@@ -34,13 +34,15 @@
   --chart-3: oklch(0.3958 0.1331 25.723);
   --chart-4: oklch(0.5553 0.1455 48.9975);
   --chart-5: oklch(0.4732 0.1247 46.2007);
-  --sidebar: oklch(0.9431 0.0068 53.4442);
+  /* Light mode: sidebar slightly darker than page for separation */
+  --sidebar: oklch(0.96 0.01 56.3756);
   --sidebar-foreground: oklch(0.2178 0 0);
   --sidebar-primary: oklch(0.465 0.147 24.9381);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.9619 0.058 95.6174);
   --sidebar-accent-foreground: oklch(0.3958 0.1331 25.723);
-  --sidebar-border: oklch(0.9355 0.0324 80.9937);
+  /* Light mode: clearer divider at the edge of the sidebar */
+  --sidebar-border: oklch(0.9 0.02 80.9937);
   --sidebar-ring: oklch(0.465 0.147 24.9381);
   --font-sans: Poppins, sans-serif;
   --font-serif: Libre Baskerville, serif;
@@ -99,13 +101,15 @@
   --chart-3: oklch(0.5771 0.2152 27.325);
   --chart-4: oklch(0.8369 0.1644 84.4286);
   --chart-5: oklch(0.7686 0.1647 70.0804);
-  --sidebar: oklch(0.2161 0.0061 56.0434);
+  /* Sidebar is slightly lighter than background for separation */
+  --sidebar: oklch(0.255 0.006 56.0434);
   --sidebar-foreground: oklch(0.9699 0.0013 106.4238);
   --sidebar-primary: oklch(0.5054 0.1905 27.5181);
   --sidebar-primary-foreground: oklch(0.9779 0.0042 56.3756);
   --sidebar-accent: oklch(0.5553 0.1455 48.9975);
   --sidebar-accent-foreground: oklch(0.9619 0.058 95.6174);
-  --sidebar-border: oklch(0.3741 0.0087 67.5582);
+  /* Side divider line a bit brighter for clearer edge */
+  --sidebar-border: oklch(0.42 0.01 67.5582);
   --sidebar-ring: oklch(0.5054 0.1905 27.5181);
   --font-sans: Poppins, sans-serif;
   --font-serif: Libre Baskerville, serif;
