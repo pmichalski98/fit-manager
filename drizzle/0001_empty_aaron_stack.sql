@@ -1,0 +1,1 @@
+ALTER TABLE "fit-manager_user" DROP COLUMN "credits";
