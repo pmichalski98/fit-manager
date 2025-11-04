@@ -1,8 +1,7 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { sql } from "drizzle-orm";
-import { index, pgTableCreator } from "drizzle-orm/pg-core";
+import { index, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -90,3 +89,52 @@ export const verification = createTable("verification", (d) => ({
     .$defaultFn(() => new Date())
     .notNull(),
 }));
+
+// Daily log: one per user per day for weight and calories
+export const dailyLog = createTable(
+  "daily_log",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: d.date("date").notNull(),
+    weight: d.numeric("weight", { precision: 5, scale: 2 }),
+    kcal: d.integer("kcal"),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => ({
+    userDateIdx: index("daily_log_user_date_idx").on(t.userId, t.date),
+    userDateUnique: uniqueIndex("daily_log_user_date_unique").on(
+      t.userId,
+      t.date,
+    ),
+  }),
+);
+
+// Body measurements: snapshots with optional fields
+export const bodyMeasurement = createTable(
+  "body_measurement",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: d.date("date").notNull(),
+    neck: d.numeric("neck", { precision: 5, scale: 2 }),
+    chest: d.numeric("chest", { precision: 5, scale: 2 }),
+    waist: d.numeric("waist", { precision: 5, scale: 2 }),
+    hips: d.numeric("hips", { precision: 5, scale: 2 }),
+    biceps: d.numeric("biceps", { precision: 5, scale: 2 }),
+    thigh: d.numeric("thigh", { precision: 5, scale: 2 }),
+    notes: d.text("notes"),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => ({
+    userDateIdx: index("body_measurement_user_date_idx").on(t.userId, t.date),
+  }),
+);

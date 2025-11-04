@@ -10,5 +10,8 @@ export default async function HomePage() {
   if (session?.user) {
     return redirect(REDIRECT_URL);
   }
+  if (!session?.user) {
+    return redirect("/sign-in");
+  }
   return <main></main>;
 }
