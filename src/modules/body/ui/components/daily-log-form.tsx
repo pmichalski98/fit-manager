@@ -39,7 +39,7 @@ export function DailyLogForm({ defaultValues }: Props) {
       setIsSubmitting(true);
       await createOrUpdateDailyLog(values);
       toast.success("Daily log saved");
-    } catch (err) {
+    } catch (_err) {
       toast.error("Failed to save daily log");
     } finally {
       setIsSubmitting(false);
@@ -72,10 +72,21 @@ export function DailyLogForm({ defaultValues }: Props) {
                 <FormLabel>Weight (kg)</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="0.1"
+                    type="text"
                     inputMode="decimal"
-                    {...field}
+                    value={
+                      typeof field.value === "number"
+                        ? String(field.value)
+                        : field.value ?? ""
+                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") return field.onChange(undefined);
+                      const normalized = raw.replace(/,/g, ".");
+                      if (/^\d*(\.\d*)?$/.test(normalized)) {
+                        field.onChange(normalized);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -91,10 +102,19 @@ export function DailyLogForm({ defaultValues }: Props) {
                 <FormLabel>Calories (kcal)</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="1"
+                    type="text"
                     inputMode="numeric"
-                    {...field}
+                    value={
+                      typeof field.value === "number"
+                        ? String(field.value)
+                        : field.value ?? ""
+                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") return field.onChange(undefined);
+                      const digitsOnly = raw.replace(/\D+/g, "");
+                      field.onChange(digitsOnly);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />

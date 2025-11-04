@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -30,7 +30,9 @@ export function MeasurementsForm({ defaultValues }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<MeasurementsFormValues>({
-    resolver: zodResolver(measurementsSchema),
+    resolver: zodResolver(
+      measurementsSchema,
+    ) as unknown as Resolver<MeasurementsFormValues>,
     defaultValues,
   });
 
@@ -39,7 +41,7 @@ export function MeasurementsForm({ defaultValues }: Props) {
       setIsSubmitting(true);
       await createOrUpdateMeasurements(values);
       toast.success("Measurements saved");
-    } catch (err) {
+    } catch {
       toast.error("Failed to save measurements");
     } finally {
       setIsSubmitting(false);
@@ -49,17 +51,34 @@ export function MeasurementsForm({ defaultValues }: Props) {
   const numberField = (
     name: keyof MeasurementsFormValues,
     label: string,
-    step = "0.1",
+    _step = "0.1",
   ) => (
     <FormField
       key={String(name)}
       control={form.control}
-      name={name as any}
+      name={name}
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input type="number" step={step} inputMode="decimal" {...field} />
+            <Input
+              type="text"
+              inputMode="decimal"
+              value={
+                typeof field.value === "number"
+                  ? String(field.value)
+                  : (field.value ?? "")
+              }
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") return field.onChange(undefined);
+                const normalized = raw.replace(/,/g, ".");
+                // allow digits with at most one dot and digits after
+                if (/^\d*(\.\d*)?$/.test(normalized)) {
+                  field.onChange(normalized);
+                }
+              }}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -88,6 +107,7 @@ export function MeasurementsForm({ defaultValues }: Props) {
           {numberField("neck", "Neck (cm)")}
           {numberField("chest", "Chest (cm)")}
           {numberField("waist", "Waist (cm)")}
+          {numberField("bellybutton", "Belly button (cm)")}
           {numberField("hips", "Hips (cm)")}
           {numberField("biceps", "Biceps (cm)")}
           {numberField("thigh", "Thigh (cm)")}

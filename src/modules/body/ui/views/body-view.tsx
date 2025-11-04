@@ -32,6 +32,7 @@ export default async function BodyView() {
     neck: undefined,
     chest: undefined,
     waist: undefined,
+    bellybutton: undefined,
     hips: undefined,
     biceps: undefined,
     thigh: undefined,
@@ -73,5 +74,3 @@ export default async function BodyView() {
     </div>
   );
 }
-
-

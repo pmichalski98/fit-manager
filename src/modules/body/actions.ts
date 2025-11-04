@@ -9,7 +9,7 @@ import {
   upsertMeasurements,
 } from "@/modules/body/repositories";
 
-type MaybeNumber = number | null | undefined;
+type MaybeNumber = number | undefined;
 
 export type DailyLogInput = {
   date: string; // YYYY-MM-DD
@@ -22,6 +22,7 @@ export type MeasurementsInput = {
   neck?: MaybeNumber;
   chest?: MaybeNumber;
   waist?: MaybeNumber;
+  bellybutton?: MaybeNumber;
   hips?: MaybeNumber;
   biceps?: MaybeNumber;
   thigh?: MaybeNumber;
@@ -38,10 +39,11 @@ async function requireUserId() {
 export async function createOrUpdateDailyLog(input: DailyLogInput) {
   const userId = await requireUserId();
   const parsed = dailyLogSchema.parse(input);
+  const toFixed1 = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
   const data = await upsertDailyLog({
     userId,
     date: parsed.date,
-    weight: parsed.weight != null ? String(parsed.weight) : null,
+    weight: parsed.weight != null ? toFixed1(parsed.weight) : null,
     kcal: parsed.kcal ?? null,
   });
   return { ok: true, data } as const;
@@ -50,15 +52,18 @@ export async function createOrUpdateDailyLog(input: DailyLogInput) {
 export async function createOrUpdateMeasurements(input: MeasurementsInput) {
   const userId = await requireUserId();
   const parsed = measurementsSchema.parse(input);
+  const toFixed1 = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
   const data = await upsertMeasurements({
     userId,
     date: parsed.date,
-    neck: parsed.neck != null ? String(parsed.neck) : null,
-    chest: parsed.chest != null ? String(parsed.chest) : null,
-    waist: parsed.waist != null ? String(parsed.waist) : null,
-    hips: parsed.hips != null ? String(parsed.hips) : null,
-    biceps: parsed.biceps != null ? String(parsed.biceps) : null,
-    thigh: parsed.thigh != null ? String(parsed.thigh) : null,
+    neck: parsed.neck != null ? toFixed1(parsed.neck) : null,
+    chest: parsed.chest != null ? toFixed1(parsed.chest) : null,
+    waist: parsed.waist != null ? toFixed1(parsed.waist) : null,
+    bellybutton:
+      parsed.bellybutton != null ? toFixed1(parsed.bellybutton) : null,
+    hips: parsed.hips != null ? toFixed1(parsed.hips) : null,
+    biceps: parsed.biceps != null ? toFixed1(parsed.biceps) : null,
+    thigh: parsed.thigh != null ? toFixed1(parsed.thigh) : null,
     notes: parsed.notes ?? null,
   });
   return { ok: true, data } as const;

@@ -9,28 +9,42 @@ export type MeasurementsDBValues = {
   neck: string | null;
   chest: string | null;
   waist: string | null;
+  bellybutton: string | null;
   hips: string | null;
   biceps: string | null;
   thigh: string | null;
   notes: string | null;
 };
 
-export async function findMeasurementsByUserAndDate(userId: string, date: string) {
+export async function findMeasurementsByUserAndDate(
+  userId: string,
+  date: string,
+) {
   const [row] = await db
     .select()
     .from(bodyMeasurement)
-    .where(and(eq(bodyMeasurement.userId, userId), eq(bodyMeasurement.date, date)));
+    .where(
+      and(eq(bodyMeasurement.userId, userId), eq(bodyMeasurement.date, date)),
+    );
   return row ?? null;
 }
 
 export async function upsertMeasurements(values: MeasurementsDBValues) {
-  const existing = await findMeasurementsByUserAndDate(values.userId, values.date);
+  const existing = await findMeasurementsByUserAndDate(
+    values.userId,
+    values.date,
+  );
 
   if (existing) {
     const [updated] = await db
       .update(bodyMeasurement)
       .set({ ...values, updatedAt: new Date() })
-      .where(and(eq(bodyMeasurement.userId, values.userId), eq(bodyMeasurement.date, values.date)))
+      .where(
+        and(
+          eq(bodyMeasurement.userId, values.userId),
+          eq(bodyMeasurement.date, values.date),
+        ),
+      )
       .returning();
     return updated;
   }
@@ -41,5 +55,3 @@ export async function upsertMeasurements(values: MeasurementsDBValues) {
     .returning();
   return inserted;
 }
-
-
