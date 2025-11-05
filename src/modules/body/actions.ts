@@ -7,7 +7,9 @@ import { dailyLogSchema, measurementsSchema } from "@/modules/body/schemas";
 import {
   upsertDailyLog,
   upsertMeasurements,
+  updateCaloricGoal as repoUpdateCaloricGoal,
 } from "@/modules/body/repositories";
+import { z } from "zod";
 
 type MaybeNumber = number | undefined;
 
@@ -67,4 +69,20 @@ export async function createOrUpdateMeasurements(input: MeasurementsInput) {
     notes: parsed.notes ?? null,
   });
   return { ok: true, data } as const;
+}
+
+const goalSchema = z.object({
+  caloricGoal: z.preprocess(
+    (v) => (v === "" || v == null ? null : v),
+    z.coerce.number().int().nonnegative().nullable(),
+  ),
+});
+
+export async function updateUserCaloricGoal(input: {
+  caloricGoal: number | null | string | undefined;
+}) {
+  const userId = await requireUserId();
+  const { caloricGoal } = goalSchema.parse(input);
+  const updated = await repoUpdateCaloricGoal(userId, caloricGoal);
+  return { ok: true, data: updated } as const;
 }

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, lte, eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { bodyMeasurement } from "@/server/db/schema";
@@ -54,4 +54,19 @@ export async function upsertMeasurements(values: MeasurementsDBValues) {
     .values(values)
     .returning();
   return inserted;
+}
+
+export async function findLatestMeasurementsOnOrBefore(
+  userId: string,
+  date: string,
+) {
+  const [row] = await db
+    .select()
+    .from(bodyMeasurement)
+    .where(
+      and(eq(bodyMeasurement.userId, userId), lte(bodyMeasurement.date, date)),
+    )
+    .orderBy(desc(bodyMeasurement.date))
+    .limit(1);
+  return row ?? null;
 }

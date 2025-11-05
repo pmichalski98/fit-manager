@@ -32,6 +32,7 @@ export const user = createTable("user", (d) => ({
     .$defaultFn(() => false)
     .notNull(),
   image: d.text("image"),
+  caloricGoal: d.integer("caloric_goal"),
   createdAt: d
     .timestamp("created_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())

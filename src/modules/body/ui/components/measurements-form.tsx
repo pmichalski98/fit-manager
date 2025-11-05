@@ -24,9 +24,10 @@ import {
 
 type Props = {
   defaultValues: MeasurementsFormValues;
+  last?: Partial<MeasurementsFormValues> & { date?: string };
 };
 
-export function MeasurementsForm({ defaultValues }: Props) {
+export function MeasurementsForm({ defaultValues, last }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<MeasurementsFormValues>({
@@ -64,6 +65,11 @@ export function MeasurementsForm({ defaultValues }: Props) {
             <Input
               type="text"
               inputMode="decimal"
+              placeholder={
+                last && typeof last[name] === "number"
+                  ? `last: ${String(last[name])}`
+                  : undefined
+              }
               value={
                 typeof field.value === "number"
                   ? String(field.value)

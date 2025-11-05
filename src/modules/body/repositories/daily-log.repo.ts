@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, lte, eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { dailyLog } from "@/server/db/schema";
@@ -29,16 +29,26 @@ export async function upsertDailyLog(values: DailyLogDBValues) {
         kcal: values.kcal,
         updatedAt: new Date(),
       })
-      .where(and(eq(dailyLog.userId, values.userId), eq(dailyLog.date, values.date)))
+      .where(
+        and(eq(dailyLog.userId, values.userId), eq(dailyLog.date, values.date)),
+      )
       .returning();
     return updated;
   }
 
-  const [inserted] = await db
-    .insert(dailyLog)
-    .values(values)
-    .returning();
+  const [inserted] = await db.insert(dailyLog).values(values).returning();
   return inserted;
 }
 
-
+export async function findLatestDailyLogOnOrBefore(
+  userId: string,
+  date: string,
+) {
+  const [row] = await db
+    .select()
+    .from(dailyLog)
+    .where(and(eq(dailyLog.userId, userId), lte(dailyLog.date, date)))
+    .orderBy(desc(dailyLog.date))
+    .limit(1);
+  return row ?? null;
+}

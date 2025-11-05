@@ -12,7 +12,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -24,9 +26,15 @@ import {
 
 type Props = {
   defaultValues: DailyLogFormValues;
+  hints?: { kcal?: string };
+  alreadyFilledToday?: boolean;
 };
 
-export function DailyLogForm({ defaultValues }: Props) {
+export function DailyLogForm({
+  defaultValues,
+  hints,
+  alreadyFilledToday,
+}: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<DailyLogFormValues>({
@@ -49,6 +57,11 @@ export function DailyLogForm({ defaultValues }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {alreadyFilledToday ? (
+          <Alert>
+            <AlertDescription>You already filled this today.</AlertDescription>
+          </Alert>
+        ) : null}
         <FormField
           control={form.control}
           name="date"
@@ -77,7 +90,7 @@ export function DailyLogForm({ defaultValues }: Props) {
                     value={
                       typeof field.value === "number"
                         ? String(field.value)
-                        : field.value ?? ""
+                        : (field.value ?? "")
                     }
                     onChange={(e) => {
                       const raw = e.target.value;
@@ -107,7 +120,7 @@ export function DailyLogForm({ defaultValues }: Props) {
                     value={
                       typeof field.value === "number"
                         ? String(field.value)
-                        : field.value ?? ""
+                        : (field.value ?? "")
                     }
                     onChange={(e) => {
                       const raw = e.target.value;
@@ -117,6 +130,9 @@ export function DailyLogForm({ defaultValues }: Props) {
                     }}
                   />
                 </FormControl>
+                {hints?.kcal ? (
+                  <FormDescription>{hints.kcal}</FormDescription>
+                ) : null}
                 <FormMessage />
               </FormItem>
             )}
