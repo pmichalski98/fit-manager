@@ -57,12 +57,7 @@ export default async function BodyView() {
         : latestLog?.weight != null
           ? parseFloat(latestLog.weight)
           : undefined,
-    kcal:
-      todaysLog?.kcal != null
-        ? todaysLog.kcal
-        : caloricGoal != null
-          ? caloricGoal
-          : undefined,
+    kcal: todaysLog?.kcal ?? caloricGoal ?? undefined,
   };
 
   const dailyHints: { kcal?: string } = {};
@@ -112,7 +107,7 @@ export default async function BodyView() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardHeader className="flex flex-row items-start justify-between">
             <div>
               <CardTitle>Daily log</CardTitle>
               <CardDescription>

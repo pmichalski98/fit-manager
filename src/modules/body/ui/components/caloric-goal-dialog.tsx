@@ -17,7 +17,7 @@ export function CaloricGoalDialog({ defaultGoal }: Props) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="secondary" size="sm">
           Set kcal goal
         </Button>
       </DialogTrigger>

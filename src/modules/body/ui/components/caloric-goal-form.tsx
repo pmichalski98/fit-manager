@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ type Props = {
 export function CaloricGoalForm({ defaultGoal }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<GoalFormValues>({
-    resolver: zodResolver(goalSchema),
+    resolver: zodResolver(goalSchema) as unknown as Resolver<GoalFormValues>,
     defaultValues: { caloricGoal: defaultGoal ?? undefined },
   });
 

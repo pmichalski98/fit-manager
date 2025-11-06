@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -38,7 +38,9 @@ export function DailyLogForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<DailyLogFormValues>({
-    resolver: zodResolver(dailyLogSchema),
+    resolver: zodResolver(
+      dailyLogSchema,
+    ) as unknown as Resolver<DailyLogFormValues>,
     defaultValues,
   });
 

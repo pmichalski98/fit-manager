@@ -1,7 +1,7 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { index, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, pgEnum, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -11,12 +11,14 @@ import { index, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
  */
 export const createTable = pgTableCreator((name) => `fit-manager_${name}`);
 
+export const trainingTypeEnum = pgEnum("training_type", ["strength", "cardio"]);
+
 export const training = createTable("training", (d) => ({
   id: d.uuid("id").primaryKey().defaultRandom(),
   name: d.text("name").notNull(),
-  exercises: d.text("exercises").array().notNull(),
+  type: trainingTypeEnum("type").notNull(),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
-  updatedAt: d.timestamp("updated_at").notNull(),
+  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   userId: d
     .text("user_id")
     .notNull()
@@ -138,5 +140,26 @@ export const bodyMeasurement = createTable(
   }),
   (t) => ({
     userDateIdx: index("body_measurement_user_date_idx").on(t.userId, t.date),
+  }),
+);
+
+export const trainingExercise = createTable(
+  "training_exercise",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    trainingId: d
+      .uuid("training_id")
+      .notNull()
+      .references(() => training.id, { onDelete: "cascade" }),
+    name: d.text("name").notNull(),
+    position: d.integer("position").notNull(),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => ({
+    trainingPositionIdx: index("training_exercise_training_position_idx").on(
+      t.trainingId,
+      t.position,
+    ),
   }),
 );
