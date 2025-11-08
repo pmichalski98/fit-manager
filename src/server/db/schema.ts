@@ -163,3 +163,96 @@ export const trainingExercise = createTable(
     ),
   }),
 );
+
+// Training session lifecycle and results
+export const trainingSession = createTable("training_session", (d) => ({
+  id: d.uuid("id").primaryKey().defaultRandom(),
+  userId: d
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  trainingId: d
+    .uuid("training_id")
+    .notNull()
+    .references(() => training.id, { onDelete: "cascade" }),
+  type: trainingTypeEnum("type").notNull(),
+  startAt: d.timestamp("start_at").notNull().defaultNow(),
+  endAt: d.timestamp("end_at"),
+  notes: d.text("notes"),
+  createdAt: d.timestamp("created_at").notNull().defaultNow(),
+  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+}));
+
+export const trainingSessionExercise = createTable(
+  "training_session_exercise",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    sessionId: d
+      .uuid("session_id")
+      .notNull()
+      .references(() => trainingSession.id, { onDelete: "cascade" }),
+    templateExerciseId: d
+      .uuid("template_exercise_id")
+      .references(() => trainingExercise.id, { onDelete: "set null" }),
+    name: d.text("name").notNull(),
+    position: d.integer("position").notNull(),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => ({
+    sessionPositionIdx: index("training_session_exercise_session_position_idx").on(
+      t.sessionId,
+      t.position,
+    ),
+  }),
+);
+
+export const trainingSessionSet = createTable(
+  "training_session_set",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    sessionExerciseId: d
+      .uuid("session_exercise_id")
+      .notNull()
+      .references(() => trainingSessionExercise.id, { onDelete: "cascade" }),
+    setIndex: d.integer("set_index").notNull(),
+    reps: d.integer("reps").notNull(),
+    weight: d.numeric("weight", { precision: 6, scale: 2 }),
+    rpe: d.numeric("rpe", { precision: 3, scale: 1 }),
+    rir: d.numeric("rir", { precision: 3, scale: 1 }),
+    restSec: d.integer("rest_sec"),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => ({
+    sessionExerciseSetIdx: index("training_session_set_exercise_set_idx").on(
+      t.sessionExerciseId,
+      t.setIndex,
+    ),
+  }),
+);
+
+export const trainingSessionCardio = createTable(
+  "training_session_cardio",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    sessionId: d
+      .uuid("session_id")
+      .notNull()
+      .references(() => trainingSession.id, { onDelete: "cascade" }),
+    durationSec: d.integer("duration_sec").notNull(),
+    distanceM: d.integer("distance_m"),
+    kcal: d.integer("kcal"),
+    avgHr: d.integer("avg_hr"),
+    avgSpeedKmh: d.numeric("avg_speed_kmh", { precision: 5, scale: 2 }),
+    avgPowerW: d.integer("avg_power_w"),
+    notes: d.text("notes"),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => ({
+    sessionUniqueIdx: uniqueIndex("training_session_cardio_session_unique").on(
+      t.sessionId,
+    ),
+  }),
+);

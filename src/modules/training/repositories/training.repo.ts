@@ -1,5 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
-import { training, trainingExercise, type trainingTypeEnum } from "@/server/db/schema";
+import {
+  training,
+  trainingExercise,
+  trainingSession,
+  trainingSessionExercise,
+  trainingSessionSet,
+  type trainingTypeEnum,
+} from "@/server/db/schema";
 
 export type CreateTrainingValues = {
   userId: string;
@@ -18,6 +27,7 @@ export async function createTraining(values: CreateTrainingValues) {
         type: values.type,
       })
       .returning();
+    if (!createdTraining) return createdTraining;
 
     if (values.type === "strength" && values.exercises.length > 0) {
       await tx.insert(trainingExercise).values(
@@ -33,4 +43,97 @@ export async function createTraining(values: CreateTrainingValues) {
   });
 }
 
+export async function findAllTrainingsWithExercises(userId: string) {
+  const trainings = await db
+    .select()
+    .from(training)
+    .where(eq(training.userId, userId))
+    .orderBy(desc(training.createdAt));
 
+  const ids = trainings.map((t) => t.id);
+  type TrainingRow = typeof training.$inferSelect;
+  type ExerciseRow = typeof trainingExercise.$inferSelect;
+  type TrainingWithExercises = TrainingRow & { exercises: ExerciseRow[] };
+  if (ids.length === 0) return [] as TrainingWithExercises[];
+
+  const exercises = await db
+    .select()
+    .from(trainingExercise)
+    .where(inArray(trainingExercise.trainingId, ids))
+    .orderBy(trainingExercise.position);
+
+  const byTrainingId = new Map<string, ExerciseRow[]>();
+  for (const t of trainings) byTrainingId.set(t.id, []);
+  for (const ex of exercises) {
+    const arr = byTrainingId.get(ex.trainingId);
+    if (arr) arr.push(ex);
+  }
+
+  return trainings.map((t) => ({
+    ...t,
+    exercises: byTrainingId.get(t.id) ?? [],
+  }));
+}
+
+export async function findTrainingByIdWithExercises(
+  userId: string,
+  trainingId: string,
+) {
+  const [t] = await db
+    .select()
+    .from(training)
+    .where(and(eq(training.userId, userId), eq(training.id, trainingId)));
+  if (!t) return null;
+  const exs = await db
+    .select()
+    .from(trainingExercise)
+    .where(eq(trainingExercise.trainingId, trainingId))
+    .orderBy(trainingExercise.position);
+  return { ...t, exercises: exs };
+}
+
+export async function findLatestStrengthSessionWithDetails(
+  userId: string,
+  trainingId: string,
+) {
+  const [s] = await db
+    .select()
+    .from(trainingSession)
+    .where(
+      and(
+        eq(trainingSession.userId, userId),
+        eq(trainingSession.trainingId, trainingId),
+        eq(trainingSession.type, "strength"),
+      ),
+    )
+    .orderBy(desc(trainingSession.startAt))
+    .limit(1);
+  if (!s) return null;
+  const exercises = await db
+    .select()
+    .from(trainingSessionExercise)
+    .where(eq(trainingSessionExercise.sessionId, s.id))
+    .orderBy(trainingSessionExercise.position);
+  const exerciseIds = exercises.map((e) => e.id);
+  type SetRow = typeof trainingSessionSet.$inferSelect;
+  const sets: SetRow[] = exerciseIds.length
+    ? await db
+        .select()
+        .from(trainingSessionSet)
+        .where(inArray(trainingSessionSet.sessionExerciseId, exerciseIds))
+        .orderBy(trainingSessionSet.setIndex)
+    : [];
+  const setsByExercise = new Map<string, SetRow[]>();
+  for (const e of exercises) setsByExercise.set(e.id, []);
+  for (const st of sets) {
+    const arr = setsByExercise.get(st.sessionExerciseId);
+    if (arr) arr.push(st);
+  }
+  return {
+    session: s,
+    exercises: exercises.map((e) => ({
+      ...e,
+      sets: setsByExercise.get(e.id) ?? [],
+    })),
+  };
+}

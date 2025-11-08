@@ -1,0 +1,75 @@
+import { notFound } from "next/navigation";
+
+import { auth } from "@/lib/auth";
+import {
+  findSessionById,
+  findTrainingByIdWithExercises,
+  findLatestStrengthSessionWithDetails,
+} from "@/modules/training/repositories";
+import { TrainingStrengthSessionView } from "@/modules/training/ui/views/strength-session-view";
+import { TrainingCardioSessionView } from "@/modules/training/ui/views/cardio-session-view";
+import { headers } from "next/headers";
+
+type Props = { params: { id: string } };
+
+export default async function TrainingSessionPage({ params }: Props) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const userId = session?.user?.id;
+  if (!userId) notFound();
+
+  type SessionRow = {
+    id: string;
+    userId: string;
+    trainingId: string;
+    type: "strength" | "cardio";
+    startAt: string | Date;
+  };
+
+  const s = (await findSessionById(params.id)) as SessionRow | null;
+  if (s?.userId !== userId) notFound();
+
+  type TemplateExercise = { id: string; name: string; position: number };
+  type TemplateRow = {
+    id: string;
+    name: string;
+    type: "strength" | "cardio";
+    exercises: TemplateExercise[];
+  };
+
+  const tpl = (await findTrainingByIdWithExercises(
+    userId,
+    s.trainingId,
+  )) as TemplateRow | null;
+  if (!tpl) notFound();
+
+  if (s.type === "strength") {
+    type LastStrength = {
+      session: { id: string; startAt: string | Date };
+      exercises: Array<{
+        id: string;
+        name: string;
+        position: number;
+        sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
+      }>;
+    } | null;
+
+    const last = (await findLatestStrengthSessionWithDetails(
+      userId,
+      s.trainingId,
+    )) as LastStrength;
+    return (
+      <TrainingStrengthSessionView
+        session={{ id: s.id, startAt: s.startAt }}
+        template={{ id: tpl.id, name: tpl.name, exercises: tpl.exercises }}
+        last={last}
+      />
+    );
+  }
+
+  return (
+    <TrainingCardioSessionView
+      session={{ id: s.id, startAt: s.startAt }}
+      template={{ id: tpl.id, name: tpl.name }}
+    />
+  );
+}

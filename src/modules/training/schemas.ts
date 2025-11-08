@@ -22,4 +22,44 @@ export const trainingFormSchema = z.discriminatedUnion("type", [
 
 export type TrainingFormValues = z.infer<typeof trainingFormSchema>;
 
+// Session payloads
+export const strengthSessionSchema = z.object({
+  sessionId: z.string().uuid().optional(), // will be merged in actions
+  exercises: z
+    .array(
+      z.object({
+        templateExerciseId: z.string().uuid().optional().nullable(),
+        name: z.string().min(1),
+        position: z.coerce.number().int().nonnegative(),
+        sets: z
+          .array(
+            z.object({
+              setIndex: z.coerce.number().int().nonnegative(),
+              reps: z.coerce.number().int().positive(),
+              weight: z.coerce.number().positive().optional().nullable(),
+              rpe: z.coerce.number().min(0).max(10).optional().nullable(),
+              rir: z.coerce.number().min(0).max(10).optional().nullable(),
+              restSec: z.coerce
+                .number()
+                .int()
+                .nonnegative()
+                .optional()
+                .nullable(),
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .min(1),
+});
 
+export const cardioSessionSchema = z.object({
+  sessionId: z.string().uuid().optional(),
+  durationSec: z.coerce.number().int().positive(),
+  distanceM: z.coerce.number().int().positive().optional().nullable(),
+  kcal: z.coerce.number().int().positive().optional().nullable(),
+  avgHr: z.coerce.number().int().positive().optional().nullable(),
+  avgSpeedKmh: z.coerce.number().positive().optional().nullable(),
+  avgPowerW: z.coerce.number().int().positive().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
