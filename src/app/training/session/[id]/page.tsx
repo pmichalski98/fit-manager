@@ -10,9 +10,10 @@ import { TrainingStrengthSessionView } from "@/modules/training/ui/views/strengt
 import { TrainingCardioSessionView } from "@/modules/training/ui/views/cardio-session-view";
 import { headers } from "next/headers";
 
-type Props = { params: { id: string } };
+type Props = { params: Promise<{ id: string }> };
 
-export default async function TrainingSessionPage({ params }: Props) {
+export default async function TrainingSessionPage(props: Props) {
+  const params = await props.params;
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) notFound();
