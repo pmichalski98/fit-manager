@@ -10,7 +10,9 @@ interface DeleteTrainingButtonProps {
   trainingId: string;
 }
 
-export function DeleteTrainingButton({ trainingId }: DeleteTrainingButtonProps) {
+export function DeleteTrainingButton({
+  trainingId,
+}: DeleteTrainingButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -19,7 +21,7 @@ export function DeleteTrainingButton({ trainingId }: DeleteTrainingButtonProps) 
       setIsDeleting(true);
       await deleteTrainingAction(trainingId);
       toast.success("Training deleted");
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete training");
     } finally {
       setIsDeleting(false);
@@ -40,4 +42,3 @@ export function DeleteTrainingButton({ trainingId }: DeleteTrainingButtonProps) 
     </form>
   );
 }
-

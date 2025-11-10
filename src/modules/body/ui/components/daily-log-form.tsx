@@ -12,7 +12,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
@@ -49,7 +48,7 @@ export function DailyLogForm({
       setIsSubmitting(true);
       await createOrUpdateDailyLog(values);
       toast.success("Daily log saved");
-    } catch (_err) {
+    } catch {
       toast.error("Failed to save daily log");
     } finally {
       setIsSubmitting(false);

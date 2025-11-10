@@ -44,7 +44,7 @@ export function CaloricGoalForm({ defaultGoal }: Props) {
       const payload = { caloricGoal: values.caloricGoal ?? null };
       await updateUserCaloricGoal(payload);
       toast.success("Caloric goal updated");
-    } catch (e) {
+    } catch {
       toast.error("Failed to update caloric goal");
     } finally {
       setIsSubmitting(false);
