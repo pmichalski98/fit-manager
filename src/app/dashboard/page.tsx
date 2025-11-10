@@ -78,7 +78,7 @@ function average(values: number[]): number | null {
 }
 
 type PageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<{ week?: string }>;
 };
 
 export default async function TrainingPage(props: PageProps) {
