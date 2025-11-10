@@ -1,4 +1,4 @@
-import { and, desc, lte, eq } from "drizzle-orm";
+import { and, desc, lte, gte, eq, asc } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { dailyLog } from "@/server/db/schema";
@@ -51,4 +51,26 @@ export async function findLatestDailyLogOnOrBefore(
     .orderBy(desc(dailyLog.date))
     .limit(1);
   return row ?? null;
+}
+
+export async function findDailyLogsInRange(
+  userId: string,
+  startDate: string,
+  endDate: string,
+) {
+  return await db
+    .select({
+      date: dailyLog.date,
+      weight: dailyLog.weight,
+      kcal: dailyLog.kcal,
+    })
+    .from(dailyLog)
+    .where(
+      and(
+        eq(dailyLog.userId, userId),
+        gte(dailyLog.date, startDate),
+        lte(dailyLog.date, endDate),
+      ),
+    )
+    .orderBy(asc(dailyLog.date));
 }
