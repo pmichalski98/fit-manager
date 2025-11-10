@@ -13,17 +13,10 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import {
-  CreditCardIcon,
-  DumbbellIcon,
-  HeartIcon,
-  ImageIcon,
-  LayoutDashboardIcon,
-} from "lucide-react";
+import { DumbbellIcon, HeartIcon, LayoutDashboardIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RxAvatar } from "react-icons/rx";
 import UserButton from "./user-button";
 
 export function AppSidebar() {

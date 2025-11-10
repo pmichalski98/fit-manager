@@ -1,9 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import {
-  training,
-  trainingExercise,
   trainingSession,
   trainingSessionCardio,
   trainingSessionExercise,
@@ -21,7 +19,7 @@ export async function createSession(input: {
     .values({
       userId: input.userId,
       trainingId: input.trainingId,
-      type: input.type as any,
+      type: input.type,
       startAt: input.startAt ?? new Date(),
     })
     .returning();
@@ -57,6 +55,9 @@ export async function completeStrengthSession(
           position: ex.position,
         })
         .returning();
+      if (!insertedEx) {
+        throw new Error("Failed to insert session exercise");
+      }
       if (ex.sets?.length) {
         await tx.insert(trainingSessionSet).values(
           ex.sets.map((s) => ({

@@ -65,3 +65,11 @@ export const cardioSessionSchema = z.object({
   avgPowerW: z.coerce.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
+
+// Start training session
+export const startTrainingSessionSchema = z.object({
+  trainingId: z.string().uuid(),
+});
+export type StartTrainingSessionValues = z.infer<
+  typeof startTrainingSessionSchema
+>;

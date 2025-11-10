@@ -1,25 +1,30 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useForm, useFieldArray, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import {
   DndContext,
-  type DragEndEvent,
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  verticalListSortingStrategy,
   useSortable,
-  arrayMove,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2, Plus } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import {
+  useFieldArray,
+  useForm,
+  type Resolver,
+  type Control,
+} from "react-hook-form";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -29,7 +34,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -38,11 +42,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { createTrainingAction } from "@/modules/training/actions";
 import {
   trainingFormSchema,
   type TrainingFormValues,
 } from "@/modules/training/schemas";
-import { createTrainingAction } from "@/modules/training/actions";
 
 type Props = {
   defaultValues?: Partial<TrainingFormValues>;
@@ -64,6 +68,13 @@ export function TrainingForm({ defaultValues }: Props) {
   });
 
   const isStrength = form.watch("type") === "strength";
+  const exercisesErrorMessage = isStrength
+    ? (
+        form.formState.errors as {
+          exercises?: { message?: string };
+        }
+      ).exercises?.message
+    : undefined;
 
   const { fields, append, remove, move } = useFieldArray({
     control: form.control,
@@ -97,7 +108,7 @@ export function TrainingForm({ defaultValues }: Props) {
       } else {
         toast.error("Failed to create training");
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to create training");
     } finally {
       setIsSubmitting(false);
@@ -180,7 +191,7 @@ export function TrainingForm({ defaultValues }: Props) {
                 </div>
               </SortableContext>
             </DndContext>
-            <FormMessage>{form.formState.errors.exercises?.message as string}</FormMessage>
+            <FormMessage>{exercisesErrorMessage}</FormMessage>
           </div>
         ) : null}
 
@@ -203,7 +214,7 @@ function ExerciseRow({
   id: string;
   index: number;
   onRemove: () => void;
-  control: any;
+  control: Control<TrainingFormValues>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
@@ -216,7 +227,7 @@ function ExerciseRow({
     <div ref={setNodeRef} style={style} className="flex items-center gap-2">
       <button
         type="button"
-        className="cursor-grab rounded-md border p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        className="text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-grab rounded-md border p-2"
         {...attributes}
         {...listeners}
       >
@@ -247,5 +258,3 @@ function ExerciseRow({
     </div>
   );
 }
-
-

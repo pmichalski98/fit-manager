@@ -33,12 +33,11 @@ export default async function TrainingPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <form action={startTrainingSessionAction}>
-                      <input
-                        type="hidden"
-                        name="trainingId"
-                        value={training.id}
-                      />
+                    <form
+                      action={startTrainingSessionAction.bind(null, {
+                        trainingId: training.id,
+                      })}
+                    >
                       <button className="bg-primary text-primary-foreground inline-flex h-8 items-center rounded-md px-3 text-sm">
                         Start
                       </button>
