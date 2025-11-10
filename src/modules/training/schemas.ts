@@ -53,6 +53,8 @@ export const strengthSessionSchema = z.object({
     .min(1),
 });
 
+export type StrengthSessionFormValues = z.infer<typeof strengthSessionSchema>;
+
 export const cardioSessionSchema = z.object({
   sessionId: z.string().uuid().optional(),
   durationSec: z.coerce.number().int().positive(),

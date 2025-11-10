@@ -25,8 +25,10 @@ export default async function TrainingSessionPage({ params }: Props) {
     startAt: string | Date;
   };
 
-  const s = (await findSessionById(params.id)) as SessionRow | null;
-  if (s?.userId !== userId) notFound();
+  const trainingSession = (await findSessionById(
+    params.id,
+  )) as SessionRow | null;
+  if (trainingSession?.userId !== userId) notFound();
 
   type TemplateExercise = { id: string; name: string; position: number };
   type TemplateRow = {
@@ -38,11 +40,11 @@ export default async function TrainingSessionPage({ params }: Props) {
 
   const tpl = (await findTrainingByIdWithExercises(
     userId,
-    s.trainingId,
+    trainingSession.trainingId,
   )) as TemplateRow | null;
   if (!tpl) notFound();
 
-  if (s.type === "strength") {
+  if (trainingSession.type === "strength") {
     type LastStrength = {
       session: { id: string; startAt: string | Date };
       exercises: Array<{
@@ -55,11 +57,11 @@ export default async function TrainingSessionPage({ params }: Props) {
 
     const last = (await findLatestStrengthSessionWithDetails(
       userId,
-      s.trainingId,
+      trainingSession.trainingId,
     )) as LastStrength;
     return (
       <TrainingStrengthSessionView
-        session={{ id: s.id, startAt: s.startAt }}
+        session={{ id: trainingSession.id, startAt: trainingSession.startAt }}
         template={{ id: tpl.id, name: tpl.name, exercises: tpl.exercises }}
         last={last}
       />
@@ -68,7 +70,7 @@ export default async function TrainingSessionPage({ params }: Props) {
 
   return (
     <TrainingCardioSessionView
-      session={{ id: s.id, startAt: s.startAt }}
+      session={{ id: trainingSession.id, startAt: trainingSession.startAt }}
       template={{ id: tpl.id, name: tpl.name }}
     />
   );

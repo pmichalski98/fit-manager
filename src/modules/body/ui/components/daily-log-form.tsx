@@ -114,7 +114,11 @@ export function DailyLogForm({
             name="kcal"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Calories (kcal)</FormLabel>
+                <FormLabel>
+                  Calories (kcal)
+                  {hints?.kcal ? <FormMessage>{hints.kcal}</FormMessage> : null}
+                </FormLabel>
+
                 <FormControl>
                   <Input
                     type="text"
@@ -132,9 +136,7 @@ export function DailyLogForm({
                     }}
                   />
                 </FormControl>
-                {hints?.kcal ? (
-                  <FormDescription>{hints.kcal}</FormDescription>
-                ) : null}
+
                 <FormMessage />
               </FormItem>
             )}

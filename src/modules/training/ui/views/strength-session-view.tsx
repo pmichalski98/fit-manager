@@ -7,8 +7,18 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { strengthSessionSchema } from "@/modules/training/schemas";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  strengthSessionSchema,
+  type StrengthSessionFormValues,
+} from "@/modules/training/schemas";
 import { completeStrengthSessionAction } from "@/modules/training/actions";
 
 type TemplateExercise = { id: string; name: string; position: number };
@@ -18,42 +28,73 @@ type Props = {
   template: { id: string; name: string; exercises: TemplateExercise[] };
   last: null | {
     session: { id: string };
-    exercises: Array<{ id: string; name: string; position: number; sets: Array<{ setIndex: number; reps: number; weight: string | null }> }>;
+    exercises: Array<{
+      id: string;
+      name: string;
+      position: number;
+      sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
+    }>;
   };
 };
 
-export function TrainingStrengthSessionView({ session, template, last }: Props) {
+export function TrainingStrengthSessionView({
+  session,
+  template,
+  last,
+}: Props) {
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
     const start = new Date(session.startAt).getTime();
     const i = setInterval(() => {
       const diff = Math.max(0, Date.now() - start);
-      const h = Math.floor(diff / 3600000).toString().padStart(2, "0");
-      const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, "0");
-      const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, "0");
+      const h = Math.floor(diff / 3600000)
+        .toString()
+        .padStart(2, "0");
+      const m = Math.floor((diff % 3600000) / 60000)
+        .toString()
+        .padStart(2, "0");
+      const s = Math.floor((diff % 60000) / 1000)
+        .toString()
+        .padStart(2, "0");
       setElapsed(`${h}:${m}:${s}`);
     }, 1000);
     return () => clearInterval(i);
   }, [session.startAt]);
 
-  const defaultExercises = useMemo(() => {
+  const defaultExercises = useMemo<
+    StrengthSessionFormValues["exercises"]
+  >(() => {
     return template.exercises.map((e) => {
       const lastEx = last?.exercises.find((le) => le.position === e.position);
       const sets = lastEx?.sets?.length
-        ? lastEx.sets.map((s, idx) => ({ setIndex: idx, reps: s.reps, weight: s.weight ? Number(s.weight) : undefined }))
-        : [{ setIndex: 0, reps: 5, weight: undefined as number | undefined }];
-      return { templateExerciseId: e.id, name: e.name, position: e.position, sets };
+        ? lastEx.sets.map((s, idx) => ({
+            setIndex: idx,
+            reps: s.reps,
+            weight: s.weight ? Number(s.weight) : undefined,
+          }))
+        : [{ setIndex: 0, reps: 5, weight: undefined }];
+      return {
+        templateExerciseId: e.id,
+        name: e.name,
+        position: e.position,
+        sets,
+      };
     });
   }, [template.exercises, last]);
 
-  const form = useForm<any>({
-    resolver: zodResolver(strengthSessionSchema) as unknown as Resolver<any>,
+  const form = useForm<StrengthSessionFormValues>({
+    resolver: zodResolver(
+      strengthSessionSchema,
+    ) as unknown as Resolver<StrengthSessionFormValues>,
     defaultValues: { exercises: defaultExercises },
   });
 
-  const exercisesArr = useFieldArray({ control: form.control, name: "exercises" });
+  const exercisesArr = useFieldArray({
+    control: form.control,
+    name: "exercises",
+  });
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: StrengthSessionFormValues) => {
     try {
       await completeStrengthSessionAction({ sessionId: session.id, ...values });
       toast.success("Session saved");
@@ -91,16 +132,28 @@ export function TrainingStrengthSessionView({ session, template, last }: Props) 
   );
 }
 
-function ExerciseSets({ control, exIndex }: { control: any; exIndex: number }) {
-  const { fields, append, remove } = useFieldArray({ name: `exercises.${exIndex}.sets`, control });
+function ExerciseSets({
+  control,
+  exIndex,
+}: {
+  control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
+  exIndex: number;
+}) {
+  const { fields, append, remove } = useFieldArray({
+    name: `exercises.${exIndex}.sets`,
+    control,
+  });
   return (
     <div className="space-y-2">
       {fields.map((f, setIdx) => (
-        <div key={f.id} className="grid grid-cols-3 items-end gap-2 sm:grid-cols-6">
+        <div
+          key={f.id}
+          className="grid grid-cols-3 items-end gap-2 sm:grid-cols-6"
+        >
           <FormField
             control={control}
             name={`exercises.${exIndex}.sets.${setIdx}.setIndex`}
-            render={({ field }) => (
+            render={(_field) => (
               <FormItem>
                 <FormLabel className="text-xs">Set</FormLabel>
                 <FormControl>
@@ -129,17 +182,40 @@ function ExerciseSets({ control, exIndex }: { control: any; exIndex: number }) {
               <FormItem>
                 <FormLabel className="text-xs">Weight</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.5" inputMode="decimal" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))} />
+                  <Input
+                    type="number"
+                    step="0.5"
+                    inputMode="decimal"
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value),
+                      )
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <div className="col-span-3 flex justify-end sm:col-span-3">
-            <Button type="button" variant="outline" onClick={() => append({ setIndex: fields.length, reps: 5, weight: undefined })}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                append({ setIndex: fields.length, reps: 5, weight: undefined })
+              }
+            >
               Add set
             </Button>
-            <Button type="button" variant="destructive" className="ml-2" onClick={() => remove(setIdx)}>
+            <Button
+              type="button"
+              variant="destructive"
+              className="ml-2"
+              onClick={() => remove(setIdx)}
+            >
               Remove
             </Button>
           </div>
@@ -148,5 +224,3 @@ function ExerciseSets({ control, exIndex }: { control: any; exIndex: number }) {
     </div>
   );
 }
-
-

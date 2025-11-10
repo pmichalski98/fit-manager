@@ -30,7 +30,6 @@ export default async function BodyView() {
   const today = new Date();
   const todayStr = formatDateYYYYMMDD(today);
 
-  // session
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
 
