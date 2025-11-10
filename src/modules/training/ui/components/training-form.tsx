@@ -90,10 +90,14 @@ export function TrainingForm({ defaultValues }: Props) {
   const onSubmit = async (values: TrainingFormValues) => {
     try {
       setIsSubmitting(true);
-      await createTrainingAction(values);
-      toast.success("Training created");
-      form.reset();
-    } catch (_err) {
+      const result = await createTrainingAction(values);
+      if (result.ok) {
+        toast.success("Training created");
+        form.reset();
+      } else {
+        toast.error("Failed to create training");
+      }
+    } catch (err) {
       toast.error("Failed to create training");
     } finally {
       setIsSubmitting(false);

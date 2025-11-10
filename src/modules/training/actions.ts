@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -13,6 +14,7 @@ import {
 import {
   createTraining,
   findTrainingByIdWithExercises,
+  deleteTraining,
 } from "@/modules/training/repositories";
 import {
   completeCardioSession,
@@ -41,6 +43,8 @@ export async function createTrainingAction(input: CreateTrainingInput) {
     type: parsed.type,
     exercises,
   });
+
+  revalidatePath("/training");
 
   return { ok: true, data: created } as const;
 }
@@ -83,5 +87,12 @@ export async function completeCardioSessionAction(
     avgPowerW: parsed.avgPowerW ?? null,
     notes: parsed.notes ?? null,
   });
+  return { ok: true } as const;
+}
+
+export async function deleteTrainingAction(trainingId: string) {
+  const userId = await requireUserId();
+  await deleteTraining(userId, trainingId);
+  revalidatePath("/training");
   return { ok: true } as const;
 }

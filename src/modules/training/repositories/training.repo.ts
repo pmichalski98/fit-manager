@@ -137,3 +137,9 @@ export async function findLatestStrengthSessionWithDetails(
     })),
   };
 }
+
+export async function deleteTraining(userId: string, trainingId: string) {
+  return await db
+    .delete(training)
+    .where(and(eq(training.userId, userId), eq(training.id, trainingId)));
+}

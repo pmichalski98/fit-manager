@@ -3,6 +3,7 @@ import { startTrainingSessionAction } from "@/modules/training/actions";
 import { findAllTrainingsWithExercises } from "@/modules/training/repositories";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { DeleteTrainingButton } from "@/modules/training/ui/components/delete-training-button";
 
 export default async function TrainingPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -31,16 +32,19 @@ export default async function TrainingPage() {
                       {training.type}
                     </div>
                   </div>
-                  <form action={startTrainingSessionAction}>
-                    <input
-                      type="hidden"
-                      name="trainingId"
-                      value={training.id}
-                    />
-                    <button className="bg-primary text-primary-foreground inline-flex h-8 items-center rounded-md px-3 text-sm">
-                      Start
-                    </button>
-                  </form>
+                  <div className="flex gap-2">
+                    <form action={startTrainingSessionAction}>
+                      <input
+                        type="hidden"
+                        name="trainingId"
+                        value={training.id}
+                      />
+                      <button className="bg-primary text-primary-foreground inline-flex h-8 items-center rounded-md px-3 text-sm">
+                        Start
+                      </button>
+                    </form>
+                    <DeleteTrainingButton trainingId={training.id} />
+                  </div>
                 </div>
                 {training.type === "strength" && training.exercises?.length ? (
                   <ol className="text-muted-foreground text-sm">
