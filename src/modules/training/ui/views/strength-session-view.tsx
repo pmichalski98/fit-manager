@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm, useFieldArray, type Resolver } from "react-hook-form";
+import {
+  useForm,
+  useFieldArray,
+  useWatch,
+  type Resolver,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -105,7 +110,7 @@ export function TrainingStrengthSessionView({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b py-4">
         <h1 className="text-2xl font-bold">{template.name}</h1>
         <div className="text-muted-foreground">Time: {elapsed}</div>
       </div>
@@ -143,6 +148,10 @@ function ExerciseSets({
     name: `exercises.${exIndex}.sets`,
     control,
   });
+  const sets = useWatch({
+    control,
+    name: `exercises.${exIndex}.sets`,
+  });
   return (
     <div className="space-y-2">
       {fields.map((f, setIdx) => (
@@ -157,7 +166,13 @@ function ExerciseSets({
               <FormItem>
                 <FormLabel className="text-xs">Set</FormLabel>
                 <FormControl>
-                  <Input type="number" min={0} value={setIdx} readOnly />
+                  <Input
+                    type="number"
+                    min={0}
+                    value={setIdx + 1}
+                    readOnly
+                    tabIndex={-1}
+                  />
                 </FormControl>
               </FormItem>
             )}
@@ -204,9 +219,15 @@ function ExerciseSets({
             <Button
               type="button"
               variant="outline"
-              onClick={() =>
-                append({ setIndex: fields.length, reps: 5, weight: undefined })
-              }
+              tabIndex={-1}
+              onClick={() => {
+                const lastSet = sets?.[sets.length - 1];
+                append({
+                  setIndex: fields.length,
+                  reps: lastSet?.reps ?? 5,
+                  weight: lastSet?.weight ?? undefined,
+                });
+              }}
             >
               Add set
             </Button>
@@ -214,6 +235,7 @@ function ExerciseSets({
               type="button"
               variant="destructive"
               className="ml-2"
+              tabIndex={-1}
               onClick={() => remove(setIdx)}
             >
               Remove
