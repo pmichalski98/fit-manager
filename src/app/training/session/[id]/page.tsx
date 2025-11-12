@@ -5,6 +5,7 @@ import {
   findSessionById,
   findTrainingByIdWithExercises,
   findLatestStrengthSessionWithDetails,
+  findLatestCardioSessionWithMetrics,
 } from "@/modules/training/repositories";
 import { TrainingStrengthSessionView } from "@/modules/training/ui/views/strength-session-view";
 import { TrainingCardioSessionView } from "@/modules/training/ui/views/cardio-session-view";
@@ -69,10 +70,28 @@ export default async function TrainingSessionPage(props: Props) {
     );
   }
 
+  type LastCardio = {
+    session: { id: string; startAt: string | Date };
+    metrics: {
+      durationSec: number;
+      distanceM: number | null;
+      kcal: number | null;
+      avgHr: number | null;
+      avgSpeedKmh: string | null;
+      avgPowerW: number | null;
+      notes: string | null;
+    } | null;
+  } | null;
+  const last = (await findLatestCardioSessionWithMetrics(
+    userId,
+    trainingSession.trainingId,
+  )) as LastCardio;
+
   return (
     <TrainingCardioSessionView
       session={{ id: trainingSession.id, startAt: trainingSession.startAt }}
       template={{ id: tpl.id, name: tpl.name }}
+      last={last}
     />
   );
 }

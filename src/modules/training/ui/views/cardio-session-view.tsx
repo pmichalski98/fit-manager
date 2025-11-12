@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Form,
   FormControl,
@@ -22,11 +24,23 @@ import type { z } from "zod";
 type Props = {
   session: { id: string; startAt: string | Date };
   template: { id: string; name: string };
+  last?: null | {
+    session: { id: string; startAt: string | Date };
+    metrics: {
+      durationSec: number;
+      distanceM: number | null;
+      kcal: number | null;
+      avgHr: number | null;
+      avgSpeedKmh: string | null;
+      avgPowerW: number | null;
+      notes: string | null;
+    } | null;
+  };
 };
 
 type CardioSessionFormValues = z.infer<typeof cardioSessionSchema>;
 
-export function TrainingCardioSessionView({ session, template }: Props) {
+export function TrainingCardioSessionView({ session, template, last }: Props) {
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
     const start = new Date(session.startAt).getTime();
@@ -46,19 +60,25 @@ export function TrainingCardioSessionView({ session, template }: Props) {
     return () => clearInterval(i);
   }, [session.startAt]);
 
+  const defaultsFromLast: CardioSessionFormValues = {
+    durationSec: last?.metrics?.durationSec ?? 0,
+    distanceM: last?.metrics?.distanceM ?? undefined,
+    kcal: last?.metrics?.kcal ?? undefined,
+    avgHr: last?.metrics?.avgHr ?? undefined,
+    avgSpeedKmh:
+      last?.metrics?.avgSpeedKmh != null
+        ? Number(last.metrics.avgSpeedKmh)
+        : undefined,
+    avgPowerW: last?.metrics?.avgPowerW ?? undefined,
+    notes: last?.metrics?.notes ?? "",
+    // sessionId is added in action; optional here
+  } as unknown as CardioSessionFormValues;
+
   const form = useForm<CardioSessionFormValues>({
     resolver: zodResolver(
       cardioSessionSchema,
     ) as unknown as Resolver<CardioSessionFormValues>,
-    defaultValues: {
-      durationSec: 0,
-      distanceM: undefined,
-      kcal: undefined,
-      avgHr: undefined,
-      avgSpeedKmh: undefined,
-      avgPowerW: undefined,
-      notes: "",
-    },
+    defaultValues: defaultsFromLast,
   });
 
   const onSubmit = async (values: CardioSessionFormValues) => {
@@ -76,6 +96,25 @@ export function TrainingCardioSessionView({ session, template }: Props) {
         <h1 className="text-2xl font-bold">{template.name}</h1>
         <div className="text-muted-foreground">Time: {elapsed}</div>
       </div>
+      {last?.metrics ? (
+        <Alert className="bg-muted/40 border-border">
+          <History />
+          <AlertDescription>
+            <span className="font-medium">
+              Using values from your last session
+            </span>{" "}
+            <span className="text-muted-foreground">
+              (
+              {new Date(last.session.startAt).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+              ) — adjust as needed.
+            </span>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

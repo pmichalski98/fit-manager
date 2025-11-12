@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   training,
@@ -7,6 +7,7 @@ import {
   trainingSessionExercise,
   trainingSessionSet,
   type trainingTypeEnum,
+  trainingSessionCardio,
 } from "@/server/db/schema";
 
 export type CreateTrainingValues = {
@@ -103,9 +104,10 @@ export async function findLatestStrengthSessionWithDetails(
         eq(trainingSession.userId, userId),
         eq(trainingSession.trainingId, trainingId),
         eq(trainingSession.type, "strength"),
+        isNotNull(trainingSession.endAt),
       ),
     )
-    .orderBy(desc(trainingSession.startAt))
+    .orderBy(desc(trainingSession.endAt))
     .limit(1);
   if (!s) return null;
   const exercises = await db
@@ -141,4 +143,30 @@ export async function deleteTraining(userId: string, trainingId: string) {
   return await db
     .delete(training)
     .where(and(eq(training.userId, userId), eq(training.id, trainingId)));
+}
+
+export async function findLatestCardioSessionWithMetrics(
+  userId: string,
+  trainingId: string,
+) {
+  const [s] = await db
+    .select()
+    .from(trainingSession)
+    .where(
+      and(
+        eq(trainingSession.userId, userId),
+        eq(trainingSession.trainingId, trainingId),
+        eq(trainingSession.type, "cardio"),
+        isNotNull(trainingSession.endAt),
+      ),
+    )
+    .orderBy(desc(trainingSession.endAt))
+    .limit(1);
+  if (!s) return null;
+  const [metrics] = await db
+    .select()
+    .from(trainingSessionCardio)
+    .where(eq(trainingSessionCardio.sessionId, s.id))
+    .limit(1);
+  return { session: s, metrics: metrics ?? null };
 }

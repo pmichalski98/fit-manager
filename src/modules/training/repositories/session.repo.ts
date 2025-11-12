@@ -44,6 +44,17 @@ export type StrengthSessionPayload = Array<{
 export async function completeStrengthSession(
   sessionId: string,
   payload: StrengthSessionPayload,
+  summary?: {
+    durationSec?: number | null;
+    totalLoadKg?: number | null;
+    progress?: Array<{
+      position: number;
+      name: string;
+      prevVolume: number;
+      currentVolume: number;
+      delta: number;
+    }> | null;
+  },
 ) {
   return await db.transaction(async (tx) => {
     for (const ex of payload) {
@@ -73,9 +84,19 @@ export async function completeStrengthSession(
         );
       }
     }
+    const now = new Date();
     const [updated] = await tx
       .update(trainingSession)
-      .set({ endAt: new Date(), updatedAt: new Date() })
+      .set({
+        endAt: now,
+        updatedAt: now,
+        durationSec: summary?.durationSec ?? null,
+        totalLoadKg:
+          summary?.totalLoadKg != null
+            ? String(Number(summary.totalLoadKg.toFixed(2)))
+            : null,
+        progressJson: summary?.progress ?? null,
+      })
       .where(eq(trainingSession.id, sessionId))
       .returning();
     return updated;

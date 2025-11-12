@@ -1,7 +1,13 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { index, pgEnum, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  index,
+  pgEnum,
+  pgTableCreator,
+  uniqueIndex,
+  jsonb,
+} from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -178,6 +184,10 @@ export const trainingSession = createTable("training_session", (d) => ({
   type: trainingTypeEnum("type").notNull(),
   startAt: d.timestamp("start_at").notNull().defaultNow(),
   endAt: d.timestamp("end_at"),
+  // Derived/summary fields
+  durationSec: d.integer("duration_sec"),
+  totalLoadKg: d.numeric("total_load_kg", { precision: 12, scale: 2 }),
+  progressJson: jsonb("progress_json"),
   notes: d.text("notes"),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),

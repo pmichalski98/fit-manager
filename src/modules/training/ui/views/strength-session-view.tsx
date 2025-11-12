@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   useForm,
   useFieldArray,
@@ -9,9 +10,19 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -32,7 +43,7 @@ type Props = {
   session: { id: string; startAt: string | Date };
   template: { id: string; name: string; exercises: TemplateExercise[] };
   last: null | {
-    session: { id: string };
+    session: { id: string; startAt: string | Date };
     exercises: Array<{
       id: string;
       name: string;
@@ -47,6 +58,7 @@ export function TrainingStrengthSessionView({
   template,
   last,
 }: Props) {
+  const router = useRouter();
   const sessionStartAtMs = new Date(session.startAt).getTime();
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
@@ -76,7 +88,10 @@ export function TrainingStrengthSessionView({
         ? lastEx.sets.map((s, idx) => ({
             setIndex: idx,
             reps: s.reps,
-            weight: s.weight ? Number(s.weight) : undefined,
+            weight:
+              s.weight != null && s.weight !== ""
+                ? Number(s.weight)
+                : undefined,
           }))
         : [{ setIndex: 0, reps: 5, weight: undefined }];
       return {
@@ -87,6 +102,22 @@ export function TrainingStrengthSessionView({
       };
     });
   }, [template.exercises, last]);
+
+  const prevSetsByPosition = useMemo<
+    Record<number, Array<{ reps: number; weight?: number }>>
+  >(() => {
+    const result: Record<number, Array<{ reps: number; weight?: number }>> = {};
+    if (!last?.exercises?.length) return result;
+    for (const ex of last.exercises) {
+      const sets = (ex.sets ?? []).map((s) => ({
+        reps: s.reps,
+        weight:
+          s.weight != null && s.weight !== "" ? Number(s.weight) : undefined,
+      }));
+      result[ex.position] = sets;
+    }
+    return result;
+  }, [last]);
 
   const form = useForm<StrengthSessionFormValues>({
     resolver: zodResolver(
@@ -142,12 +173,96 @@ export function TrainingStrengthSessionView({
 
   const onSubmit = async (values: StrengthSessionFormValues) => {
     try {
-      await completeStrengthSessionAction({ sessionId: session.id, ...values });
-      toast.success("Session saved");
+      // Compute client-side summary
+      const durationSec = Math.max(
+        0,
+        Math.floor((Date.now() - sessionStartAtMs) / 1000),
+      );
+      const totalLoadKg =
+        values.exercises?.reduce((acc, ex) => {
+          const vol =
+            ex.sets?.reduce((sum, s) => {
+              const w = s.weight ?? 0;
+              const r = s.reps ?? 0;
+              return sum + w * r;
+            }, 0) ?? 0;
+          return acc + vol;
+        }, 0) ?? 0;
+
+      // Build progress vs last by position
+      const prevByPosition: Record<
+        number,
+        Array<{ reps: number; weight?: number }>
+      > = {};
+      for (const ex of last?.exercises ?? []) {
+        prevByPosition[ex.position] = (ex.sets ?? []).map((s) => ({
+          reps: s.reps,
+          weight:
+            s.weight != null && s.weight !== "" ? Number(s.weight) : undefined,
+        }));
+      }
+      const progressFull =
+        values.exercises?.map((ex) => {
+          const currentVolume =
+            ex.sets?.reduce((sum, s) => {
+              const w = s.weight ?? 0;
+              const r = s.reps ?? 0;
+              return sum + w * r;
+            }, 0) ?? 0;
+          const prevSets = prevByPosition[ex.position] ?? [];
+          const prevVolume =
+            prevSets?.reduce((sum, s) => {
+              const w = s.weight ?? 0;
+              const r = s.reps ?? 0;
+              return sum + w * r;
+            }, 0) ?? 0;
+          const delta = currentVolume - prevVolume;
+          return {
+            position: ex.position,
+            name: ex.name,
+            prevVolume,
+            currentVolume,
+            delta,
+          };
+        }) ?? [];
+
+      await completeStrengthSessionAction({
+        sessionId: session.id,
+        ...values,
+        durationSec,
+        totalLoadKg,
+        progress: progressFull,
+      });
+
+      setSummary({
+        durationSec,
+        totalLoadKg,
+        progress: progressFull
+          .filter((p) => p.delta > 0)
+          .map((p) => ({ name: p.name, delta: p.delta })),
+      });
+      setOpen(true);
     } catch {
       toast.error("Failed to save session");
     }
   };
+
+  const [open, setOpen] = useState(false);
+  const [summary, setSummary] = useState<{
+    durationSec: number | null;
+    totalLoadKg: number;
+    progress: Array<{ name: string; delta: number }>;
+  } | null>(null);
+
+  const handleClose = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        router.push("/dashboard");
+      }
+      setOpen(nextOpen);
+    },
+    [router],
+  );
 
   return (
     <div className="space-y-6">
@@ -155,6 +270,25 @@ export function TrainingStrengthSessionView({
         <h1 className="text-2xl font-bold">{template.name}</h1>
         <div className="text-muted-foreground">Time: {elapsed}</div>
       </div>
+      {last?.exercises?.some((e) => (e.sets?.length ?? 0) > 0) ? (
+        <Alert className="bg-muted/40 border-border">
+          <History />
+          <AlertDescription>
+            <span className="font-medium">
+              Using values from your last session
+            </span>{" "}
+            <span className="text-muted-foreground">
+              (
+              {new Date(last.session.startAt).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+              ) — adjust as needed.
+            </span>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -167,6 +301,7 @@ export function TrainingStrengthSessionView({
                 <ExerciseSets
                   control={form.control}
                   exIndex={exIndex}
+                  prevSets={prevSetsByPosition[field.position] ?? []}
                   prevExerciseLastDoneAt={
                     exIndex > 0
                       ? (mostRecentDoneByExercise[exIndex - 1] ?? null)
@@ -186,6 +321,65 @@ export function TrainingStrengthSessionView({
           </div>
         </form>
       </Form>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Training summary</DialogTitle>
+            <DialogDescription>
+              Here’s a quick recap of your session. Closing will take you to the
+              dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Total time</span>
+              <span className="font-medium tabular-nums">
+                {(() => {
+                  const sec = summary?.durationSec ?? null;
+                  if (sec == null) return elapsed;
+                  const h = Math.floor(sec / 3600)
+                    .toString()
+                    .padStart(2, "0");
+                  const m = Math.floor((sec % 3600) / 60)
+                    .toString()
+                    .padStart(2, "0");
+                  const s = Math.floor(sec % 60)
+                    .toString()
+                    .padStart(2, "0");
+                  return `${h}:${m}:${s}`;
+                })()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Total load</span>
+              <span className="font-medium tabular-nums">
+                {(summary?.totalLoadKg ?? 0).toFixed(2)} kg
+              </span>
+            </div>
+            {summary && summary.progress.length > 0 ? (
+              <div className="pt-2">
+                <div className="mb-1 font-medium">Progress</div>
+                <ul className="list-disc space-y-1 pl-5">
+                  {summary.progress.map((p, idx) => (
+                    <li key={idx} className="text-sm">
+                      {p.name}: +{p.delta.toFixed(2)} kg volume
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-sm">
+                No volume increase vs last session.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => handleClose(false)}>
+              Go to dashboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -193,6 +387,7 @@ export function TrainingStrengthSessionView({
 function ExerciseSets({
   control,
   exIndex,
+  prevSets,
   prevExerciseLastDoneAt,
   sessionStartAtMs,
   onMostRecentChange,
@@ -201,6 +396,7 @@ function ExerciseSets({
 }: {
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   exIndex: number;
+  prevSets: Array<{ reps: number; weight?: number }>;
   prevExerciseLastDoneAt: number | null;
   sessionStartAtMs: number;
   onMostRecentChange: (index: number, mostRecent: number | null) => void;
@@ -314,12 +510,52 @@ function ExerciseSets({
     return `${h}:${m}:${s}`;
   };
 
+  const compare = (
+    current: number | undefined,
+    previous: number | undefined,
+  ) => {
+    if (previous == null || current == null) return "neutral" as const;
+    if (current > previous) return "up" as const;
+    if (current < previous) return "down" as const;
+    return "equal" as const;
+  };
+
+  const deltaClass = (delta: "up" | "down" | "equal" | "neutral") => {
+    if (delta === "up")
+      return "bg-emerald-500/15 dark:bg-emerald-500/15 border-emerald-500/40 focus-visible:ring-emerald-500/40";
+    if (delta === "down")
+      return "bg-rose-500/15 dark:bg-rose-500/15 border-rose-500/40 focus-visible:ring-rose-500/40";
+    return "";
+  };
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-2">
       <div className="text-muted-foreground flex items-center justify-between text-xs">
         <span>Current rest</span>
         <span className="tabular-nums">{isActive ? currentRest : "—"}</span>
       </div>
+      {(() => {
+        const prevCount = prevSets.length;
+        const currentCount = fields.length;
+        if (prevCount === 0) return null;
+        if (currentCount === prevCount)
+          return (
+            <div className="text-muted-foreground text-xs">
+              Same number of sets as last time ({prevCount})
+            </div>
+          );
+        if (currentCount > prevCount)
+          return (
+            <div className="text-xs text-emerald-400/80">
+              More sets than last time (+{currentCount - prevCount})
+            </div>
+          );
+        return (
+          <div className="text-xs text-rose-400/80">
+            Fewer sets than last time ({currentCount}/{prevCount})
+          </div>
+        );
+      })()}
       {fields.map((f, setIdx) => (
         // single set row
         <div
@@ -342,6 +578,7 @@ function ExerciseSets({
                     tabIndex={-1}
                   />
                 </FormControl>
+                <div className="invisible text-[10px]">placeholder</div>
               </FormItem>
             )}
           />
@@ -355,10 +592,28 @@ function ExerciseSets({
                   <Input
                     type="number"
                     inputMode="numeric"
+                    value={field.value ?? ""}
+                    className={deltaClass(
+                      compare(
+                        typeof field.value === "string"
+                          ? field.value === ""
+                            ? undefined
+                            : Number(field.value)
+                          : (field.value as number | undefined),
+                        prevSets?.[setIdx]?.reps,
+                      ),
+                    )}
                     disabled={!!doneMap[f.id]}
-                    {...field}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
                   />
                 </FormControl>
+                <div className="text-muted-foreground text-[10px]">
+                  prev: {prevSets?.[setIdx]?.reps ?? "—"}
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -374,7 +629,17 @@ function ExerciseSets({
                     type="number"
                     step="0.5"
                     inputMode="decimal"
+                    min={0}
+                    placeholder="0 = Bodyweight"
                     value={field.value ?? ""}
+                    className={deltaClass(
+                      compare(
+                        typeof field.value === "number"
+                          ? field.value
+                          : undefined,
+                        prevSets?.[setIdx]?.weight,
+                      ),
+                    )}
                     disabled={!!doneMap[f.id]}
                     onChange={(e) =>
                       field.onChange(
@@ -385,6 +650,12 @@ function ExerciseSets({
                     }
                   />
                 </FormControl>
+                <div className="text-muted-foreground text-[10px]">
+                  prev:{" "}
+                  {prevSets?.[setIdx]?.weight === 0
+                    ? "Bodyweight"
+                    : (prevSets?.[setIdx]?.weight ?? "—")}
+                </div>
                 <FormMessage />
               </FormItem>
             )}

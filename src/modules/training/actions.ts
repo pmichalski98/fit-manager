@@ -78,7 +78,44 @@ export async function completeStrengthSessionAction(
   // We don't strictly check ownership here; ideally check session.userId === userId
   const { sessionId, ...rest } = input;
   const parsed = strengthSessionSchema.parse(rest);
-  await completeStrengthSession(sessionId, parsed.exercises);
+  const durationSec: number | null =
+    typeof (parsed as { durationSec?: unknown }).durationSec === "number"
+      ? (parsed as { durationSec?: number }).durationSec!
+      : null;
+  const totalLoadKg: number | null =
+    typeof (parsed as { totalLoadKg?: unknown }).totalLoadKg === "number"
+      ? (parsed as { totalLoadKg?: number }).totalLoadKg!
+      : null;
+  const progress: Array<{
+    position: number;
+    name: string;
+    prevVolume: number;
+    currentVolume: number;
+    delta: number;
+  }> | null = Array.isArray((parsed as { progress?: unknown }).progress)
+    ? ((
+        parsed as {
+          progress?: Array<{
+            position: number;
+            name: string;
+            prevVolume: number;
+            currentVolume: number;
+            delta: number;
+          }>;
+        }
+      ).progress as Array<{
+        position: number;
+        name: string;
+        prevVolume: number;
+        currentVolume: number;
+        delta: number;
+      }>)
+    : null;
+  await completeStrengthSession(sessionId, parsed.exercises, {
+    durationSec,
+    totalLoadKg,
+    progress,
+  });
   return { ok: true } as const;
 }
 
