@@ -133,13 +133,13 @@ export const bodyMeasurement = createTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     date: d.date("date").notNull(),
-    neck: d.numeric("neck", { precision: 5, scale: 1 }),
-    chest: d.numeric("chest", { precision: 5, scale: 1 }),
-    waist: d.numeric("waist", { precision: 5, scale: 1 }),
-    bellybutton: d.numeric("bellybutton", { precision: 5, scale: 1 }),
-    hips: d.numeric("hips", { precision: 5, scale: 1 }),
-    biceps: d.numeric("biceps", { precision: 5, scale: 1 }),
-    thigh: d.numeric("thigh", { precision: 5, scale: 1 }),
+    neck: d.real("neck"),
+    chest: d.real("chest"),
+    waist: d.real("waist"),
+    bellybutton: d.real("bellybutton"),
+    hips: d.real("hips"),
+    biceps: d.real("biceps"),
+    thigh: d.real("thigh"),
     notes: d.text("notes"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
@@ -210,10 +210,9 @@ export const trainingSessionExercise = createTable(
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
   (t) => ({
-    sessionPositionIdx: index("training_session_exercise_session_position_idx").on(
-      t.sessionId,
-      t.position,
-    ),
+    sessionPositionIdx: index(
+      "training_session_exercise_session_position_idx",
+    ).on(t.sessionId, t.position),
   }),
 );
 

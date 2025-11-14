@@ -21,20 +21,23 @@ import {
   measurementsSchema,
   type MeasurementsFormValues,
 } from "@/modules/body/schemas";
+import { getTodayDateYYYYMMDD } from "@/lib/utils";
 
 type Props = {
-  defaultValues: MeasurementsFormValues;
-  last?: Partial<MeasurementsFormValues> & { date?: string };
+  last: Partial<MeasurementsFormValues> | null;
 };
 
-export function MeasurementsForm({ defaultValues, last }: Props) {
+export function MeasurementsForm({ last }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<MeasurementsFormValues>({
     resolver: zodResolver(
       measurementsSchema,
     ) as unknown as Resolver<MeasurementsFormValues>,
-    defaultValues,
+    defaultValues: {
+      ...last,
+      date: getTodayDateYYYYMMDD(),
+    },
   });
 
   const onSubmit = async (values: MeasurementsFormValues) => {
@@ -60,16 +63,19 @@ export function MeasurementsForm({ defaultValues, last }: Props) {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel>
+            <span className="text-muted-foreground text-sm">{label}</span>
+            {last && (
+              <span className="text-muted-foreground text-xs">
+                last: {last[name]}
+              </span>
+            )}
+          </FormLabel>
+
           <FormControl>
             <Input
               type="text"
               inputMode="decimal"
-              placeholder={
-                last && typeof last[name] === "number"
-                  ? `last: ${String(last[name])}`
-                  : undefined
-              }
               value={
                 typeof field.value === "number"
                   ? String(field.value)

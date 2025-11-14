@@ -39,3 +39,29 @@ export const measurementsSchema = z.object({
   notes: z.string().max(1000).optional().or(z.literal("")),
 });
 export type MeasurementsFormValues = z.infer<typeof measurementsSchema>;
+
+export const goalSchema = z.object({
+  caloricGoal: z.number().int().nonnegative(),
+});
+
+export type GoalFormValues = z.infer<typeof goalSchema>;
+
+type MaybeNumber = number | undefined;
+
+export type DailyLogInput = {
+  date: string; // YYYY-MM-DD
+  weight?: MaybeNumber;
+  kcal?: MaybeNumber;
+};
+
+export type MeasurementsInput = {
+  date: string; // YYYY-MM-DD
+  neck?: MaybeNumber;
+  chest?: MaybeNumber;
+  waist?: MaybeNumber;
+  bellybutton?: MaybeNumber;
+  hips?: MaybeNumber;
+  biceps?: MaybeNumber;
+  thigh?: MaybeNumber;
+  notes?: string | null;
+};

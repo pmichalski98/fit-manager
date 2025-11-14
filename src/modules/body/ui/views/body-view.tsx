@@ -5,48 +5,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DailyLogForm } from "@/modules/body/ui/components/daily-log-form";
-import { MeasurementsForm } from "@/modules/body/ui/components/measurements-form";
-import type {
-  DailyLogFormValues,
-  MeasurementsFormValues,
-} from "@/modules/body/schemas";
-import { CaloricGoalDialog } from "@/modules/body/ui/components/caloric-goal-dialog";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import {
-  findDailyLogByUserAndDate,
-  findLatestDailyLogOnOrBefore,
-} from "@/modules/body/repositories/daily-log.repo";
-import { findLatestMeasurementsOnOrBefore } from "@/modules/body/repositories/measurements.repo";
-import { findUserById } from "@/modules/body/repositories";
-
-function formatDateYYYYMMDD(d: Date) {
-  const tz = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return tz.toISOString().slice(0, 10);
-}
+  getCaloricGoal,
+  getLatestDailyLog,
+  getLatestMeasurements,
+  getUserDailyLog,
+} from "@/modules/body/actions";
+import { MeasurementsForm } from "../components/measurements-form";
+import { getTodayDateYYYYMMDD } from "@/lib/utils";
+import type { DailyLogFormValues } from "../../schemas";
+import { CaloricGoalDialog } from "../components/caloric-goal-dialog";
+import { DailyLogForm } from "../components/daily-log-form";
+import MeasurementsView from "./measurements-view";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function BodyView() {
-  const today = new Date();
-  const todayStr = formatDateYYYYMMDD(today);
+  const todayStr = getTodayDateYYYYMMDD();
 
-  const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user?.id;
+  const { data: caloricGoal } = await getCaloricGoal();
 
-  let caloricGoal: number | null = null;
-  let todaysLog: Awaited<ReturnType<typeof findDailyLogByUserAndDate>> = null;
-  let latestLog: Awaited<ReturnType<typeof findLatestDailyLogOnOrBefore>> =
-    null;
-  let latestMeas: Awaited<ReturnType<typeof findLatestMeasurementsOnOrBefore>> =
-    null;
-
-  if (userId) {
-    const user = await findUserById(userId);
-    caloricGoal = user?.caloricGoal ?? null;
-    todaysLog = await findDailyLogByUserAndDate(userId, todayStr);
-    latestLog = await findLatestDailyLogOnOrBefore(userId, todayStr);
-    latestMeas = await findLatestMeasurementsOnOrBefore(userId, todayStr);
-  }
+  const [{ data: todaysLog }, { data: latestLog }] = await Promise.all([
+    getUserDailyLog(todayStr),
+    getLatestDailyLog(todayStr),
+  ]);
 
   const dailyDefault: DailyLogFormValues = {
     date: todayStr,
@@ -68,32 +50,6 @@ export default async function BodyView() {
   const alreadyFilledToday = Boolean(
     todaysLog?.weight != null || todaysLog?.kcal != null,
   );
-
-  const measurementsDefault: MeasurementsFormValues = {
-    date: todayStr,
-    neck: undefined,
-    chest: undefined,
-    waist: undefined,
-    bellybutton: undefined,
-    hips: undefined,
-    biceps: undefined,
-    thigh: undefined,
-    notes: "",
-  };
-
-  const lastMeasurements: Partial<MeasurementsFormValues> & { date?: string } =
-    {
-      date: latestMeas?.date,
-      neck: latestMeas?.neck ? parseFloat(latestMeas.neck) : undefined,
-      chest: latestMeas?.chest ? parseFloat(latestMeas.chest) : undefined,
-      waist: latestMeas?.waist ? parseFloat(latestMeas.waist) : undefined,
-      bellybutton: latestMeas?.bellybutton
-        ? parseFloat(latestMeas.bellybutton)
-        : undefined,
-      hips: latestMeas?.hips ? parseFloat(latestMeas.hips) : undefined,
-      biceps: latestMeas?.biceps ? parseFloat(latestMeas.biceps) : undefined,
-      thigh: latestMeas?.thigh ? parseFloat(latestMeas.thigh) : undefined,
-    };
 
   return (
     <div className="space-y-6">
@@ -124,20 +80,9 @@ export default async function BodyView() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Measurements</CardTitle>
-            <CardDescription>
-              Record your latest body measurements.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <MeasurementsForm
-              defaultValues={measurementsDefault}
-              last={lastMeasurements}
-            />
-          </CardContent>
-        </Card>
+        <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+          <MeasurementsView />
+        </Suspense>
       </div>
     </div>
   );

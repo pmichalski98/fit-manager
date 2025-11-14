@@ -16,57 +16,58 @@ export type MeasurementsDBValues = {
   notes: string | null;
 };
 
-export async function findMeasurementsByUserAndDate(
-  userId: string,
-  date: string,
-) {
-  const [row] = await db
-    .select()
-    .from(bodyMeasurement)
-    .where(
-      and(eq(bodyMeasurement.userId, userId), eq(bodyMeasurement.date, date)),
-    );
-  return row ?? null;
-}
-
-export async function upsertMeasurements(values: MeasurementsDBValues) {
-  const existing = await findMeasurementsByUserAndDate(
-    values.userId,
-    values.date,
-  );
-
-  if (existing) {
-    const [updated] = await db
-      .update(bodyMeasurement)
-      .set({ ...values, updatedAt: new Date() })
+class MeasurementsRepository {
+  async findMeasurementsByUserAndDate(userId: string, date: string) {
+    const [row] = await db
+      .select()
+      .from(bodyMeasurement)
       .where(
-        and(
-          eq(bodyMeasurement.userId, values.userId),
-          eq(bodyMeasurement.date, values.date),
-        ),
-      )
-      .returning();
-    return updated;
+        and(eq(bodyMeasurement.userId, userId), eq(bodyMeasurement.date, date)),
+      );
+    return row ?? null;
   }
 
-  const [inserted] = await db
-    .insert(bodyMeasurement)
-    .values(values)
-    .returning();
-  return inserted;
+  async upsertMeasurements(values: MeasurementsDBValues) {
+    const existing = await this.findMeasurementsByUserAndDate(
+      values.userId,
+      values.date,
+    );
+
+    if (existing) {
+      const [updated] = await db
+        .update(bodyMeasurement)
+        .set({ ...values, updatedAt: new Date() })
+        .where(
+          and(
+            eq(bodyMeasurement.userId, values.userId),
+            eq(bodyMeasurement.date, values.date),
+          ),
+        )
+        .returning();
+      return updated;
+    }
+
+    const [inserted] = await db
+      .insert(bodyMeasurement)
+      .values(values)
+      .returning();
+    return inserted;
+  }
+
+  async findLatestMeasurementsOnOrBefore(userId: string, date: string) {
+    const [row] = await db
+      .select()
+      .from(bodyMeasurement)
+      .where(
+        and(
+          eq(bodyMeasurement.userId, userId),
+          lte(bodyMeasurement.date, date),
+        ),
+      )
+      .orderBy(desc(bodyMeasurement.date))
+      .limit(1);
+    return row ?? null;
+  }
 }
 
-export async function findLatestMeasurementsOnOrBefore(
-  userId: string,
-  date: string,
-) {
-  const [row] = await db
-    .select()
-    .from(bodyMeasurement)
-    .where(
-      and(eq(bodyMeasurement.userId, userId), lte(bodyMeasurement.date, date)),
-    )
-    .orderBy(desc(bodyMeasurement.date))
-    .limit(1);
-  return row ?? null;
-}
+export const measurementsRepository = new MeasurementsRepository();
