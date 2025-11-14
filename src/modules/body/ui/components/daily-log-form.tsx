@@ -24,23 +24,14 @@ import {
 } from "@/modules/body/schemas";
 
 type Props = {
-  defaultValues: DailyLogFormValues;
-  hints?: { kcal?: string };
   alreadyFilledToday?: boolean;
 };
 
-export function DailyLogForm({
-  defaultValues,
-  hints,
-  alreadyFilledToday,
-}: Props) {
+export function DailyLogForm({ alreadyFilledToday }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<DailyLogFormValues>({
-    resolver: zodResolver(
-      dailyLogSchema,
-    ) as unknown as Resolver<DailyLogFormValues>,
-    defaultValues,
+    resolver: zodResolver(dailyLogSchema) as Resolver<DailyLogFormValues>,
   });
 
   const onSubmit = async (values: DailyLogFormValues) => {
@@ -113,10 +104,7 @@ export function DailyLogForm({
             name="kcal"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Calories (kcal)
-                  {hints?.kcal ? <FormMessage>{hints.kcal}</FormMessage> : null}
-                </FormLabel>
+                <FormLabel>Calories (kcal)</FormLabel>
 
                 <FormControl>
                   <Input

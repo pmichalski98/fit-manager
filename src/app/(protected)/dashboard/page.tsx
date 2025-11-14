@@ -10,12 +10,10 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
-import { findDailyLogsInRange } from "@/modules/body/repositories/daily-log.repo";
 import {
   findSessionsInRangeWithSummaries,
   type SessionSummary,
 } from "@/modules/training/repositories/session.repo";
-import { findUserById } from "@/modules/body/repositories";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 

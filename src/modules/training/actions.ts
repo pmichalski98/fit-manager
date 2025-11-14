@@ -1,33 +1,21 @@
 "use server";
 
-import { headers } from "next/headers";
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import {
-  trainingFormSchema,
-  cardioSessionSchema,
-  strengthSessionSchema,
-} from "@/modules/training/schemas";
-import {
-  createTraining,
-  findTrainingByIdWithExercises,
-  deleteTraining,
-} from "@/modules/training/repositories";
+import { requireUserId } from "@/lib/user";
 import {
   completeCardioSession,
   completeStrengthSession,
   createSession,
 } from "@/modules/training/repositories";
-
-async function requireUserId() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user?.id;
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
-}
+import {
+  cardioSessionSchema,
+  strengthSessionSchema,
+  trainingFormSchema,
+} from "@/modules/training/schemas";
+import { redirect } from "next/navigation";
+import { trainingRepository } from "./repositories/training.repo";
 
 export type CreateTrainingInput = z.infer<typeof trainingFormSchema>;
 const startTrainingSessionSchemaLocal = z.object({
@@ -37,13 +25,25 @@ export type StartTrainingSessionInput = z.infer<
   typeof startTrainingSessionSchemaLocal
 >;
 
+export async function getAllTrainingsWithExercises() {
+  const userId = await requireUserId();
+  try {
+    const trainingsWithExercises =
+      await trainingRepository.findAllTrainingsWithExercises(userId);
+    return { ok: true, data: trainingsWithExercises };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, error: "Internal server error", data: [] };
+  }
+}
+
 export async function createTrainingAction(input: CreateTrainingInput) {
   const userId = await requireUserId();
   const parsed = trainingFormSchema.parse(input);
 
   const exercises = parsed.type === "strength" ? parsed.exercises : [];
 
-  const created = await createTraining({
+  const created = await trainingRepository.createTraining({
     userId,
     name: parsed.name,
     type: parsed.type,
@@ -52,7 +52,7 @@ export async function createTrainingAction(input: CreateTrainingInput) {
 
   revalidatePath("/training");
 
-  return { ok: true, data: created } as const;
+  return { ok: true, data: created };
 }
 
 export async function startTrainingSessionAction(
@@ -60,7 +60,10 @@ export async function startTrainingSessionAction(
 ) {
   const userId = await requireUserId();
   const { trainingId } = startTrainingSessionSchemaLocal.parse(input);
-  const tpl = await findTrainingByIdWithExercises(userId, trainingId);
+  const tpl = await trainingRepository.findTrainingByIdWithExercises(
+    userId,
+    trainingId,
+  );
   if (!tpl) throw new Error("Training not found");
   const session = await createSession({
     userId,
@@ -137,9 +140,14 @@ export async function completeCardioSessionAction(
   return { ok: true } as const;
 }
 
-export async function deleteTrainingAction(trainingId: string) {
+export async function deleteTraining(trainingId: string) {
   const userId = await requireUserId();
-  await deleteTraining(userId, trainingId);
-  revalidatePath("/training");
-  return { ok: true } as const;
+  try {
+    await trainingRepository.deleteTraining(userId, trainingId);
+    revalidatePath("/training");
+    return { ok: true };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, error: "Internal server error" };
+  }
 }
