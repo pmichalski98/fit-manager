@@ -45,16 +45,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="text-sidebar-accent-foreground">
-        <Link href="/" className="flex items-center gap-2 px-2 pt-2">
-          <Image src="/logo.jpg" alt="logo" width={50} height={50} />
+        <Link href="/" className="flex items-center gap-2 px-2 pt-2.75">
           <p className="text-xl font-semibold text-black dark:text-white">
             Fitness Manager
           </p>
         </Link>
       </SidebarHeader>
-      <div className="px-4 py-2">
-        <Separator className="bg-sidebar-border" />
-      </div>
+      <Separator className="bg-sidebar-border my-2" />
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -80,13 +77,8 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <div className="px-4 py-2">
-          <Separator className="bg-sidebar-border" />
-        </div>
+        <Separator className="bg-sidebar-border my-2" />
       </SidebarContent>
-      <SidebarFooter>
-        <UserButton />
-      </SidebarFooter>
     </Sidebar>
   );
 }

@@ -15,3 +15,11 @@ export function formatDateYYYYMMDD(d: Date) {
 export function getTodayDateYYYYMMDD() {
   return formatDateYYYYMMDD(new Date());
 }
+
+export const handleIntegerInput = (
+  event: React.KeyboardEvent<HTMLInputElement>,
+) => {
+  if (event.key === "." || event.key === ",") {
+    event.preventDefault();
+  }
+};

@@ -2,15 +2,21 @@ import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { dailyLog } from "@/server/db/schema";
+import type { DailyLogFormValues } from "../schemas";
 
-export type DailyLogDBValues = {
-  userId: string;
-  date: string; // YYYY-MM-DD
-  weight: string | null; // pg numeric → string
-  kcal: number | null;
-};
+export type DailyLogDBValues = DailyLogFormValues & { userId: string };
 
 class DailyLogRepository {
+  async findLatestDailyLog(userId: string) {
+    const [row] = await db
+      .select()
+      .from(dailyLog)
+      .where(eq(dailyLog.userId, userId))
+      .orderBy(desc(dailyLog.date))
+      .limit(1);
+    return row ?? null;
+  }
+
   async findDailyLogByUserAndDate(userId: string, date: string) {
     const [row] = await db
       .select()
@@ -20,6 +26,7 @@ class DailyLogRepository {
   }
 
   async upsertDailyLog(values: DailyLogDBValues) {
+    console.log("values", values);
     const existing = await this.findDailyLogByUserAndDate(
       values.userId,
       values.date,
@@ -29,8 +36,11 @@ class DailyLogRepository {
       const [updated] = await db
         .update(dailyLog)
         .set({
-          weight: values.weight,
-          kcal: values.kcal,
+          weight: values.weight === "" ? null : (values.weight ?? null),
+          kcal:
+            values.kcal === 0 || values.kcal === undefined
+              ? null
+              : (values.kcal ?? null),
           updatedAt: new Date(),
         })
         .where(
@@ -43,18 +53,18 @@ class DailyLogRepository {
       return updated;
     }
 
-    const [inserted] = await db.insert(dailyLog).values(values).returning();
+    const [inserted] = await db
+      .insert(dailyLog)
+      .values({
+        ...values,
+        kcal:
+          values.kcal === 0 || values.kcal === undefined
+            ? null
+            : (values.kcal ?? null),
+        weight: values.weight === "" ? null : (values.weight ?? null),
+      })
+      .returning();
     return inserted;
-  }
-
-  async findLatestDailyLogOnOrBefore(userId: string, date: string) {
-    const [row] = await db
-      .select()
-      .from(dailyLog)
-      .where(and(eq(dailyLog.userId, userId), lte(dailyLog.date, date)))
-      .orderBy(desc(dailyLog.date))
-      .limit(1);
-    return row ?? null;
   }
 
   async findDailyLogsInRange(

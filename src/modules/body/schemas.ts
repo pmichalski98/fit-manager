@@ -22,26 +22,26 @@ const intOptional = z
 
 export const dailyLogSchema = z.object({
   date: z.string().regex(dateRegex, "Invalid date format (YYYY-MM-DD)"),
-  weight: decimal1Optional,
-  kcal: intOptional,
+  weight: z.coerce.string().min(0).max(1000).optional(),
+  kcal: z.coerce.number().int().min(0).max(100000).optional(),
 });
 export type DailyLogFormValues = z.infer<typeof dailyLogSchema>;
 
 export const measurementsSchema = z.object({
   date: z.string().regex(dateRegex, "Invalid date format (YYYY-MM-DD)"),
-  neck: decimal1Optional,
-  chest: decimal1Optional,
-  waist: decimal1Optional,
-  bellybutton: decimal1Optional,
-  hips: decimal1Optional,
-  biceps: decimal1Optional,
-  thigh: decimal1Optional,
+  neck: decimal1Optional.nullable(),
+  chest: decimal1Optional.nullable(),
+  waist: decimal1Optional.nullable(),
+  bellybutton: decimal1Optional.nullable(),
+  hips: decimal1Optional.nullable(),
+  biceps: decimal1Optional.nullable(),
+  thigh: decimal1Optional.nullable(),
   notes: z.string().max(1000).optional().or(z.literal("")),
 });
 export type MeasurementsFormValues = z.infer<typeof measurementsSchema>;
 
 export const goalSchema = z.object({
-  caloricGoal: z.number().int().nonnegative(),
+  caloricGoal: z.coerce.number().int("Invalid caloric goal"),
 });
 
 export type GoalFormValues = z.infer<typeof goalSchema>;

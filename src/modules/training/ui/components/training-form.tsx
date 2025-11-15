@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { createTrainingAction } from "@/modules/training/actions";
+import { createTraining } from "@/modules/training/actions";
 import {
   trainingFormSchema,
   type TrainingFormValues,
@@ -90,7 +90,7 @@ export function TrainingForm() {
   const onSubmit = async (values: TrainingFormValues) => {
     try {
       setIsSubmitting(true);
-      const result = await createTrainingAction(values);
+      const result = await createTraining(values);
       if (result.ok) {
         toast.success("Training created");
         form.reset();

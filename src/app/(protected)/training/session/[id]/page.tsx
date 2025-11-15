@@ -1,23 +1,9 @@
 import { notFound } from "next/navigation";
 
-import { auth } from "@/lib/auth";
-import {
-  findSessionById,
-  findTrainingByIdWithExercises,
-  findLatestStrengthSessionWithDetails,
-  findLatestCardioSessionWithMetrics,
-} from "@/modules/training/repositories";
-import { TrainingStrengthSessionView } from "@/modules/training/ui/views/strength-session-view";
-import { TrainingCardioSessionView } from "@/modules/training/ui/views/cardio-session-view";
-import { headers } from "next/headers";
-
 type Props = { params: Promise<{ id: string }> };
 
 export default async function TrainingSessionPage(props: Props) {
   const params = await props.params;
-  const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user?.id;
-  if (!userId) notFound();
 
   type SessionRow = {
     id: string;
@@ -30,7 +16,6 @@ export default async function TrainingSessionPage(props: Props) {
   const trainingSession = (await findSessionById(
     params.id,
   )) as SessionRow | null;
-  if (trainingSession?.userId !== userId) notFound();
 
   type TemplateExercise = { id: string; name: string; position: number };
   type TemplateRow = {

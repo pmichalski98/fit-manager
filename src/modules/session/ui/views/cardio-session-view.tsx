@@ -17,8 +17,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { cardioSessionSchema } from "@/modules/training/schemas";
-import { completeCardioSessionAction } from "@/modules/training/actions";
+import { cardioSessionSchema } from "@/modules/session/schemas";
+import { completeCardioSession } from "@/modules/session/actions";
 import type { z } from "zod";
 
 type Props = {
@@ -77,13 +77,13 @@ export function TrainingCardioSessionView({ session, template, last }: Props) {
   const form = useForm<CardioSessionFormValues>({
     resolver: zodResolver(
       cardioSessionSchema,
-    ) as unknown as Resolver<CardioSessionFormValues>,
+    ) as Resolver<CardioSessionFormValues>,
     defaultValues: defaultsFromLast,
   });
 
   const onSubmit = async (values: CardioSessionFormValues) => {
     try {
-      await completeCardioSessionAction({ sessionId: session.id, ...values });
+      await completeCardioSession({ sessionId: session.id, ...values });
       toast.success("Session saved");
     } catch {
       toast.error("Failed to save session");

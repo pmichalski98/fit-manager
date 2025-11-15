@@ -10,10 +10,7 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
-import {
-  findSessionsInRangeWithSummaries,
-  type SessionSummary,
-} from "@/modules/training/repositories/session.repo";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 

@@ -34,8 +34,8 @@ import {
 import {
   strengthSessionSchema,
   type StrengthSessionFormValues,
-} from "@/modules/training/schemas";
-import { completeStrengthSessionAction } from "@/modules/training/actions";
+} from "@/modules/session/schemas";
+import { completeStrengthSession } from "@/modules/session/actions";
 
 type TemplateExercise = { id: string; name: string; position: number };
 
@@ -226,7 +226,7 @@ export function TrainingStrengthSessionView({
           };
         }) ?? [];
 
-      await completeStrengthSessionAction({
+      await completeStrengthSession({
         sessionId: session.id,
         ...values,
         durationSec,

@@ -1,7 +1,5 @@
-import {
-  getAllTrainingsWithExercises,
-  startTrainingSessionAction,
-} from "../../actions";
+import { getAllTrainingsWithExercises } from "@/modules/training/actions";
+import { startTrainingSession } from "@/modules/session/actions";
 import { DeleteTrainingButton } from "../components/delete-training-button";
 
 export async function TrainingsView() {
@@ -25,7 +23,7 @@ export async function TrainingsView() {
                 </div>
                 <div className="flex gap-2">
                   <form
-                    action={startTrainingSessionAction.bind(null, {
+                    action={startTrainingSession.bind(null, {
                       trainingId: training.id,
                     })}
                   >

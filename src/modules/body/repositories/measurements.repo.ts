@@ -13,7 +13,7 @@ export type MeasurementsDBValues = {
   hips: string | null;
   biceps: string | null;
   thigh: string | null;
-  notes: string | null;
+  notes: string;
 };
 
 class MeasurementsRepository {

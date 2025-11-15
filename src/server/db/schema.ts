@@ -6,7 +6,6 @@ import {
   pgEnum,
   pgTableCreator,
   uniqueIndex,
-  jsonb,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -16,20 +15,6 @@ import {
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
 export const createTable = pgTableCreator((name) => `fit-manager_${name}`);
-
-export const trainingTypeEnum = pgEnum("training_type", ["strength", "cardio"]);
-
-export const training = createTable("training", (d) => ({
-  id: d.uuid("id").primaryKey().defaultRandom(),
-  name: d.text("name").notNull(),
-  type: trainingTypeEnum("type").notNull(),
-  createdAt: d.timestamp("created_at").notNull().defaultNow(),
-  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  userId: d
-    .text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-}));
 
 export const user = createTable("user", (d) => ({
   id: d.text("id").primaryKey(),
@@ -114,15 +99,13 @@ export const dailyLog = createTable(
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
-  (t) => ({
-    userDateIdx: index("daily_log_user_date_idx").on(t.userId, t.date),
-    userDateUnique: uniqueIndex("daily_log_user_date_unique").on(
-      t.userId,
-      t.date,
-    ),
-  }),
+  (t) => [
+    index("daily_log_user_date_idx").on(t.userId, t.date),
+    uniqueIndex("daily_log_user_date_unique").on(t.userId, t.date),
+  ],
 );
 
+export type DailyLog = typeof dailyLog.$inferSelect;
 // Body measurements: snapshots with optional fields
 export const bodyMeasurement = createTable(
   "body_measurement",
@@ -133,21 +116,33 @@ export const bodyMeasurement = createTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     date: d.date("date").notNull(),
-    neck: d.real("neck"),
-    chest: d.real("chest"),
-    waist: d.real("waist"),
-    bellybutton: d.real("bellybutton"),
-    hips: d.real("hips"),
-    biceps: d.real("biceps"),
-    thigh: d.real("thigh"),
-    notes: d.text("notes"),
+    neck: d.numeric("neck", { precision: 5, scale: 1 }),
+    chest: d.numeric("chest", { precision: 5, scale: 1 }),
+    waist: d.numeric("waist", { precision: 5, scale: 1 }),
+    bellybutton: d.numeric("bellybutton", { precision: 5, scale: 1 }),
+    hips: d.numeric("hips", { precision: 5, scale: 1 }),
+    biceps: d.numeric("biceps", { precision: 5, scale: 1 }),
+    thigh: d.numeric("thigh", { precision: 5, scale: 1 }),
+    notes: d.text("notes").notNull().default(""),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
-  (t) => ({
-    userDateIdx: index("body_measurement_user_date_idx").on(t.userId, t.date),
-  }),
+  (t) => [index("body_measurement_user_date_idx").on(t.userId, t.date)],
 );
+
+export const trainingTypeEnum = pgEnum("training_type", ["strength", "cardio"]);
+
+export const training = createTable("training", (d) => ({
+  id: d.uuid("id").primaryKey().defaultRandom(),
+  name: d.text("name").notNull(),
+  type: trainingTypeEnum("type").notNull(),
+  createdAt: d.timestamp("created_at").notNull().defaultNow(),
+  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  userId: d
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+}));
 
 export const trainingExercise = createTable(
   "training_exercise",
@@ -162,12 +157,12 @@ export const trainingExercise = createTable(
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
-  (t) => ({
-    trainingPositionIdx: index("training_exercise_training_position_idx").on(
+  (t) => [
+    index("training_exercise_training_position_idx").on(
       t.trainingId,
       t.position,
     ),
-  }),
+  ],
 );
 
 // Training session lifecycle and results
@@ -185,9 +180,8 @@ export const trainingSession = createTable("training_session", (d) => ({
   startAt: d.timestamp("start_at").notNull().defaultNow(),
   endAt: d.timestamp("end_at"),
   // Derived/summary fields
-  durationSec: d.integer("duration_sec"),
+  durationMin: d.integer("duration_min"),
   totalLoadKg: d.numeric("total_load_kg", { precision: 12, scale: 2 }),
-  progressJson: jsonb("progress_json"),
   notes: d.text("notes"),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
@@ -209,11 +203,12 @@ export const trainingSessionExercise = createTable(
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
-  (t) => ({
-    sessionPositionIdx: index(
-      "training_session_exercise_session_position_idx",
-    ).on(t.sessionId, t.position),
-  }),
+  (t) => [
+    index("training_session_exercise_session_position_idx").on(
+      t.sessionId,
+      t.position,
+    ),
+  ],
 );
 
 export const trainingSessionSet = createTable(
@@ -227,18 +222,15 @@ export const trainingSessionSet = createTable(
     setIndex: d.integer("set_index").notNull(),
     reps: d.integer("reps").notNull(),
     weight: d.numeric("weight", { precision: 6, scale: 2 }),
-    rpe: d.numeric("rpe", { precision: 3, scale: 1 }),
-    rir: d.numeric("rir", { precision: 3, scale: 1 }),
-    restSec: d.integer("rest_sec"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
-  (t) => ({
-    sessionExerciseSetIdx: index("training_session_set_exercise_set_idx").on(
+  (t) => [
+    index("training_session_set_exercise_set_idx").on(
       t.sessionExerciseId,
       t.setIndex,
     ),
-  }),
+  ],
 );
 
 export const trainingSessionCardio = createTable(
@@ -249,19 +241,18 @@ export const trainingSessionCardio = createTable(
       .uuid("session_id")
       .notNull()
       .references(() => trainingSession.id, { onDelete: "cascade" }),
-    durationSec: d.integer("duration_sec").notNull(),
-    distanceM: d.integer("distance_m"),
+    durationMin: d.integer("duration_min").notNull(),
+    distanceKm: d.numeric("distance_km", { precision: 5, scale: 2 }),
     kcal: d.integer("kcal"),
     avgHr: d.integer("avg_hr"),
+    cadence: d.integer("cadence"),
     avgSpeedKmh: d.numeric("avg_speed_kmh", { precision: 5, scale: 2 }),
     avgPowerW: d.integer("avg_power_w"),
     notes: d.text("notes"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
-  (t) => ({
-    sessionUniqueIdx: uniqueIndex("training_session_cardio_session_unique").on(
-      t.sessionId,
-    ),
-  }),
+  (t) => [
+    uniqueIndex("training_session_cardio_session_unique").on(t.sessionId),
+  ],
 );

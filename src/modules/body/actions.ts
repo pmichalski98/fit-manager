@@ -11,26 +11,39 @@ import {
   dailyLogSchema,
   goalSchema,
   measurementsSchema,
-  type DailyLogInput,
+  type DailyLogFormValues,
   type GoalFormValues,
   type MeasurementsInput,
 } from "@/modules/body/schemas";
+import { revalidatePath } from "next/cache";
 
-export async function getUserDailyLog(date: string) {
+export async function getLatestDailyLog() {
   const userId = await requireUserId();
   try {
-    const data = await dailyLogRepository.findDailyLogByUserAndDate(
-      userId,
-      date,
-    );
-    return { ok: true, data: data };
+    const result = await dailyLogRepository.findLatestDailyLog(userId);
+    return { ok: true, data: result };
   } catch (error) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
   }
 }
 
-export async function createOrUpdateDailyLog(input: DailyLogInput) {
+export async function getDailyLogByDate(date: string) {
+  console.log("date", date);
+  const userId = await requireUserId();
+  try {
+    const result = await dailyLogRepository.findDailyLogByUserAndDate(
+      userId,
+      date,
+    );
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
+}
+
+export async function createOrUpdateDailyLog(input: DailyLogFormValues) {
   const userId = await requireUserId();
   const { success, data, error } = dailyLogSchema.safeParse(input);
 
@@ -42,13 +55,15 @@ export async function createOrUpdateDailyLog(input: DailyLogInput) {
     const result = await dailyLogRepository.upsertDailyLog({
       userId,
       date: data.date,
-      weight: data.weight != null ? toFixed1(data.weight) : null,
-      kcal: data.kcal ?? null,
+      weight: data.weight,
+      kcal: data.kcal,
     });
     return { ok: true, data: result };
   } catch (error) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
+  } finally {
+    revalidatePath("/body");
   }
 }
 
@@ -69,7 +84,7 @@ export async function createOrUpdateMeasurements(input: MeasurementsInput) {
       hips: data.hips != null ? toFixed1(data.hips) : null,
       biceps: data.biceps != null ? toFixed1(data.biceps) : null,
       thigh: data.thigh != null ? toFixed1(data.thigh) : null,
-      notes: data.notes ?? null,
+      notes: data.notes ?? "",
     });
     return { ok: true, data: result };
   } catch (error) {
@@ -93,20 +108,8 @@ export async function updateUserCaloricGoal(input: GoalFormValues) {
   } catch (error) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
-  }
-}
-
-export async function getLatestDailyLog(date: string) {
-  const userId = await requireUserId();
-  try {
-    const result = await dailyLogRepository.findLatestDailyLogOnOrBefore(
-      userId,
-      date,
-    );
-    return { ok: true, data: result };
-  } catch (error) {
-    console.error(error);
-    return { ok: false, data: null, error: "Internal server error" };
+  } finally {
+    revalidatePath("/body");
   }
 }
 

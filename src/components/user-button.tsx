@@ -45,7 +45,7 @@ export default function UserButton() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="border-border/10 flex w-full items-center justify-between gap-1 overflow-hidden rounded-lg border bg-white/5 p-3 px-4 py-2 hover:bg-white/10">
+        <DropdownMenuTrigger className="border-border/10 not-visited:hover:bg-accent/10 flex items-center justify-between gap-1 overflow-hidden rounded-lg border p-3 px-4 py-2">
           <Avatar>
             {user.image ? (
               <AvatarImage src={user.image} />
@@ -53,13 +53,10 @@ export default function UserButton() {
               <GeneratedAvatar seed={user.name ?? user.email} />
             )}
           </Avatar>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden text-left">
-            <p className="w-full truncate text-sm">{user.name}</p>
-            <p className="w-full truncate text-xs">{user.email}</p>
-          </div>
+
           <ChevronDownIcon className="size-4 shrink-0" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-72" align="end">
+        <DropdownMenuContent className="w-52" align="end">
           <DropdownMenuLabel className="flex justify-between">
             <div className="flex flex-col gap-1">
               <span className="truncate font-medium">{user.name}</span>
@@ -67,16 +64,11 @@ export default function UserButton() {
                 {user.email}
               </span>
             </div>
-            <ThemeButton />
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup className="">
-            <DropdownMenuItem className="flex justify-between">
-              Billing
-              <CreditCardIcon />
-            </DropdownMenuItem>
             <DropdownMenuItem
-              className="flex justify-between"
+              className="hover:bg-accent/10 flex cursor-pointer justify-between"
               onClick={handleLogout}
             >
               Logout

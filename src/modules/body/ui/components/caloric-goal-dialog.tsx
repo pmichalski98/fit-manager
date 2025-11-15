@@ -22,9 +22,12 @@ export function CaloricGoalDialog({ defaultGoal }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Set caloric goal</DialogTitle>
-          <DialogDescription>
-            Used to prefill your daily calories.
-          </DialogDescription>
+          {defaultGoal && (
+            <DialogDescription>
+              Your current caloric goal is{" "}
+              <span className="text-primary font-bold">{defaultGoal} kcal</span>
+            </DialogDescription>
+          )}
         </DialogHeader>
         <CaloricGoalForm defaultGoal={defaultGoal} />
       </DialogContent>

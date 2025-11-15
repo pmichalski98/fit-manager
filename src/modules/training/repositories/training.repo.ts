@@ -1,14 +1,10 @@
-import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   training,
   trainingExercise,
-  trainingSession,
-  trainingSessionExercise,
-  trainingSessionSet,
   type trainingTypeEnum,
-  trainingSessionCardio,
 } from "@/server/db/schema";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 export type CreateTrainingValues = {
   userId: string;
@@ -90,80 +86,10 @@ class TrainingRepository {
     return { ...t, exercises: exs };
   }
 
-  async findLatestStrengthSessionWithDetails(
-    userId: string,
-    trainingId: string,
-  ) {
-    const [s] = await db
-      .select()
-      .from(trainingSession)
-      .where(
-        and(
-          eq(trainingSession.userId, userId),
-          eq(trainingSession.trainingId, trainingId),
-          eq(trainingSession.type, "strength"),
-          isNotNull(trainingSession.endAt),
-        ),
-      )
-      .orderBy(desc(trainingSession.endAt))
-      .limit(1);
-    if (!s) return null;
-    const exercises = await db
-      .select()
-      .from(trainingSessionExercise)
-      .where(eq(trainingSessionExercise.sessionId, s.id))
-      .orderBy(trainingSessionExercise.position);
-    const exerciseIds = exercises.map((e) => e.id);
-    type SetRow = typeof trainingSessionSet.$inferSelect;
-    const sets: SetRow[] = exerciseIds.length
-      ? await db
-          .select()
-          .from(trainingSessionSet)
-          .where(inArray(trainingSessionSet.sessionExerciseId, exerciseIds))
-          .orderBy(trainingSessionSet.setIndex)
-      : [];
-    const setsByExercise = new Map<string, SetRow[]>();
-    for (const e of exercises) setsByExercise.set(e.id, []);
-    for (const st of sets) {
-      const arr = setsByExercise.get(st.sessionExerciseId);
-      if (arr) arr.push(st);
-    }
-    return {
-      session: s,
-      exercises: exercises.map((e) => ({
-        ...e,
-        sets: setsByExercise.get(e.id) ?? [],
-      })),
-    };
-  }
-
   async deleteTraining(userId: string, trainingId: string) {
     return await db
       .delete(training)
       .where(and(eq(training.userId, userId), eq(training.id, trainingId)));
-  }
-
-  async findLatestCardioSessionWithMetrics(userId: string, trainingId: string) {
-    const [s] = await db
-      .select()
-      .from(trainingSession)
-      .where(
-        and(
-          eq(trainingSession.userId, userId),
-          eq(trainingSession.trainingId, trainingId),
-          eq(trainingSession.type, "cardio"),
-          isNotNull(trainingSession.endAt),
-        ),
-      )
-      .orderBy(desc(trainingSession.endAt))
-      .limit(1);
-    if (!s) return null;
-    const [metrics] = await db
-      .select()
-      .from(trainingSessionCardio)
-      .where(eq(trainingSessionCardio.sessionId, s.id))
-      .limit(1);
-    return { session: s, metrics: metrics ?? null };
   }
 }
 

@@ -1,38 +1,96 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useRef, useState } from "react";
+import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
-import { createOrUpdateDailyLog } from "@/modules/body/actions";
+import { getTodayDateYYYYMMDD, handleIntegerInput } from "@/lib/utils";
+import {
+  createOrUpdateDailyLog,
+  getDailyLogByDate,
+} from "@/modules/body/actions";
 import {
   dailyLogSchema,
   type DailyLogFormValues,
 } from "@/modules/body/schemas";
+import type { DailyLog } from "@/server/db/schema";
 
 type Props = {
-  alreadyFilledToday?: boolean;
+  caloricGoal: number | null;
+  lastDailyLog: DailyLog | null;
 };
 
-export function DailyLogForm({ alreadyFilledToday }: Props) {
+export function DailyLogForm({ caloricGoal, lastDailyLog }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<DailyLogFormValues>({
     resolver: zodResolver(dailyLogSchema) as Resolver<DailyLogFormValues>,
+    defaultValues: {
+      date: getTodayDateYYYYMMDD(),
+      weight: lastDailyLog?.weight ?? "",
+      kcal: lastDailyLog?.kcal ?? undefined,
+    },
   });
+
+  const selectedDate = form.watch("date");
+  const today = getTodayDateYYYYMMDD();
+  const previousDateRef = useRef(today);
+
+  // Fetch data when date changes (but not on initial mount)
+  useEffect(() => {
+    // Skip if the date hasn't actually changed
+    if (previousDateRef.current === selectedDate) {
+      return;
+    }
+
+    previousDateRef.current = selectedDate;
+
+    const fetchDailyLogForDate = async () => {
+      if (!selectedDate) return;
+
+      setIsLoading(true);
+      try {
+        const result = await getDailyLogByDate(selectedDate);
+
+        if (result.ok && result.data) {
+          console.log("result.data", result.data);
+          // If data exists for this date, populate the form
+          form.setValue("weight", result.data.weight ?? "");
+          form.setValue(
+            "kcal",
+            result.data.kcal === 0 || result.data.kcal === null
+              ? undefined
+              : result.data.kcal,
+          );
+        } else {
+          // If no data exists, clear the form fields
+          form.setValue("weight", "");
+          form.setValue("kcal", undefined);
+        }
+      } catch (error) {
+        console.error("Failed to fetch daily log:", error);
+        toast.error("Failed to load data for selected date");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void fetchDailyLogForDate();
+  }, [selectedDate, form]);
 
   const onSubmit = async (values: DailyLogFormValues) => {
     try {
@@ -49,11 +107,6 @@ export function DailyLogForm({ alreadyFilledToday }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {alreadyFilledToday ? (
-          <Alert>
-            <AlertDescription>You already filled this today.</AlertDescription>
-          </Alert>
-        ) : null}
         <FormField
           control={form.control}
           name="date"
@@ -61,7 +114,7 @@ export function DailyLogForm({ alreadyFilledToday }: Props) {
             <FormItem>
               <FormLabel>Date</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input type="date" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -77,23 +130,26 @@ export function DailyLogForm({ alreadyFilledToday }: Props) {
                 <FormLabel>Weight (kg)</FormLabel>
                 <FormControl>
                   <Input
-                    type="text"
+                    type="number"
                     inputMode="decimal"
-                    value={
-                      typeof field.value === "number"
-                        ? String(field.value)
-                        : (field.value ?? "")
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === "") return field.onChange(undefined);
-                      const normalized = raw.replace(/,/g, ".");
-                      if (/^\d*(\.\d*)?$/.test(normalized)) {
-                        field.onChange(normalized);
-                      }
-                    }}
+                    {...field}
+                    disabled={isLoading}
                   />
                 </FormControl>
+                {lastDailyLog?.weight &&
+                  lastDailyLog.date === today &&
+                  selectedDate === today && (
+                    <FormDescription className="text-primary font-bold">
+                      Already filled today.
+                    </FormDescription>
+                  )}
+
+                {field.value && selectedDate !== today && (
+                  <FormDescription className="text-primary font-bold">
+                    You have already filled your weight for that day.
+                  </FormDescription>
+                )}
+
                 <FormMessage />
               </FormItem>
             )}
@@ -104,25 +160,44 @@ export function DailyLogForm({ alreadyFilledToday }: Props) {
             name="kcal"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Calories (kcal)</FormLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FormLabel>Calories (kcal)</FormLabel>
+                  {caloricGoal && (
+                    <FormLabel className="text-primary text-xs">
+                      Caloric goal: {caloricGoal} kcal
+                    </FormLabel>
+                  )}
+                </div>
 
                 <FormControl>
                   <Input
-                    type="text"
+                    type="number"
                     inputMode="numeric"
-                    value={
-                      typeof field.value === "number"
-                        ? String(field.value)
-                        : (field.value ?? "")
-                    }
+                    value={field.value ?? ""}
                     onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === "") return field.onChange(undefined);
-                      const digitsOnly = raw.replace(/\D+/g, "");
-                      field.onChange(digitsOnly);
+                      const value = e.target.value;
+                      field.onChange(value === "" ? undefined : Number(value));
                     }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    onKeyDown={handleIntegerInput}
+                    disabled={isLoading}
                   />
                 </FormControl>
+                {lastDailyLog?.kcal &&
+                  lastDailyLog.date === today &&
+                  selectedDate === today && (
+                    <FormDescription className="text-primary font-bold">
+                      Already filled today.
+                    </FormDescription>
+                  )}
+
+                {field.value && selectedDate !== today && (
+                  <FormDescription className="text-primary font-bold">
+                    You have already filled your calories for that day.
+                  </FormDescription>
+                )}
 
                 <FormMessage />
               </FormItem>
@@ -131,8 +206,8 @@ export function DailyLogForm({ alreadyFilledToday }: Props) {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save"}
+          <Button type="submit" disabled={isSubmitting || isLoading}>
+            {isSubmitting ? "Saving..." : isLoading ? "Loading..." : "Save"}
           </Button>
         </div>
       </form>
