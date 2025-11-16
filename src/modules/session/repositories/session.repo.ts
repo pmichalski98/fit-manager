@@ -1,6 +1,7 @@
 "server-only";
 
 import { and, eq, gte, lt, inArray, asc, isNotNull, desc } from "drizzle-orm";
+import { isToday } from "date-fns";
 
 import { db } from "@/server/db";
 import {
@@ -133,7 +134,50 @@ class SessionRepository {
     });
   }
 
-  async completeCardioSession(input: CardioSessionFormValues, userId: string) {
+  async createOrUpdateCardioSession(
+    input: CardioSessionFormValues,
+    userId: string,
+  ) {
+    const [exists] = await db
+      .select()
+      .from(trainingSession)
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          eq(trainingSession.trainingId, input.trainingId),
+          eq(trainingSession.type, "cardio"),
+          eq(trainingSession.date, input.date),
+          isNotNull(trainingSession.endAt),
+        ),
+      );
+    if (exists) {
+      return await db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(trainingSession)
+          .set({
+            endAt: new Date(),
+          })
+          .where(eq(trainingSession.id, exists.id))
+          .returning();
+        if (!updated) {
+          throw new Error("Failed to update session");
+        }
+        await db
+          .update(trainingSessionCardio)
+          .set({
+            durationMin: input.durationMin ?? null,
+            distanceKm: input.distanceKm ?? null,
+            kcal: input.kcal ?? null,
+            avgHr: input.avgHr ?? null,
+            avgSpeedKmh: input.avgSpeedKmh ?? null,
+            avgPowerW: input.avgPowerW ?? null,
+            notes: input.notes ?? null,
+            cadence: input.cadence ?? null,
+          })
+          .where(eq(trainingSessionCardio.sessionId, exists.id));
+        return updated;
+      });
+    }
     return await db.transaction(async (tx) => {
       const [session] = await tx
         .insert(trainingSession)
@@ -141,14 +185,16 @@ class SessionRepository {
           userId,
           trainingId: input.trainingId,
           type: "cardio",
-          startAt: input.startAt,
+          date: input.date,
+          durationMin: input.durationMin,
+          endAt: new Date(),
         })
         .returning();
       if (!session) {
         throw new Error("Failed to insert session");
       }
       await tx.insert(trainingSessionCardio).values({
-        durationMin: input.durationMin,
+        durationMin: input.durationMin ?? null,
         distanceKm: input.distanceKm ?? null,
         kcal: input.kcal ?? null,
         avgHr: input.avgHr ?? null,
@@ -156,8 +202,24 @@ class SessionRepository {
         avgPowerW: input.avgPowerW ?? null,
         notes: input.notes ?? null,
         cadence: input.cadence ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         sessionId: session.id,
       });
+
+      // Only update lastSessionAt if the session date is today
+      const sessionDate = new Date(input.date);
+
+      if (isToday(sessionDate)) {
+        await tx
+          .update(training)
+          .set({
+            lastSessionAt: new Date(input.date),
+          })
+          .where(eq(training.id, input.trainingId));
+      }
+
+      return session;
     });
   }
 

@@ -24,13 +24,11 @@ export async function createTraining(input: CreateTrainingInput) {
   const userId = await requireUserId();
   const parsed = trainingFormSchema.parse(input);
 
-  const exercises = parsed.type === "strength" ? parsed.exercises : [];
-
   const created = await trainingRepository.createTraining({
     userId,
     name: parsed.name,
     type: parsed.type,
-    exercises,
+    exercises: parsed.exercises ?? [],
   });
 
   revalidatePath("/training");

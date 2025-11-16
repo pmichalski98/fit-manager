@@ -1,12 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { History } from "lucide-react";
+import { CalendarIcon, History } from "lucide-react";
+import { format } from "date-fns";
+import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -15,7 +18,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { NumberFormField } from "@/modules/session/ui/components/number-form-field";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn, formatDateYYYYMMDD, getTodayDateYYYYMMDD } from "@/lib/utils";
 import { completeCardioSession } from "@/modules/session/actions";
 import {
   cardioSessionSchema,
@@ -25,6 +34,7 @@ import type {
   TrainingSession,
   TrainingSessionCardio,
 } from "@/server/db/schema";
+import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
   template: { id: string; name: string };
@@ -35,7 +45,7 @@ type Props = {
 };
 
 export function CardioSessionView({ template, last }: Props) {
-  const start = new Date().getTime();
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const form = useForm<CardioSessionFormValues>({
     resolver: zodResolver(
@@ -51,16 +61,13 @@ export function CardioSessionView({ template, last }: Props) {
       kcal: last?.metrics?.kcal ?? undefined,
       cadence: last?.metrics?.cadence ?? undefined,
       trainingId: template.id,
-      startAt: last?.session.startAt ?? new Date(),
+      date: getTodayDateYYYYMMDD(),
     },
   });
 
   const onSubmit = async (values: CardioSessionFormValues) => {
     try {
-      await completeCardioSession({
-        ...values,
-        startAt: new Date(start),
-      });
+      await completeCardioSession(values);
       toast.success("Session saved");
     } catch {
       toast.error("Failed to save session");
@@ -69,21 +76,17 @@ export function CardioSessionView({ template, last }: Props) {
 
   return (
     <div className="space-y-6">
+      <h1 className="text-2xl font-bold">{template.name}</h1>
       {last?.metrics ? (
-        <Alert className="bg-muted/40 border-border">
+        <Alert variant="accent">
           <History />
           <AlertDescription>
             <span className="font-medium">
               Using values from your last session
             </span>{" "}
             <span className="text-muted-foreground">
-              (
-              {new Date(last.session.startAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-              ) — adjust as needed.
+              ({format(new Date(last.session.date), "MMM d, yyyy")}) — adjust as
+              needed.
             </span>
           </AlertDescription>
         </Alert>
@@ -91,142 +94,98 @@ export function CardioSessionView({ template, last }: Props) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value ? (
+                          format(new Date(field.value), "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          field.onChange(formatDateYYYYMMDD(date));
+                          setPopoverOpen(false);
+                        }
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
+            <NumberFormField
               control={form.control}
               name="durationMin"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration (sec)</FormLabel>
-                  <FormControl>
-                    <Input type="number" inputMode="numeric" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Duration (min)"
             />
-            <FormField
-              control={form.control}
-              name="kcal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kcal</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
+            <NumberFormField control={form.control} name="kcal" label="Kcal" />
+            <NumberFormField
               control={form.control}
               name="distanceKm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Distance (m)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Distance (km)"
             />
-            <FormField
+            <NumberFormField
+              control={form.control}
+              name="cadence"
+              label="Cadence (rpm)"
+            />
+            <NumberFormField
               control={form.control}
               name="avgHr"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Avg HR</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Avg Heart Rate (bpm)"
             />
-            <FormField
+            <NumberFormField
               control={form.control}
               name="avgSpeedKmh"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Avg Speed (km/h)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      inputMode="decimal"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Avg Speed (km/h)"
             />
-            <FormField
+            <NumberFormField
               control={form.control}
               name="avgPowerW"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Avg Power (W)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Avg Power (W)"
             />
           </div>
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes (optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="Add any notes about the session"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className="flex justify-end">
             <Button type="submit">Complete session</Button>
           </div>

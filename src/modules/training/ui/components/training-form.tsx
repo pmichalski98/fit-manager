@@ -38,17 +38,17 @@ import {
 import { createTraining } from "@/modules/training/actions";
 import {
   trainingFormSchema,
-  type TrainingFormValues,
+  type CreateTrainingInput,
 } from "@/modules/training/schemas";
 import { ExerciseRow } from "./exercise-row";
 
 export function TrainingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<TrainingFormValues>({
-    resolver: zodResolver(trainingFormSchema) as Resolver<TrainingFormValues>,
+  const form = useForm<CreateTrainingInput>({
+    resolver: zodResolver(trainingFormSchema) as Resolver<CreateTrainingInput>,
     defaultValues: {
-      type: "strength",
+      type: "cardio",
       name: "",
       exercises: [{ name: "" }],
     },
@@ -85,7 +85,7 @@ export function TrainingForm() {
     [fields, move],
   );
 
-  const onSubmit = async (values: TrainingFormValues) => {
+  const onSubmit = async (values: CreateTrainingInput) => {
     try {
       setIsSubmitting(true);
       const result = await createTraining(values);

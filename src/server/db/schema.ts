@@ -140,6 +140,7 @@ export const training = createTable("training", (d) => ({
   type: trainingTypeEnum("type").notNull(),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  lastSessionAt: d.timestamp("last_session_at"),
   userId: d
     .text("user_id")
     .notNull()
@@ -185,6 +186,7 @@ export const trainingSession = createTable("training_session", (d) => ({
   durationMin: d.integer("duration_min"),
   totalLoadKg: d.integer("total_load_kg"),
   notes: d.text("notes"),
+  date: d.date("date").notNull().defaultNow(),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
 }));

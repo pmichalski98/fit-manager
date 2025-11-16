@@ -4,7 +4,7 @@ import {
   trainingExercise,
   type trainingTypeEnum,
 } from "@/server/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 export type CreateTrainingValues = {
   userId: string;
@@ -44,8 +44,7 @@ class TrainingRepository {
     const trainings = await db
       .select()
       .from(training)
-      .where(eq(training.userId, userId))
-      .orderBy(desc(training.createdAt));
+      .where(eq(training.userId, userId));
 
     const ids = trainings.map((t) => t.id);
     type TrainingRow = typeof training.$inferSelect;
@@ -66,10 +65,21 @@ class TrainingRepository {
       if (arr) arr.push(ex);
     }
 
-    return trainings.map((t) => ({
+    const trainingsWithExercises = trainings.map((t) => ({
       ...t,
       exercises: byTrainingId.get(t.id) ?? [],
     }));
+
+    // Sort by lastSessionAt ascending (oldest first), with nulls last
+    return trainingsWithExercises.sort((a, b) => {
+      if (a.lastSessionAt === null && b.lastSessionAt === null) return 0;
+      if (a.lastSessionAt === null) return 1;
+      if (b.lastSessionAt === null) return -1;
+      return (
+        new Date(a.lastSessionAt).getTime() -
+        new Date(b.lastSessionAt).getTime()
+      );
+    });
   }
 
   async findTrainingByIdWithExercises(userId: string, trainingId: string) {

@@ -73,9 +73,18 @@ export async function completeStrengthSession(
 
 export async function completeCardioSession(input: CardioSessionFormValues) {
   const userId = await requireUserId();
-  const parsed = cardioSessionSchema.parse(input);
-
-  await sessionRepository.completeCardioSession(input, userId);
+  const parsed = cardioSessionSchema.safeParse(input);
+  if (!parsed.success) {
+    console.error(parsed.error);
+    throw new Error("Failed to parse input");
+  }
+  const session = await sessionRepository.createOrUpdateCardioSession(
+    parsed.data,
+    userId,
+  );
+  if (!session) {
+    throw new Error("Failed to complete session");
+  }
   return { ok: true } as const;
 }
 
@@ -85,7 +94,7 @@ export async function findLatestStrengthSessionWithDetails(trainingId: string) {
     userId,
     trainingId,
   );
-  if (!session) throw new Error("Session not found");
+  if (!session) return null;
   return session;
 }
 
@@ -95,6 +104,6 @@ export async function findLatestCardioSessionWithMetrics(trainingId: string) {
     userId,
     trainingId,
   );
-  if (!session) throw new Error("Session not found");
+  if (!session) return null;
   return session;
 }
