@@ -183,11 +183,13 @@ export const trainingSession = createTable("training_session", (d) => ({
   endAt: d.timestamp("end_at"),
   // Derived/summary fields
   durationMin: d.integer("duration_min"),
-  totalLoadKg: d.numeric("total_load_kg", { precision: 12, scale: 2 }),
+  totalLoadKg: d.integer("total_load_kg"),
   notes: d.text("notes"),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
 }));
+
+export type TrainingSession = typeof trainingSession.$inferSelect;
 
 export const trainingSessionExercise = createTable(
   "training_session_exercise",
@@ -258,3 +260,5 @@ export const trainingSessionCardio = createTable(
     uniqueIndex("training_session_cardio_session_unique").on(t.sessionId),
   ],
 );
+
+export type TrainingSessionCardio = typeof trainingSessionCardio.$inferSelect;

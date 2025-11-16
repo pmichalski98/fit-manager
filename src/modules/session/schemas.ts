@@ -2,7 +2,6 @@ import { z } from "zod";
 
 // Session payloads
 export const strengthSessionSchema = z.object({
-  sessionId: z.string().uuid().optional(), // will be merged in actions
   exercises: z
     .array(
       z.object({
@@ -43,19 +42,22 @@ export const strengthSessionSchema = z.object({
       }),
     )
     .optional(),
+  trainingId: z.uuid(),
 });
 
 export type StrengthSessionFormValues = z.infer<typeof strengthSessionSchema>;
 
 export const cardioSessionSchema = z.object({
-  sessionId: z.uuid().optional(),
-  durationSec: z.coerce.number().int().positive(),
-  distanceM: z.coerce.number().int().positive().optional().nullable(),
+  durationMin: z.coerce.number().int().positive(),
+  distanceKm: z.coerce.string().optional().nullable(),
   kcal: z.coerce.number().int().positive().optional().nullable(),
   avgHr: z.coerce.number().int().positive().optional().nullable(),
-  avgSpeedKmh: z.coerce.number().positive().optional().nullable(),
+  cadence: z.coerce.number().int().positive().optional().nullable(),
+  avgSpeedKmh: z.coerce.string().optional().nullable(),
   avgPowerW: z.coerce.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
+  trainingId: z.uuid(),
+  startAt: z.date(),
 });
 
 export type CardioSessionFormValues = z.infer<typeof cardioSessionSchema>;

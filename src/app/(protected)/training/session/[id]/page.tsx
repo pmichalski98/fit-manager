@@ -23,6 +23,7 @@ export default async function TrainingSessionPage(props: Props) {
       <StrengthSessionView
         template={trainingTemplate}
         last={lastTrainingSession}
+        trainingId={params.id}
       />
     );
   }

@@ -8,6 +8,7 @@ import {
   type CardioSessionFormValues,
   type StrengthSessionFormValues,
 } from "./schemas";
+import { trainingRepository } from "../training/repositories";
 
 export async function findSessionById(id: string) {
   const userId = await requireUserId();
@@ -21,8 +22,7 @@ export async function completeStrengthSession(
 ) {
   await requireUserId();
   // We don't strictly check ownership here; ideally check session.userId === userId
-  const { sessionId, ...rest } = input;
-  const parsed = strengthSessionSchema.parse(rest);
+  const parsed = strengthSessionSchema.parse(input);
   const durationSec: number | null =
     typeof (parsed as { durationSec?: unknown }).durationSec === "number"
       ? (parsed as { durationSec?: number }).durationSec!
@@ -56,29 +56,26 @@ export async function completeStrengthSession(
         delta: number;
       }>)
     : null;
-  await sessionRepository.completeStrengthSession(sessionId, parsed.exercises, {
-    durationSec,
-    totalLoadKg,
-    progress,
-  });
+  const userId = await requireUserId();
+  await sessionRepository.completeStrengthSession(
+    input.trainingId,
+    parsed?.exercises ?? [],
+    userId,
+    new Date(input.startedAt),
+    {
+      durationSec,
+      totalLoadKg,
+      progress,
+    },
+  );
   return { ok: true } as const;
 }
 
-export async function completeCardioSession(
-  input: CardioSessionFormValues & { sessionId: string },
-) {
-  await requireUserId();
-  const { sessionId, ...rest } = input;
-  const parsed = cardioSessionSchema.parse(rest);
-  await sessionRepository.completeCardioSession(sessionId, {
-    durationSec: parsed.durationSec,
-    distanceM: parsed.distanceM ?? null,
-    kcal: parsed.kcal ?? null,
-    avgHr: parsed.avgHr ?? null,
-    avgSpeedKmh: parsed.avgSpeedKmh ?? null,
-    avgPowerW: parsed.avgPowerW ?? null,
-    notes: parsed.notes ?? null,
-  });
+export async function completeCardioSession(input: CardioSessionFormValues) {
+  const userId = await requireUserId();
+  const parsed = cardioSessionSchema.parse(input);
+
+  await sessionRepository.completeCardioSession(input, userId);
   return { ok: true } as const;
 }
 

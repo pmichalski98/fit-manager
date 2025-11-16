@@ -50,11 +50,12 @@ type Props = {
       sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
     }>;
   };
+  trainingId: string;
 };
 
-export function StrengthSessionView({ template, last }: Props) {
+export function StrengthSessionView({ template, last, trainingId }: Props) {
   const router = useRouter();
-  const sessionStartAtMs = new Date().getTime();
+  const sessionStartAtMs = useMemo(() => new Date().getTime(), []);
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
     const start = sessionStartAtMs;
@@ -118,8 +119,10 @@ export function StrengthSessionView({ template, last }: Props) {
     resolver: zodResolver(
       strengthSessionSchema,
     ) as Resolver<StrengthSessionFormValues>,
-    defaultValues: { exercises: defaultExercises },
+    defaultValues: { exercises: defaultExercises, trainingId },
   });
+
+  console.log("form.formState.errors", form.formState.errors);
 
   const exercisesArr = useFieldArray({
     control: form.control,
@@ -167,6 +170,7 @@ export function StrengthSessionView({ template, last }: Props) {
   }, [exercisesArr.fields.length, progressByExercise]);
 
   const onSubmit = async (values: StrengthSessionFormValues) => {
+    console.log("onSubmit", values);
     try {
       // Compute client-side summary
       const durationSec = Math.max(
@@ -555,7 +559,7 @@ function ExerciseSets({
         // single set row
         <div
           key={f.id}
-          className="grid grid-cols-3 items-end gap-2 sm:grid-cols-6"
+          className="grid grid-cols-3 items-center gap-2 sm:grid-cols-6"
         >
           <FormField
             control={control}
