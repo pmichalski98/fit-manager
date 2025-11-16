@@ -40,7 +40,6 @@ import { completeStrengthSession } from "@/modules/session/actions";
 type TemplateExercise = { id: string; name: string; position: number };
 
 type Props = {
-  session: { id: string; startAt: string | Date };
   template: { id: string; name: string; exercises: TemplateExercise[] };
   last: null | {
     session: { id: string; startAt: string | Date };
@@ -53,16 +52,12 @@ type Props = {
   };
 };
 
-export function TrainingStrengthSessionView({
-  session,
-  template,
-  last,
-}: Props) {
+export function StrengthSessionView({ template, last }: Props) {
   const router = useRouter();
-  const sessionStartAtMs = new Date(session.startAt).getTime();
+  const sessionStartAtMs = new Date().getTime();
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
-    const start = new Date(session.startAt).getTime();
+    const start = sessionStartAtMs;
     const i = setInterval(() => {
       const diff = Math.max(0, Date.now() - start);
       const h = Math.floor(diff / 3600000)
@@ -77,7 +72,7 @@ export function TrainingStrengthSessionView({
       setElapsed(`${h}:${m}:${s}`);
     }, 1000);
     return () => clearInterval(i);
-  }, [session.startAt]);
+  }, [sessionStartAtMs]);
 
   const defaultExercises = useMemo<
     StrengthSessionFormValues["exercises"]
@@ -122,7 +117,7 @@ export function TrainingStrengthSessionView({
   const form = useForm<StrengthSessionFormValues>({
     resolver: zodResolver(
       strengthSessionSchema,
-    ) as unknown as Resolver<StrengthSessionFormValues>,
+    ) as Resolver<StrengthSessionFormValues>,
     defaultValues: { exercises: defaultExercises },
   });
 
@@ -227,7 +222,7 @@ export function TrainingStrengthSessionView({
         }) ?? [];
 
       await completeStrengthSession({
-        sessionId: session.id,
+        startedAt: new Date(sessionStartAtMs).toISOString(),
         ...values,
         durationSec,
         totalLoadKg,

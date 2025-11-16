@@ -49,3 +49,13 @@ export async function deleteTraining(trainingId: string) {
     return { ok: false, error: "Internal server error" };
   }
 }
+
+export async function findTrainingByIdWithExercises(trainingId: string) {
+  const userId = await requireUserId();
+  const training = await trainingRepository.findTrainingByIdWithExercises(
+    userId,
+    trainingId,
+  );
+  if (!training) throw new Error("Training not found");
+  return training;
+}

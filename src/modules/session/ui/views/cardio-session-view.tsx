@@ -40,7 +40,7 @@ type Props = {
 
 type CardioSessionFormValues = z.infer<typeof cardioSessionSchema>;
 
-export function TrainingCardioSessionView({ session, template, last }: Props) {
+export function CardioSessionView({ session, template, last }: Props) {
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
     const start = new Date(session.startAt).getTime();

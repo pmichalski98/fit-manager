@@ -345,7 +345,7 @@ class SessionRepository {
   }
 
   async findLatestCardioSessionWithMetrics(userId: string, trainingId: string) {
-    const [s] = await db
+    const [session] = await db
       .select()
       .from(trainingSession)
       .where(
@@ -358,20 +358,20 @@ class SessionRepository {
       )
       .orderBy(desc(trainingSession.endAt))
       .limit(1);
-    if (!s) return null;
+    if (!session) return null;
     const [metrics] = await db
       .select()
       .from(trainingSessionCardio)
-      .where(eq(trainingSessionCardio.sessionId, s.id))
+      .where(eq(trainingSessionCardio.sessionId, session.id))
       .limit(1);
-    return { session: s, metrics: metrics ?? null };
+    return { session, metrics };
   }
 
   async findLatestStrengthSessionWithDetails(
     userId: string,
     trainingId: string,
   ) {
-    const [s] = await db
+    const [session] = await db
       .select()
       .from(trainingSession)
       .where(
@@ -384,11 +384,11 @@ class SessionRepository {
       )
       .orderBy(desc(trainingSession.endAt))
       .limit(1);
-    if (!s) return null;
+    if (!session) return null;
     const exercises = await db
       .select()
       .from(trainingSessionExercise)
-      .where(eq(trainingSessionExercise.sessionId, s.id))
+      .where(eq(trainingSessionExercise.sessionId, session.id))
       .orderBy(trainingSessionExercise.position);
     const exerciseIds = exercises.map((e) => e.id);
     type SetRow = typeof trainingSessionSet.$inferSelect;
@@ -400,16 +400,16 @@ class SessionRepository {
           .orderBy(trainingSessionSet.setIndex)
       : [];
     const setsByExercise = new Map<string, SetRow[]>();
-    for (const e of exercises) setsByExercise.set(e.id, []);
-    for (const st of sets) {
-      const arr = setsByExercise.get(st.sessionExerciseId);
-      if (arr) arr.push(st);
+    for (const exercise of exercises) setsByExercise.set(exercise.id, []);
+    for (const set of sets) {
+      const arr = setsByExercise.get(set.sessionExerciseId);
+      if (arr) arr.push(set);
     }
     return {
-      session: s,
-      exercises: exercises.map((e) => ({
-        ...e,
-        sets: setsByExercise.get(e.id) ?? [],
+      session,
+      exercises: exercises.map((exercise) => ({
+        ...exercise,
+        sets: setsByExercise.get(exercise.id) ?? [],
       })),
     };
   }

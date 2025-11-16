@@ -1,3 +1,10 @@
+import {
+  findLatestCardioSessionWithMetrics,
+  findLatestStrengthSessionWithDetails,
+} from "@/modules/session/actions";
+import { CardioSessionView } from "@/modules/session/ui/views/cardio-session-view";
+import { StrengthSessionView } from "@/modules/session/ui/views/strength-session-view";
+import { findTrainingByIdWithExercises } from "@/modules/training/actions";
 import { notFound } from "next/navigation";
 
 type Props = { params: Promise<{ id: string }> };
@@ -5,78 +12,26 @@ type Props = { params: Promise<{ id: string }> };
 export default async function TrainingSessionPage(props: Props) {
   const params = await props.params;
 
-  type SessionRow = {
-    id: string;
-    userId: string;
-    trainingId: string;
-    type: "strength" | "cardio";
-    startAt: string | Date;
-  };
+  const trainingTemplate = await findTrainingByIdWithExercises(params.id);
+  if (!trainingTemplate) notFound();
 
-  const trainingSession = (await findSessionById(
-    params.id,
-  )) as SessionRow | null;
-
-  type TemplateExercise = { id: string; name: string; position: number };
-  type TemplateRow = {
-    id: string;
-    name: string;
-    type: "strength" | "cardio";
-    exercises: TemplateExercise[];
-  };
-
-  const tpl = (await findTrainingByIdWithExercises(
-    userId,
-    trainingSession.trainingId,
-  )) as TemplateRow | null;
-  if (!tpl) notFound();
-
-  if (trainingSession.type === "strength") {
-    type LastStrength = {
-      session: { id: string; startAt: string | Date };
-      exercises: Array<{
-        id: string;
-        name: string;
-        position: number;
-        sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
-      }>;
-    } | null;
-
-    const last = (await findLatestStrengthSessionWithDetails(
-      userId,
-      trainingSession.trainingId,
-    )) as LastStrength;
+  if (trainingTemplate.type === "strength") {
+    const lastTrainingSession = await findLatestStrengthSessionWithDetails(
+      trainingTemplate.id,
+    );
     return (
-      <TrainingStrengthSessionView
-        session={{ id: trainingSession.id, startAt: trainingSession.startAt }}
-        template={{ id: tpl.id, name: tpl.name, exercises: tpl.exercises }}
-        last={last}
+      <StrengthSessionView
+        template={trainingTemplate}
+        last={lastTrainingSession}
       />
     );
   }
 
-  type LastCardio = {
-    session: { id: string; startAt: string | Date };
-    metrics: {
-      durationSec: number;
-      distanceM: number | null;
-      kcal: number | null;
-      avgHr: number | null;
-      avgSpeedKmh: string | null;
-      avgPowerW: number | null;
-      notes: string | null;
-    } | null;
-  } | null;
-  const last = (await findLatestCardioSessionWithMetrics(
-    userId,
-    trainingSession.trainingId,
-  )) as LastCardio;
+  const lastCardioSession = await findLatestCardioSessionWithMetrics(
+    trainingTemplate.id,
+  );
 
   return (
-    <TrainingCardioSessionView
-      session={{ id: trainingSession.id, startAt: trainingSession.startAt }}
-      template={{ id: tpl.id, name: tpl.name }}
-      last={last}
-    />
+    <CardioSessionView template={trainingTemplate} last={lastCardioSession} />
   );
 }

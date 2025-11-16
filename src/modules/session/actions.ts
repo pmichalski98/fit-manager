@@ -2,36 +2,22 @@
 
 import { requireUserId } from "@/lib/user";
 import { sessionRepository } from "@/modules/session/repositories";
-import { trainingRepository } from "@/modules/training/repositories/training.repo";
-import { redirect } from "next/navigation";
 import {
   cardioSessionSchema,
-  startTrainingSessionSchema,
   strengthSessionSchema,
   type CardioSessionFormValues,
-  type StartTrainingSessionInput,
   type StrengthSessionFormValues,
 } from "./schemas";
 
-export async function startTrainingSession(input: StartTrainingSessionInput) {
+export async function findSessionById(id: string) {
   const userId = await requireUserId();
-  const { trainingId } = startTrainingSessionSchema.parse(input);
-  const tpl = await trainingRepository.findTrainingByIdWithExercises(
-    userId,
-    trainingId,
-  );
-  if (!tpl) throw new Error("Training not found");
-  const session = await sessionRepository.createSession({
-    userId,
-    trainingId: tpl.id,
-    type: tpl.type,
-  });
-  if (!session) throw new Error("Failed to create session");
-  redirect(`/training/session/${session.id}`);
+  const session = await sessionRepository.findSessionById(id);
+  if (!session) throw new Error("Session not found");
+  return session;
 }
 
 export async function completeStrengthSession(
-  input: StrengthSessionFormValues & { sessionId: string },
+  input: StrengthSessionFormValues & { startedAt: string },
 ) {
   await requireUserId();
   // We don't strictly check ownership here; ideally check session.userId === userId
@@ -94,4 +80,24 @@ export async function completeCardioSession(
     notes: parsed.notes ?? null,
   });
   return { ok: true } as const;
+}
+
+export async function findLatestStrengthSessionWithDetails(trainingId: string) {
+  const userId = await requireUserId();
+  const session = await sessionRepository.findLatestStrengthSessionWithDetails(
+    userId,
+    trainingId,
+  );
+  if (!session) throw new Error("Session not found");
+  return session;
+}
+
+export async function findLatestCardioSessionWithMetrics(trainingId: string) {
+  const userId = await requireUserId();
+  const session = await sessionRepository.findLatestCardioSessionWithMetrics(
+    userId,
+    trainingId,
+  );
+  if (!session) throw new Error("Session not found");
+  return session;
 }

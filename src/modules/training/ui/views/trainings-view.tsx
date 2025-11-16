@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { getAllTrainingsWithExercises } from "@/modules/training/actions";
-import { startTrainingSession } from "@/modules/session/actions";
 import { DeleteTrainingButton } from "../components/delete-training-button";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
 type StrengthExercise = {
   id: string;
@@ -120,16 +121,14 @@ export async function TrainingsView() {
                 )}
 
                 <div className="mt-auto flex flex-wrap gap-3">
-                  <form
-                    action={startTrainingSession.bind(null, {
-                      trainingId: training.id,
-                    })}
-                    className="flex-1"
-                  >
-                    <Button type="submit" className="w-full" size="sm">
+                  <Button asChild>
+                    <Link
+                      href={`/training/session/${training.id}`}
+                      className="w-full flex-1"
+                    >
                       {isCardio ? "Start cardio" : "Start workout"}
-                    </Button>
-                  </form>
+                    </Link>
+                  </Button>
                   <DeleteTrainingButton trainingId={training.id} />
                 </div>
               </li>
