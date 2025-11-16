@@ -1,88 +1,138 @@
 "use server";
 
-import { headers } from "next/headers";
-
-import { auth } from "@/lib/auth";
-import { dailyLogSchema, measurementsSchema } from "@/modules/body/schemas";
+import { requireUserId } from "@/lib/user";
 import {
-  upsertDailyLog,
-  upsertMeasurements,
-  updateCaloricGoal as repoUpdateCaloricGoal,
+  dailyLogRepository,
+  measurementsRepository,
+  userRepository,
 } from "@/modules/body/repositories";
-import { z } from "zod";
+import {
+  dailyLogSchema,
+  goalSchema,
+  measurementsSchema,
+  type DailyLogFormValues,
+  type GoalFormValues,
+  type MeasurementsFormValues,
+} from "@/modules/body/schemas";
+import { revalidatePath } from "next/cache";
 
-type MaybeNumber = number | undefined;
-
-export type DailyLogInput = {
-  date: string; // YYYY-MM-DD
-  weight?: MaybeNumber;
-  kcal?: MaybeNumber;
-};
-
-export type MeasurementsInput = {
-  date: string; // YYYY-MM-DD
-  neck?: MaybeNumber;
-  chest?: MaybeNumber;
-  waist?: MaybeNumber;
-  bellybutton?: MaybeNumber;
-  hips?: MaybeNumber;
-  biceps?: MaybeNumber;
-  thigh?: MaybeNumber;
-  notes?: string | null;
-};
-
-async function requireUserId() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user?.id;
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
+export async function getLatestDailyLog() {
+  const userId = await requireUserId();
+  try {
+    const result = await dailyLogRepository.findLatestDailyLog(userId);
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
 }
 
-export async function createOrUpdateDailyLog(input: DailyLogInput) {
+export async function getDailyLogByDate(date: string) {
   const userId = await requireUserId();
-  const parsed = dailyLogSchema.parse(input);
-  const toFixed1 = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
-  const data = await upsertDailyLog({
-    userId,
-    date: parsed.date,
-    weight: parsed.weight != null ? toFixed1(parsed.weight) : null,
-    kcal: parsed.kcal ?? null,
-  });
-  return { ok: true, data } as const;
+  try {
+    const result = await dailyLogRepository.findDailyLogByUserAndDate(
+      userId,
+      date,
+    );
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
 }
 
-export async function createOrUpdateMeasurements(input: MeasurementsInput) {
+export async function createOrUpdateDailyLog(input: DailyLogFormValues) {
   const userId = await requireUserId();
-  const parsed = measurementsSchema.parse(input);
-  const toFixed1 = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
-  const data = await upsertMeasurements({
-    userId,
-    date: parsed.date,
-    neck: parsed.neck != null ? toFixed1(parsed.neck) : null,
-    chest: parsed.chest != null ? toFixed1(parsed.chest) : null,
-    waist: parsed.waist != null ? toFixed1(parsed.waist) : null,
-    bellybutton:
-      parsed.bellybutton != null ? toFixed1(parsed.bellybutton) : null,
-    hips: parsed.hips != null ? toFixed1(parsed.hips) : null,
-    biceps: parsed.biceps != null ? toFixed1(parsed.biceps) : null,
-    thigh: parsed.thigh != null ? toFixed1(parsed.thigh) : null,
-    notes: parsed.notes ?? null,
-  });
-  return { ok: true, data } as const;
+  const { success, data, error } = dailyLogSchema.safeParse(input);
+
+  if (!success) {
+    return { ok: false, data: null, error: error.message };
+  }
+
+  try {
+    const result = await dailyLogRepository.upsertDailyLog({
+      userId,
+      date: data.date,
+      weight: data.weight,
+      kcal: data.kcal,
+    });
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  } finally {
+    revalidatePath("/body");
+  }
 }
 
-const goalSchema = z.object({
-  caloricGoal: z.preprocess(
-    (v) => (v === "" || v == null ? null : v),
-    z.coerce.number().int().nonnegative().nullable(),
-  ),
-});
-
-export async function updateUserCaloricGoal(input: {
-  caloricGoal: number | null | string | undefined;
-}) {
+export async function createOrUpdateMeasurements(
+  input: MeasurementsFormValues,
+) {
   const userId = await requireUserId();
-  const { caloricGoal } = goalSchema.parse(input);
-  const updated = await repoUpdateCaloricGoal(userId, caloricGoal);
-  return { ok: true, data: updated } as const;
+  const { success, data, error } = measurementsSchema.safeParse(input);
+  if (!success) {
+    return { ok: false, data: null, error: error.message };
+  }
+  try {
+    const result = await measurementsRepository.upsertMeasurements({
+      userId,
+      date: data.date,
+      neck: data.neck,
+      chest: data.chest,
+      waist: data.waist,
+      bellybutton: data.bellybutton,
+      hips: data.hips,
+      biceps: data.biceps,
+      thigh: data.thigh,
+      notes: data.notes ?? "",
+    });
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  } finally {
+    revalidatePath("/body");
+  }
+}
+
+export async function updateUserCaloricGoal(input: GoalFormValues) {
+  const userId = await requireUserId();
+  const { success, data, error } = goalSchema.safeParse(input);
+  if (!success) {
+    return { ok: false, data: null, error: error.message };
+  }
+  try {
+    const result = await userRepository.updateCaloricGoal(
+      userId,
+      data.caloricGoal,
+    );
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  } finally {
+    revalidatePath("/body");
+  }
+}
+
+export async function getLatestMeasurements() {
+  const userId = await requireUserId();
+  try {
+    const result = await measurementsRepository.findLatestMeasurements(userId);
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
+}
+
+export async function getCaloricGoal() {
+  const userId = await requireUserId();
+  try {
+    const result = await userRepository.findCaloricGoal(userId);
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
 }

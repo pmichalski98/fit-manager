@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState, type KeyboardEvent } from "react";
+import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -15,17 +15,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { updateUserCaloricGoal } from "@/modules/body/actions";
-
-const goalSchema = z.object({
-  caloricGoal: z.preprocess(
-    (v) => (v === "" || v == null ? undefined : v),
-    z.coerce.number().int().nonnegative().optional(),
-  ),
-});
-
-type GoalFormValues = z.infer<typeof goalSchema>;
+import { goalSchema, type GoalFormValues } from "../../schemas";
+import { handleIntegerInput } from "@/lib/utils";
 
 type Props = {
   defaultGoal: number | null;
@@ -34,15 +26,14 @@ type Props = {
 export function CaloricGoalForm({ defaultGoal }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<GoalFormValues>({
-    resolver: zodResolver(goalSchema) as unknown as Resolver<GoalFormValues>,
+    resolver: zodResolver(goalSchema) as Resolver<GoalFormValues>,
     defaultValues: { caloricGoal: defaultGoal ?? undefined },
   });
 
   const onSubmit = async (values: GoalFormValues) => {
     try {
       setIsSubmitting(true);
-      const payload = { caloricGoal: values.caloricGoal ?? null };
-      await updateUserCaloricGoal(payload);
+      await updateUserCaloricGoal(values);
       toast.success("Caloric goal updated");
     } catch {
       toast.error("Failed to update caloric goal");
@@ -65,12 +56,8 @@ export function CaloricGoalForm({ defaultGoal }: Props) {
                   type="number"
                   inputMode="numeric"
                   placeholder="e.g. 2300"
-                  value={field.value == null ? "" : String(field.value)}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") return field.onChange(undefined);
-                    if (/^\d*$/.test(raw)) field.onChange(raw);
-                  }}
+                  {...field}
+                  onKeyDown={handleIntegerInput}
                 />
               </FormControl>
               <FormMessage />

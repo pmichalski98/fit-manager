@@ -34,13 +34,12 @@ import {
 import {
   strengthSessionSchema,
   type StrengthSessionFormValues,
-} from "@/modules/training/schemas";
-import { completeStrengthSessionAction } from "@/modules/training/actions";
+} from "@/modules/session/schemas";
+import { completeStrengthSession } from "@/modules/session/actions";
 
 type TemplateExercise = { id: string; name: string; position: number };
 
 type Props = {
-  session: { id: string; startAt: string | Date };
   template: { id: string; name: string; exercises: TemplateExercise[] };
   last: null | {
     session: { id: string; startAt: string | Date };
@@ -51,18 +50,15 @@ type Props = {
       sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
     }>;
   };
+  trainingId: string;
 };
 
-export function TrainingStrengthSessionView({
-  session,
-  template,
-  last,
-}: Props) {
+export function StrengthSessionView({ template, last, trainingId }: Props) {
   const router = useRouter();
-  const sessionStartAtMs = new Date(session.startAt).getTime();
+  const sessionStartAtMs = useMemo(() => new Date().getTime(), []);
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
-    const start = new Date(session.startAt).getTime();
+    const start = sessionStartAtMs;
     const i = setInterval(() => {
       const diff = Math.max(0, Date.now() - start);
       const h = Math.floor(diff / 3600000)
@@ -77,7 +73,7 @@ export function TrainingStrengthSessionView({
       setElapsed(`${h}:${m}:${s}`);
     }, 1000);
     return () => clearInterval(i);
-  }, [session.startAt]);
+  }, [sessionStartAtMs]);
 
   const defaultExercises = useMemo<
     StrengthSessionFormValues["exercises"]
@@ -122,9 +118,11 @@ export function TrainingStrengthSessionView({
   const form = useForm<StrengthSessionFormValues>({
     resolver: zodResolver(
       strengthSessionSchema,
-    ) as unknown as Resolver<StrengthSessionFormValues>,
-    defaultValues: { exercises: defaultExercises },
+    ) as Resolver<StrengthSessionFormValues>,
+    defaultValues: { exercises: defaultExercises, trainingId },
   });
+
+  console.log("form.formState.errors", form.formState.errors);
 
   const exercisesArr = useFieldArray({
     control: form.control,
@@ -172,6 +170,7 @@ export function TrainingStrengthSessionView({
   }, [exercisesArr.fields.length, progressByExercise]);
 
   const onSubmit = async (values: StrengthSessionFormValues) => {
+    console.log("onSubmit", values);
     try {
       // Compute client-side summary
       const durationSec = Math.max(
@@ -226,8 +225,8 @@ export function TrainingStrengthSessionView({
           };
         }) ?? [];
 
-      await completeStrengthSessionAction({
-        sessionId: session.id,
+      await completeStrengthSession({
+        startedAt: new Date(sessionStartAtMs).toISOString(),
         ...values,
         durationSec,
         totalLoadKg,
@@ -560,7 +559,7 @@ function ExerciseSets({
         // single set row
         <div
           key={f.id}
-          className="grid grid-cols-3 items-end gap-2 sm:grid-cols-6"
+          className="grid grid-cols-3 items-center gap-2 sm:grid-cols-6"
         >
           <FormField
             control={control}
