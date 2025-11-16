@@ -46,14 +46,12 @@ export function TrainingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TrainingFormValues>({
-    resolver: zodResolver(
-      trainingFormSchema,
-    ) as unknown as Resolver<TrainingFormValues>,
+    resolver: zodResolver(trainingFormSchema) as Resolver<TrainingFormValues>,
     defaultValues: {
       type: "strength",
       name: "",
       exercises: [{ name: "" }],
-    } as TrainingFormValues,
+    },
   });
 
   const isStrength = form.watch("type") === "strength";

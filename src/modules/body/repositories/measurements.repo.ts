@@ -1,20 +1,15 @@
-import { and, desc, lte, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { bodyMeasurement } from "@/server/db/schema";
+import type { MeasurementsFormValues } from "../schemas";
 
-export type MeasurementsDBValues = {
+export type MeasurementsWithUserId = MeasurementsFormValues & {
   userId: string;
-  date: string; // YYYY-MM-DD
-  neck: string | null;
-  chest: string | null;
-  waist: string | null;
-  bellybutton: string | null;
-  hips: string | null;
-  biceps: string | null;
-  thigh: string | null;
-  notes: string;
 };
+
+const normalizeMeasurementField = (value: string | null | undefined) =>
+  value === "" || value === undefined ? null : value;
 
 class MeasurementsRepository {
   async findMeasurementsByUserAndDate(userId: string, date: string) {
@@ -27,16 +22,41 @@ class MeasurementsRepository {
     return row ?? null;
   }
 
-  async upsertMeasurements(values: MeasurementsDBValues) {
+  async findLatestMeasurements(userId: string) {
+    const [row] = await db
+      .select()
+      .from(bodyMeasurement)
+      .where(and(eq(bodyMeasurement.userId, userId)))
+      .orderBy(desc(bodyMeasurement.date))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async upsertMeasurements(values: MeasurementsWithUserId) {
     const existing = await this.findMeasurementsByUserAndDate(
       values.userId,
       values.date,
     );
 
+    const normalizedMeasurements = {
+      neck: normalizeMeasurementField(values.neck),
+      chest: normalizeMeasurementField(values.chest),
+      waist: normalizeMeasurementField(values.waist),
+      bellybutton: normalizeMeasurementField(values.bellybutton),
+      hips: normalizeMeasurementField(values.hips),
+      biceps: normalizeMeasurementField(values.biceps),
+      thigh: normalizeMeasurementField(values.thigh),
+    };
+
     if (existing) {
       const [updated] = await db
         .update(bodyMeasurement)
-        .set({ ...values, updatedAt: new Date() })
+        .set({
+          ...normalizedMeasurements,
+          notes: values.notes ?? "",
+          userId: values.userId,
+          updatedAt: new Date(),
+        })
         .where(
           and(
             eq(bodyMeasurement.userId, values.userId),
@@ -49,24 +69,14 @@ class MeasurementsRepository {
 
     const [inserted] = await db
       .insert(bodyMeasurement)
-      .values(values)
+      .values({
+        ...normalizedMeasurements,
+        notes: values.notes ?? "",
+        userId: values.userId,
+        date: values.date,
+      })
       .returning();
     return inserted;
-  }
-
-  async findLatestMeasurementsOnOrBefore(userId: string, date: string) {
-    const [row] = await db
-      .select()
-      .from(bodyMeasurement)
-      .where(
-        and(
-          eq(bodyMeasurement.userId, userId),
-          lte(bodyMeasurement.date, date),
-        ),
-      )
-      .orderBy(desc(bodyMeasurement.date))
-      .limit(1);
-    return row ?? null;
   }
 }
 

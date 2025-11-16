@@ -130,6 +130,8 @@ export const bodyMeasurement = createTable(
   (t) => [index("body_measurement_user_date_idx").on(t.userId, t.date)],
 );
 
+export type BodyMeasurement = typeof bodyMeasurement.$inferSelect;
+
 export const trainingTypeEnum = pgEnum("training_type", ["strength", "cardio"]);
 
 export const training = createTable("training", (d) => ({

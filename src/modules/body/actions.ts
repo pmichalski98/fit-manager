@@ -1,7 +1,6 @@
 "use server";
 
 import { requireUserId } from "@/lib/user";
-import { toFixed1 } from "@/lib/utils";
 import {
   dailyLogRepository,
   measurementsRepository,
@@ -13,7 +12,7 @@ import {
   measurementsSchema,
   type DailyLogFormValues,
   type GoalFormValues,
-  type MeasurementsInput,
+  type MeasurementsFormValues,
 } from "@/modules/body/schemas";
 import { revalidatePath } from "next/cache";
 
@@ -29,7 +28,6 @@ export async function getLatestDailyLog() {
 }
 
 export async function getDailyLogByDate(date: string) {
-  console.log("date", date);
   const userId = await requireUserId();
   try {
     const result = await dailyLogRepository.findDailyLogByUserAndDate(
@@ -67,7 +65,9 @@ export async function createOrUpdateDailyLog(input: DailyLogFormValues) {
   }
 }
 
-export async function createOrUpdateMeasurements(input: MeasurementsInput) {
+export async function createOrUpdateMeasurements(
+  input: MeasurementsFormValues,
+) {
   const userId = await requireUserId();
   const { success, data, error } = measurementsSchema.safeParse(input);
   if (!success) {
@@ -77,19 +77,21 @@ export async function createOrUpdateMeasurements(input: MeasurementsInput) {
     const result = await measurementsRepository.upsertMeasurements({
       userId,
       date: data.date,
-      neck: data.neck != null ? toFixed1(data.neck) : null,
-      chest: data.chest != null ? toFixed1(data.chest) : null,
-      waist: data.waist != null ? toFixed1(data.waist) : null,
-      bellybutton: data.bellybutton != null ? toFixed1(data.bellybutton) : null,
-      hips: data.hips != null ? toFixed1(data.hips) : null,
-      biceps: data.biceps != null ? toFixed1(data.biceps) : null,
-      thigh: data.thigh != null ? toFixed1(data.thigh) : null,
+      neck: data.neck,
+      chest: data.chest,
+      waist: data.waist,
+      bellybutton: data.bellybutton,
+      hips: data.hips,
+      biceps: data.biceps,
+      thigh: data.thigh,
       notes: data.notes ?? "",
     });
     return { ok: true, data: result };
   } catch (error) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
+  } finally {
+    revalidatePath("/body");
   }
 }
 
@@ -113,14 +115,10 @@ export async function updateUserCaloricGoal(input: GoalFormValues) {
   }
 }
 
-export async function getLatestMeasurements(date: string) {
+export async function getLatestMeasurements() {
   const userId = await requireUserId();
   try {
-    const result =
-      await measurementsRepository.findLatestMeasurementsOnOrBefore(
-        userId,
-        date,
-      );
+    const result = await measurementsRepository.findLatestMeasurements(userId);
     return { ok: true, data: result };
   } catch (error) {
     console.error(error);

@@ -21,7 +21,7 @@ export default async function DailyLogView() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between">
-        <div>
+        <div className="space-y-2">
           <CardTitle>Daily log</CardTitle>
 
           <CardDescription>Log today’s weight and calories.</CardDescription>

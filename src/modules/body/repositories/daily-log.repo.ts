@@ -4,7 +4,7 @@ import { db } from "@/server/db";
 import { dailyLog } from "@/server/db/schema";
 import type { DailyLogFormValues } from "../schemas";
 
-export type DailyLogDBValues = DailyLogFormValues & { userId: string };
+export type DailyLogWithUserId = DailyLogFormValues & { userId: string };
 
 class DailyLogRepository {
   async findLatestDailyLog(userId: string) {
@@ -25,7 +25,7 @@ class DailyLogRepository {
     return row ?? null;
   }
 
-  async upsertDailyLog(values: DailyLogDBValues) {
+  async upsertDailyLog(values: DailyLogWithUserId) {
     console.log("values", values);
     const existing = await this.findDailyLogByUserAndDate(
       values.userId,

@@ -136,21 +136,24 @@ export function DailyLogForm({ caloricGoal, lastDailyLog }: Props) {
                     disabled={isLoading}
                   />
                 </FormControl>
-                {lastDailyLog?.weight &&
-                  lastDailyLog.date === today &&
-                  selectedDate === today && (
+
+                <div className="flex min-h-6 flex-col gap-1">
+                  {lastDailyLog?.weight &&
+                    lastDailyLog.date === today &&
+                    selectedDate === today && (
+                      <FormDescription className="text-primary font-bold">
+                        Already filled today.
+                      </FormDescription>
+                    )}
+
+                  {field.value && selectedDate !== today && (
                     <FormDescription className="text-primary font-bold">
-                      Already filled today.
+                      Already filled for this day.
                     </FormDescription>
                   )}
 
-                {field.value && selectedDate !== today && (
-                  <FormDescription className="text-primary font-bold">
-                    You have already filled your weight for that day.
-                  </FormDescription>
-                )}
-
-                <FormMessage />
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -185,21 +188,24 @@ export function DailyLogForm({ caloricGoal, lastDailyLog }: Props) {
                     disabled={isLoading}
                   />
                 </FormControl>
-                {lastDailyLog?.kcal &&
-                  lastDailyLog.date === today &&
-                  selectedDate === today && (
+
+                <div className="flex min-h-6 flex-col gap-1">
+                  <FormMessage />
+
+                  {lastDailyLog?.kcal &&
+                    lastDailyLog.date === today &&
+                    selectedDate === today && (
+                      <FormDescription className="text-primary font-bold">
+                        Already filled today.
+                      </FormDescription>
+                    )}
+
+                  {field.value && selectedDate !== today && (
                     <FormDescription className="text-primary font-bold">
-                      Already filled today.
+                      Already filled for this day.
                     </FormDescription>
                   )}
-
-                {field.value && selectedDate !== today && (
-                  <FormDescription className="text-primary font-bold">
-                    You have already filled your calories for that day.
-                  </FormDescription>
-                )}
-
-                <FormMessage />
+                </div>
               </FormItem>
             )}
           />
