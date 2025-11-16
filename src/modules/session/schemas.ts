@@ -1,3 +1,4 @@
+import { dateRegex } from "@/lib/utils";
 import { z } from "zod";
 
 // Session payloads
@@ -57,7 +58,7 @@ export const cardioSessionSchema = z.object({
   avgPowerW: z.coerce.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
   trainingId: z.uuid(),
-  startAt: z.date(),
+  date: z.string().regex(dateRegex, "Invalid date format (YYYY-MM-DD)"),
 });
 
 export type CardioSessionFormValues = z.infer<typeof cardioSessionSchema>;
