@@ -9,19 +9,12 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
-import {
-  useFieldArray,
-  useForm,
-  type Resolver,
-  type Control,
-} from "react-hook-form";
+import { useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -42,29 +35,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { createTrainingAction } from "@/modules/training/actions";
+import { createTraining } from "@/modules/training/actions";
 import {
   trainingFormSchema,
   type TrainingFormValues,
 } from "@/modules/training/schemas";
+import { ExerciseRow } from "./exercise-row";
 
-type Props = {
-  defaultValues?: Partial<TrainingFormValues>;
-};
-
-export function TrainingForm({ defaultValues }: Props) {
+export function TrainingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TrainingFormValues>({
-    resolver: zodResolver(
-      trainingFormSchema,
-    ) as unknown as Resolver<TrainingFormValues>,
+    resolver: zodResolver(trainingFormSchema) as Resolver<TrainingFormValues>,
     defaultValues: {
-      type: "cardio",
+      type: "strength",
       name: "",
       exercises: [{ name: "" }],
-      ...defaultValues,
-    } as TrainingFormValues,
+    },
   });
 
   const isStrength = form.watch("type") === "strength";
@@ -101,7 +88,7 @@ export function TrainingForm({ defaultValues }: Props) {
   const onSubmit = async (values: TrainingFormValues) => {
     try {
       setIsSubmitting(true);
-      const result = await createTrainingAction(values);
+      const result = await createTraining(values);
       if (result.ok) {
         toast.success("Training created");
         form.reset();
@@ -202,59 +189,5 @@ export function TrainingForm({ defaultValues }: Props) {
         </div>
       </form>
     </Form>
-  );
-}
-
-function ExerciseRow({
-  id,
-  index,
-  onRemove,
-  control,
-}: {
-  id: string;
-  index: number;
-  onRemove: () => void;
-  control: Control<TrainingFormValues>;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  } as React.CSSProperties;
-
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-      <button
-        type="button"
-        className="text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-grab rounded-md border p-2"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="size-4" />
-      </button>
-      <FormField
-        control={control}
-        name={`exercises.${index}.name` as const}
-        render={({ field }) => (
-          <FormItem className="flex-1">
-            <FormLabel className="sr-only">Exercise name</FormLabel>
-            <FormControl>
-              <Input placeholder={`Exercise #${index + 1}`} {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <Button
-        type="button"
-        variant="destructive"
-        size="icon-sm"
-        onClick={onRemove}
-        aria-label="Remove"
-      >
-        <Trash2 className="size-4" />
-      </Button>
-    </div>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { deleteTrainingAction } from "@/modules/training/actions";
-import { toast } from "sonner";
+import { deleteTraining } from "@/modules/training/actions";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface DeleteTrainingButtonProps {
   trainingId: string;
@@ -19,7 +19,7 @@ export function DeleteTrainingButton({
     e.preventDefault();
     try {
       setIsDeleting(true);
-      await deleteTrainingAction(trainingId);
+      await deleteTraining(trainingId);
       toast.success("Training deleted");
     } catch {
       toast.error("Failed to delete training");

@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import { History } from "lucide-react";
+import { useForm, type Resolver } from "react-hook-form";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -17,73 +15,52 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { cardioSessionSchema } from "@/modules/training/schemas";
-import { completeCardioSessionAction } from "@/modules/training/actions";
-import type { z } from "zod";
+import { Input } from "@/components/ui/input";
+import { completeCardioSession } from "@/modules/session/actions";
+import {
+  cardioSessionSchema,
+  type CardioSessionFormValues,
+} from "@/modules/session/schemas";
+import type {
+  TrainingSession,
+  TrainingSessionCardio,
+} from "@/server/db/schema";
 
 type Props = {
-  session: { id: string; startAt: string | Date };
   template: { id: string; name: string };
   last?: null | {
-    session: { id: string; startAt: string | Date };
-    metrics: {
-      durationSec: number;
-      distanceM: number | null;
-      kcal: number | null;
-      avgHr: number | null;
-      avgSpeedKmh: string | null;
-      avgPowerW: number | null;
-      notes: string | null;
-    } | null;
+    session: TrainingSession;
+    metrics: TrainingSessionCardio;
   };
 };
 
-type CardioSessionFormValues = z.infer<typeof cardioSessionSchema>;
-
-export function TrainingCardioSessionView({ session, template, last }: Props) {
-  const [elapsed, setElapsed] = useState("00:00:00");
-  useEffect(() => {
-    const start = new Date(session.startAt).getTime();
-    const i = setInterval(() => {
-      const diff = Math.max(0, Date.now() - start);
-      const h = Math.floor(diff / 3600000)
-        .toString()
-        .padStart(2, "0");
-      const m = Math.floor((diff % 3600000) / 60000)
-        .toString()
-        .padStart(2, "0");
-      const s = Math.floor((diff % 60000) / 1000)
-        .toString()
-        .padStart(2, "0");
-      setElapsed(`${h}:${m}:${s}`);
-    }, 1000);
-    return () => clearInterval(i);
-  }, [session.startAt]);
-
-  const defaultsFromLast: CardioSessionFormValues = {
-    durationSec: last?.metrics?.durationSec ?? 0,
-    distanceM: last?.metrics?.distanceM ?? undefined,
-    kcal: last?.metrics?.kcal ?? undefined,
-    avgHr: last?.metrics?.avgHr ?? undefined,
-    avgSpeedKmh:
-      last?.metrics?.avgSpeedKmh != null
-        ? Number(last.metrics.avgSpeedKmh)
-        : undefined,
-    avgPowerW: last?.metrics?.avgPowerW ?? undefined,
-    notes: last?.metrics?.notes ?? "",
-    // sessionId is added in action; optional here
-  } as unknown as CardioSessionFormValues;
+export function CardioSessionView({ template, last }: Props) {
+  const start = new Date().getTime();
 
   const form = useForm<CardioSessionFormValues>({
     resolver: zodResolver(
       cardioSessionSchema,
-    ) as unknown as Resolver<CardioSessionFormValues>,
-    defaultValues: defaultsFromLast,
+    ) as Resolver<CardioSessionFormValues>,
+    defaultValues: {
+      avgHr: last?.metrics?.avgHr ?? undefined,
+      avgSpeedKmh: last?.metrics?.avgSpeedKmh ?? undefined,
+      avgPowerW: last?.metrics?.avgPowerW ?? undefined,
+      notes: last?.metrics?.notes ?? "",
+      durationMin: last?.metrics?.durationMin ?? 0,
+      distanceKm: last?.metrics?.distanceKm ?? undefined,
+      kcal: last?.metrics?.kcal ?? undefined,
+      cadence: last?.metrics?.cadence ?? undefined,
+      trainingId: template.id,
+      startAt: last?.session.startAt ?? new Date(),
+    },
   });
 
   const onSubmit = async (values: CardioSessionFormValues) => {
     try {
-      await completeCardioSessionAction({ sessionId: session.id, ...values });
+      await completeCardioSession({
+        ...values,
+        startAt: new Date(start),
+      });
       toast.success("Session saved");
     } catch {
       toast.error("Failed to save session");
@@ -92,10 +69,6 @@ export function TrainingCardioSessionView({ session, template, last }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{template.name}</h1>
-        <div className="text-muted-foreground">Time: {elapsed}</div>
-      </div>
       {last?.metrics ? (
         <Alert className="bg-muted/40 border-border">
           <History />
@@ -121,7 +94,7 @@ export function TrainingCardioSessionView({ session, template, last }: Props) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="durationSec"
+              name="durationMin"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Duration (sec)</FormLabel>
@@ -158,7 +131,7 @@ export function TrainingCardioSessionView({ session, template, last }: Props) {
             />
             <FormField
               control={form.control}
-              name="distanceM"
+              name="distanceKm"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Distance (m)</FormLabel>

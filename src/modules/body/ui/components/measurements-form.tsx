@@ -21,20 +21,31 @@ import {
   measurementsSchema,
   type MeasurementsFormValues,
 } from "@/modules/body/schemas";
+import { getTodayDateYYYYMMDD } from "@/lib/utils";
+import type { BodyMeasurement } from "@/server/db/schema";
 
 type Props = {
-  defaultValues: MeasurementsFormValues;
-  last?: Partial<MeasurementsFormValues> & { date?: string };
+  last: BodyMeasurement | null;
 };
 
-export function MeasurementsForm({ defaultValues, last }: Props) {
+export function MeasurementsForm({ last }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<MeasurementsFormValues>({
     resolver: zodResolver(
       measurementsSchema,
-    ) as unknown as Resolver<MeasurementsFormValues>,
-    defaultValues,
+    ) as Resolver<MeasurementsFormValues>,
+    defaultValues: {
+      date: getTodayDateYYYYMMDD(),
+      neck: last?.neck ?? "",
+      chest: last?.chest ?? "",
+      waist: last?.waist ?? "",
+      bellybutton: last?.bellybutton ?? "",
+      hips: last?.hips ?? "",
+      biceps: last?.biceps ?? "",
+      thigh: last?.thigh ?? "",
+      notes: last?.notes ?? "",
+    },
   });
 
   const onSubmit = async (values: MeasurementsFormValues) => {
@@ -49,7 +60,7 @@ export function MeasurementsForm({ defaultValues, last }: Props) {
     }
   };
 
-  const numberField = (
+  const measurementField = (
     name: keyof MeasurementsFormValues,
     label: string,
     _step = "0.1",
@@ -61,31 +72,15 @@ export function MeasurementsForm({ defaultValues, last }: Props) {
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
+
           <FormControl>
-            <Input
-              type="text"
-              inputMode="decimal"
-              placeholder={
-                last && typeof last[name] === "number"
-                  ? `last: ${String(last[name])}`
-                  : undefined
-              }
-              value={
-                typeof field.value === "number"
-                  ? String(field.value)
-                  : (field.value ?? "")
-              }
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === "") return field.onChange(undefined);
-                const normalized = raw.replace(/,/g, ".");
-                // allow digits with at most one dot and digits after
-                if (/^\d*(\.\d*)?$/.test(normalized)) {
-                  field.onChange(normalized);
-                }
-              }}
-            />
+            <Input type="number" inputMode="decimal" {...field} />
           </FormControl>
+          {last?.[name] ? (
+            <FormLabel className="text-primary text-xs font-semibold">
+              Previous: {last?.[name]} cm {last.date}
+            </FormLabel>
+          ) : null}
           <FormMessage />
         </FormItem>
       )}
@@ -110,13 +105,13 @@ export function MeasurementsForm({ defaultValues, last }: Props) {
         />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {numberField("neck", "Neck (cm)")}
-          {numberField("chest", "Chest (cm)")}
-          {numberField("waist", "Waist (cm)")}
-          {numberField("bellybutton", "Belly button (cm)")}
-          {numberField("hips", "Hips (cm)")}
-          {numberField("biceps", "Biceps (cm)")}
-          {numberField("thigh", "Thigh (cm)")}
+          {measurementField("neck", "Neck (cm)")}
+          {measurementField("chest", "Chest (cm)")}
+          {measurementField("waist", "Waist (cm)")}
+          {measurementField("bellybutton", "Belly button (cm)")}
+          {measurementField("hips", "Hips (cm)")}
+          {measurementField("biceps", "Biceps (cm)")}
+          {measurementField("thigh", "Thigh (cm)")}
         </div>
 
         <FormField

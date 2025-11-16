@@ -17,16 +17,17 @@ export function CaloricGoalDialog({ defaultGoal }: Props) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="secondary" size="sm">
-          Set kcal goal
-        </Button>
+        <Button size="sm">Set kcal goal</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Set caloric goal</DialogTitle>
-          <DialogDescription>
-            Used to prefill your daily calories.
-          </DialogDescription>
+          {defaultGoal && (
+            <DialogDescription>
+              Your current caloric goal is{" "}
+              <span className="text-primary font-bold">{defaultGoal} kcal</span>
+            </DialogDescription>
+          )}
         </DialogHeader>
         <CaloricGoalForm defaultGoal={defaultGoal} />
       </DialogContent>
