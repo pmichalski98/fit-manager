@@ -31,9 +31,14 @@ import type { DailyLog } from "@/server/db/schema";
 type Props = {
   caloricGoal: number | null;
   lastDailyLog: DailyLog | null;
+  latestDailyLog: DailyLog | null;
 };
 
-export function DailyLogForm({ caloricGoal, lastDailyLog }: Props) {
+export function DailyLogForm({
+  caloricGoal,
+  lastDailyLog,
+  latestDailyLog,
+}: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -136,6 +141,11 @@ export function DailyLogForm({ caloricGoal, lastDailyLog }: Props) {
                     disabled={isLoading}
                   />
                 </FormControl>
+                {latestDailyLog?.weight && latestDailyLog.date !== today && (
+                  <FormLabel className="text-primary text-xs">
+                    Previous: {latestDailyLog.weight} kg
+                  </FormLabel>
+                )}
 
                 <div className="flex min-h-6 flex-col gap-1">
                   {lastDailyLog?.weight &&
@@ -188,6 +198,11 @@ export function DailyLogForm({ caloricGoal, lastDailyLog }: Props) {
                     disabled={isLoading}
                   />
                 </FormControl>
+                {latestDailyLog?.kcal && latestDailyLog.date !== today && (
+                  <FormLabel className="text-primary text-xs">
+                    Previous: {latestDailyLog.kcal} kcal
+                  </FormLabel>
+                )}
 
                 <div className="flex min-h-6 flex-col gap-1">
                   <FormMessage />

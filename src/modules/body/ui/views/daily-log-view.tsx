@@ -6,14 +6,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
-import { getCaloricGoal, getDailyLogByDate } from "../../actions";
+import {
+  getCaloricGoal,
+  getDailyLogByDate,
+  getLatestDailyLog,
+} from "../../actions";
 import { CaloricGoalDialog } from "../components/caloric-goal-dialog";
 import { DailyLogForm } from "../components/daily-log-form";
 
 export default async function DailyLogView() {
   const today = getTodayDateYYYYMMDD();
 
-  const [{ data: todayDailyLog }, { data: caloricGoal }] = await Promise.all([
+  const [
+    { data: latestDailyLog },
+    { data: todayDailyLog },
+    { data: caloricGoal },
+  ] = await Promise.all([
+    getLatestDailyLog(),
     getDailyLogByDate(today),
     getCaloricGoal(),
   ]);
@@ -29,7 +38,11 @@ export default async function DailyLogView() {
         <CaloricGoalDialog defaultGoal={caloricGoal} />
       </CardHeader>
       <CardContent>
-        <DailyLogForm caloricGoal={caloricGoal} lastDailyLog={todayDailyLog} />
+        <DailyLogForm
+          caloricGoal={caloricGoal}
+          lastDailyLog={todayDailyLog}
+          latestDailyLog={latestDailyLog}
+        />
       </CardContent>
     </Card>
   );

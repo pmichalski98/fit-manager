@@ -32,7 +32,7 @@ export default function UserButton() {
   };
   if (isPending) {
     return (
-      <Skeleton className="flex h-[54px] w-full items-center justify-center">
+      <Skeleton className="flex h-[54px] w-21 items-center justify-center">
         <FaSpinner className="size-4 animate-spin" />
       </Skeleton>
     );
