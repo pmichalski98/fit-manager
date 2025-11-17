@@ -181,7 +181,7 @@ export default function SignInView() {
             </form>
           </Form>
           <div className="bg-primary relative hidden flex-col items-center justify-center gap-y-4 md:flex">
-            <Image src="/logo.jpg" alt="logo" width={400} height={400} />
+            <Image src="/dark_logo.png" alt="logo" width={400} height={400} />
           </div>
         </CardContent>
       </Card>

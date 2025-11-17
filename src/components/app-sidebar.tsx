@@ -4,7 +4,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -17,7 +16,6 @@ import { DumbbellIcon, HeartIcon, LayoutDashboardIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import UserButton from "./user-button";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -44,9 +42,16 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="text-sidebar-accent-foreground">
-        <Link href="/" className="flex items-center gap-2 px-2 pt-2.75">
-          <p className="text-xl font-semibold text-black dark:text-white">
+      <SidebarHeader className="px-4 py-3">
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="Fit Manager"
+            width={40}
+            height={40}
+            className="shrink-0"
+          />
+          <p className="text-base font-semibold tracking-tight text-black dark:text-white">
             Fitness Manager
           </p>
         </Link>
