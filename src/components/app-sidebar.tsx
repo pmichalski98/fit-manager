@@ -12,7 +12,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { DumbbellIcon, HeartIcon, LayoutDashboardIcon } from "lucide-react";
+import {
+  DumbbellIcon,
+  HeartIcon,
+  ImageIcon,
+  LayoutDashboardIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,6 +39,11 @@ export function AppSidebar() {
       label: "Body",
       icon: <HeartIcon />,
       href: "/body",
+    },
+    {
+      label: "Photo",
+      icon: <ImageIcon />,
+      href: "/photo",
     },
   ];
 

@@ -132,6 +132,18 @@ export const bodyMeasurement = createTable(
 
 export type BodyMeasurement = typeof bodyMeasurement.$inferSelect;
 
+export const photo = createTable("photo", (d) => ({
+  id: d.uuid("id").primaryKey().defaultRandom(),
+  userId: d
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  date: d.date("date").notNull(),
+  weight: d.numeric("weight", { precision: 5, scale: 1 }),
+  imageUrl: d.text("image_url").notNull(),
+  createdAt: d.timestamp("created_at").notNull().defaultNow(),
+  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+}));
 export const trainingTypeEnum = pgEnum("training_type", ["strength", "cardio"]);
 
 export const training = createTable("training", (d) => ({
