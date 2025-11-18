@@ -7,22 +7,13 @@ import { requireUserId } from "@/lib/user";
 import { uploadImageToS3 } from "@/server/s3";
 
 import { photoRepository } from "./repositories";
-import { photoSchema } from "./schemas";
+import { photoSchema, type PhotoFormValues } from "./schemas";
 
-const photoDataSchema = photoSchema.omit({ image: true });
-
-export async function uploadPhoto(formData: FormData) {
+export async function uploadPhoto(values: PhotoFormValues) {
   const userId = await requireUserId();
 
   try {
-    const date = formData.get("date");
-    const weight = formData.get("weight");
-    const image = formData.get("image");
-
-    const parsed = photoDataSchema.safeParse({
-      date,
-      weight,
-    });
+    const parsed = photoSchema.safeParse(values);
 
     if (!parsed.success) {
       return {
@@ -31,6 +22,8 @@ export async function uploadPhoto(formData: FormData) {
         error: parsed.error.message,
       };
     }
+
+    const { date, weight, image } = parsed.data;
 
     if (!(image instanceof File)) {
       return {
@@ -56,20 +49,12 @@ export async function uploadPhoto(formData: FormData) {
       };
     }
 
-    const extension = image.name.split(".").pop() ?? "jpg";
-    const timestamp = Date.now();
-    const key = `users/${userId}/photos/${parsed.data.date}-${timestamp}.${extension}`;
-
-    const imageUrl = await uploadImageToS3({
-      key,
-      file: image,
-      contentType: image.type,
-    });
+    const imageUrl = await uploadImageToS3(image);
 
     const created = await photoRepository.createPhoto({
       userId,
-      date: parsed.data.date,
-      weight: parsed.data.weight ?? null,
+      date,
+      weight: weight ?? null,
       imageUrl,
     });
 

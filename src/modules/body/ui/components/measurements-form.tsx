@@ -23,6 +23,7 @@ import {
 } from "@/modules/body/schemas";
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
 import type { BodyMeasurement } from "@/server/db/schema";
+import { DateFormField } from "@/components/date-form-field";
 
 type Props = {
   last: BodyMeasurement | null;
@@ -90,19 +91,7 @@ export function MeasurementsForm({ last }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <DateFormField control={form.control} name="date" label="Date" />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {measurementField("neck", "Neck (cm)")}

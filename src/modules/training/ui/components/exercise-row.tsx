@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import { type TrainingFormValues } from "@/modules/training/schemas";
+import { type CreateTrainingInput } from "@/modules/training/schemas";
 
 export function ExerciseRow({
   id,
@@ -26,7 +26,7 @@ export function ExerciseRow({
   id: string;
   index: number;
   onRemove: () => void;
-  control: Control<TrainingFormValues>;
+  control: Control<CreateTrainingInput>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });

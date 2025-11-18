@@ -27,6 +27,7 @@ import {
   type DailyLogFormValues,
 } from "@/modules/body/schemas";
 import type { DailyLog } from "@/server/db/schema";
+import { DateFormField } from "@/components/date-form-field";
 
 type Props = {
   caloricGoal: number | null;
@@ -112,19 +113,7 @@ export function DailyLogForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} disabled={isLoading} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <DateFormField control={form.control} name="date" label="Date" />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField

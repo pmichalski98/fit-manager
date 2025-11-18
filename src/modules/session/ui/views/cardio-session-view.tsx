@@ -1,15 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, History } from "lucide-react";
+import { History } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -19,12 +17,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { NumberFormField } from "@/modules/session/ui/components/number-form-field";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn, formatDateYYYYMMDD, getTodayDateYYYYMMDD } from "@/lib/utils";
+import { DateFormField } from "@/components/date-form-field";
+import { getTodayDateYYYYMMDD } from "@/lib/utils";
 import { completeCardioSession } from "@/modules/session/actions";
 import {
   cardioSessionSchema,
@@ -45,8 +39,6 @@ type Props = {
 };
 
 export function CardioSessionView({ template, last }: Props) {
-  const [popoverOpen, setPopoverOpen] = useState(false);
-
   const form = useForm<CardioSessionFormValues>({
     resolver: zodResolver(
       cardioSessionSchema,
@@ -94,48 +86,7 @@ export function CardioSessionView({ template, last }: Props) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
-                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground",
-                        )}
-                      >
-                        {field.value ? (
-                          format(new Date(field.value), "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          field.onChange(formatDateYYYYMMDD(date));
-                          setPopoverOpen(false);
-                        }
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <DateFormField control={form.control} name="date" label="Date" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumberFormField
               control={form.control}
