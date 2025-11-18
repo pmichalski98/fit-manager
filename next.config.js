@@ -5,6 +5,15 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "training-manager.s3.eu-central-1.amazonaws.com",
+            },
+        ],
+    },
+};
 
 export default config;

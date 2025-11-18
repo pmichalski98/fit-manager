@@ -10,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +25,7 @@ import { usePathname } from "next/navigation";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { openMobile, setOpenMobile, isMobile } = useSidebar();
   const firstSection = [
     {
       label: "Dashboard",
@@ -72,6 +74,11 @@ export function AppSidebar() {
                       "hover:border-sidebar-accent from-sidebar-accent via-sidebar/50 to-sidebar/50 h-10 border border-transparent from-5% via-30% hover:bg-linear-to-r/oklch",
                       pathname === item.href && activeStyles,
                     )}
+                    onClick={() => {
+                      if (isMobile && openMobile) {
+                        setOpenMobile(false);
+                      }
+                    }}
                     asChild
                   >
                     <Link href={item.href}>
