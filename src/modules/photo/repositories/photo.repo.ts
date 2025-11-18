@@ -1,5 +1,6 @@
 import { db } from "@/server/db";
 import { photo } from "@/server/db/schema";
+import { desc, eq } from "drizzle-orm";
 
 export type CreatePhotoValues = {
   userId: string;
@@ -25,6 +26,15 @@ class PhotoRepository {
       .returning();
 
     return inserted ?? null;
+  }
+
+  async getPhotos(userId: string) {
+    const photos = await db
+      .select()
+      .from(photo)
+      .where(eq(photo.userId, userId))
+      .orderBy(desc(photo.date));
+    return photos ?? [];
   }
 }
 

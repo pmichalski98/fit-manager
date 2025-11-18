@@ -74,3 +74,14 @@ export async function uploadPhoto(values: PhotoFormValues) {
     };
   }
 }
+
+export async function getPhotos() {
+  const userId = await requireUserId();
+  try {
+    const photos = await photoRepository.getPhotos(userId);
+    return { ok: true, data: photos };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
+}

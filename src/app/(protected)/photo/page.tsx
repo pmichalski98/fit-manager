@@ -1,4 +1,6 @@
 import { PhotoForm } from "@/modules/photo/components/ui/photo-form";
+import PhotoGalleryView from "@/modules/photo/components/views/photo-gallery-view";
+import { Suspense } from "react";
 
 export default async function PhotoPage() {
   return (
@@ -13,6 +15,10 @@ export default async function PhotoPage() {
       <div className="max-w-xl">
         <PhotoForm />
       </div>
+
+      <Suspense fallback={<div>Loading...</div>}>
+        <PhotoGalleryView />
+      </Suspense>
     </div>
   );
 }
