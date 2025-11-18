@@ -1,9 +1,10 @@
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type ImagesPreviewProps = {
   imageFiles: File[];
@@ -12,6 +13,7 @@ type ImagesPreviewProps = {
 
 function ImagesPreview({ imageFiles, onDelete }: ImagesPreviewProps) {
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const urls = imageFiles.map((file) => {
@@ -32,18 +34,38 @@ function ImagesPreview({ imageFiles, onDelete }: ImagesPreviewProps) {
     }
     onDelete(index);
   };
+
+  const selectedUrl =
+    selectedIndex !== null ? (objectUrls[selectedIndex] ?? null) : null;
+
   return (
     <>
       {imageFiles && imageFiles.length > 0 && (
-        <div className="">
-          <CardTitle className="text-lg">Selected images</CardTitle>
-          <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-3">
+        <div>
+          <CardTitle className="text-lg">
+            {imageFiles.length === 1 ? "Selected photo" : "Selected images"}
+          </CardTitle>
+          <div
+            className={
+              imageFiles.length === 1
+                ? "mt-2 max-w-xs"
+                : "mt-2 grid grid-cols-2 gap-4 md:grid-cols-3"
+            }
+          >
             {imageFiles.map((file, index) => {
               const objectUrl = objectUrls[index];
               if (!objectUrl) return null;
 
+              const handleClick = () => {
+                setSelectedIndex(index);
+              };
+
               return (
-                <div key={index} className="group relative aspect-square">
+                <div
+                  key={index}
+                  className="group relative aspect-square cursor-pointer"
+                  onClick={handleClick}
+                >
                   <Image
                     src={objectUrl}
                     alt={`Preview ${index + 1}`}
@@ -53,7 +75,10 @@ function ImagesPreview({ imageFiles, onDelete }: ImagesPreviewProps) {
                   <Button
                     type="button"
                     variant="destructive"
-                    onClick={() => handleDelete(index)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDelete(index);
+                    }}
                     className="absolute top-0 right-0 size-6 rounded-full p-1 opacity-0 transition-all group-hover:opacity-100"
                   >
                     <X className="text-foreground h-4 w-4" />
@@ -63,6 +88,33 @@ function ImagesPreview({ imageFiles, onDelete }: ImagesPreviewProps) {
             })}
           </div>
         </div>
+      )}
+
+      {selectedUrl && (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedIndex(null);
+            }
+          }}
+        >
+          <DialogTitle className="sr-only">Selected photo</DialogTitle>
+          <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
+            <div className="relative h-[70vh] w-full">
+              <Image
+                src={selectedUrl}
+                alt={
+                  selectedIndex !== null
+                    ? `Selected preview ${selectedIndex + 1}`
+                    : "Selected preview"
+                }
+                fill
+                className="rounded-md object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

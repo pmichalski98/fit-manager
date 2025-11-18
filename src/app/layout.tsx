@@ -7,8 +7,10 @@ import { type Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Fit Manager",
-  icons: [{ rel: "icon", url: "apple-touch-icon.png" }],
-  manifest: "site.webmanifest",
+  // Use absolute URLs so these assets are requested from the app root,
+  // not relative to nested routes like /training/session/[id].
+  icons: [{ rel: "icon", url: "/apple-touch-icon.png" }],
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
