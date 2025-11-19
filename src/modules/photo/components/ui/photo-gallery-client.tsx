@@ -106,6 +106,47 @@ export default function PhotoGalleryClient({
                 Compare fullscreen
               </Button>
             </DialogTrigger>
+            <DialogTrigger asChild disabled={selectedPhotos.length < 2}>
+              <button
+                type="button"
+                className="bg-muted focus-visible:ring-primary relative flex w-full overflow-hidden rounded-lg border text-left transition hover:shadow-md focus-visible:ring-2 focus-visible:outline-none"
+                aria-label="Open fullscreen comparison"
+              >
+                {[firstSelected, secondSelected].map((photo, index) => (
+                  <div
+                    key={photo?.id ?? index}
+                    className="relative aspect-[3/4] w-1/2"
+                  >
+                    {photo ? (
+                      <Image
+                        src={photo.imageUrl}
+                        alt={`Progress photo from ${photo.date}`}
+                        fill
+                        sizes="(min-width: 1024px) 30vw, (min-width: 768px) 40vw, 100vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                        Select a photo below
+                      </div>
+                    )}
+                    <div className="bg-background/70 text-foreground absolute top-2 left-2 rounded-full px-2 py-0.5 text-xs font-medium shadow-sm">
+                      {index === 0 ? "Photo A" : "Photo B"}
+                    </div>
+                    {photo && (
+                      <div className="bg-background/80 absolute inset-x-0 bottom-0 px-3 py-2 text-xs sm:text-sm">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{photo.date}</span>
+                          <span className="text-muted-foreground">
+                            {formatWeight(photo.weight)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </button>
+            </DialogTrigger>
             <DialogContent className="max-w-5xl">
               <DialogHeader>
                 <DialogTitle>Fullscreen comparison</DialogTitle>
@@ -138,29 +179,14 @@ export default function PhotoGalleryClient({
                       <div className="bg-background/70 text-foreground absolute top-2 left-2 rounded-full px-2 py-0.5 text-xs font-medium shadow-sm">
                         {index === 0 ? "Photo A" : "Photo B"}
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  {[firstSelected, secondSelected].map((photo, index) => (
-                    <div
-                      key={photo?.id ?? index}
-                      className="bg-card rounded-lg border p-4 text-sm"
-                    >
-                      <div className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
-                        {index === 0 ? "Photo A" : "Photo B"}
-                      </div>
-                      {photo ? (
-                        <div className="space-y-1">
-                          <div className="font-medium">{photo.date}</div>
-                          <div className="text-muted-foreground">
-                            {formatWeight(photo.weight)}
+                      {photo && (
+                        <div className="bg-background/80 absolute inset-x-0 bottom-0 px-3 py-2 text-xs sm:text-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">{photo.date}</span>
+                            <span className="text-muted-foreground">
+                              {formatWeight(photo.weight)}
+                            </span>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-muted-foreground">
-                          Select a photo to compare.
                         </div>
                       )}
                     </div>
@@ -200,29 +226,14 @@ export default function PhotoGalleryClient({
                 <div className="bg-background/70 text-foreground absolute top-2 left-2 rounded-full px-2 py-0.5 text-xs font-medium shadow-sm">
                   {index === 0 ? "Photo A" : "Photo B"}
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {[firstSelected, secondSelected].map((photo, index) => (
-              <div
-                key={photo?.id ?? index}
-                className="bg-card rounded-lg border p-4 text-sm"
-              >
-                <div className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
-                  {index === 0 ? "Photo A (earlier)" : "Photo B (later)"}
-                </div>
-                {photo ? (
-                  <div className="space-y-1">
-                    <div className="font-medium">{photo.date}</div>
-                    <div className="text-muted-foreground">
-                      {formatWeight(photo.weight)}
+                {photo && (
+                  <div className="bg-background/80 absolute inset-x-0 bottom-0 px-3 py-2 text-xs sm:text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{photo.date}</span>
+                      <span className="text-muted-foreground">
+                        {formatWeight(photo.weight)}
+                      </span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground">
-                    Select a photo below.
                   </div>
                 )}
               </div>
