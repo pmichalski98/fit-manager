@@ -48,7 +48,7 @@ function ImagesPreview({ imageFiles, onDelete }: ImagesPreviewProps) {
           <div
             className={
               imageFiles.length === 1
-                ? "mt-2 max-w-xs"
+                ? "mt-2 w-40"
                 : "mt-2 grid grid-cols-2 gap-4 md:grid-cols-3"
             }
           >
