@@ -27,7 +27,7 @@ export default async function PhotoGalleryView() {
   }
 
   return (
-    <div className="py-12">
+    <div className="">
       <PhotoGalleryClient photos={photos} />
     </div>
   );

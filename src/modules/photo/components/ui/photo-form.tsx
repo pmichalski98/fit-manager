@@ -22,7 +22,7 @@ import { photoSchema, type PhotoFormValues } from "@/modules/photo/schemas";
 import ImagesDragDrop from "./images-drag-drop";
 import ImagesPreview from "./images-preview";
 
-export function PhotoForm() {
+export function PhotoForm({ onSuccess }: { onSuccess?: () => void }) {
   const form = useForm<PhotoFormValues>({
     resolver: zodResolver(photoSchema) as Resolver<PhotoFormValues>,
     defaultValues: {
@@ -64,6 +64,7 @@ export function PhotoForm() {
           keepDefaultValues: true,
         },
       );
+      onSuccess?.();
     } catch (error) {
       console.error(error);
       toast.error("Failed to upload photo");

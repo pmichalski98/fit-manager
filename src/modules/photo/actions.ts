@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE } from "@/lib/constants";
 import { requireUserId } from "@/lib/user";
-import { uploadImageToS3 } from "@/server/s3";
+import { deleteImageFromS3, uploadImageToS3 } from "@/server/s3";
 
 import { photoRepository } from "./repositories";
 import { photoSchema, type PhotoFormValues } from "./schemas";
@@ -83,5 +83,35 @@ export async function getPhotos() {
   } catch (error) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
+  }
+}
+
+export async function deletePhoto(id: string) {
+  const userId = await requireUserId();
+
+  try {
+    const deleted = await photoRepository.deletePhoto(id, userId);
+
+    if (!deleted) {
+      return {
+        ok: false as const,
+        error: "Photo not found or unauthorized",
+      };
+    }
+
+    try {
+      await deleteImageFromS3(deleted.imageUrl);
+    } catch (error) {
+      console.error("Failed to delete image from S3", error);
+    }
+
+    revalidatePath("/photo");
+    return { ok: true as const, data: deleted, error: null };
+  } catch (error) {
+    console.error(error);
+    return {
+      ok: false as const,
+      error: "Internal server error",
+    };
   }
 }

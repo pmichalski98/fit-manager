@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { photo } from "@/server/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 export type CreatePhotoValues = {
   userId: string;
@@ -35,6 +35,14 @@ class PhotoRepository {
       .where(eq(photo.userId, userId))
       .orderBy(desc(photo.date));
     return photos ?? [];
+  }
+
+  async deletePhoto(id: string, userId: string) {
+    const [deleted] = await db
+      .delete(photo)
+      .where(and(eq(photo.id, id), eq(photo.userId, userId)))
+      .returning();
+    return deleted ?? null;
   }
 }
 
