@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { DeleteTrainingButton } from "../components/delete-training-button";
+import { EditTrainingDialog } from "./edit-training-dialog";
 
 type StrengthExercise = {
   id: string;
@@ -19,7 +20,7 @@ type TrainingCardProps = {
   training: {
     id: string;
     name: string;
-    type: string;
+    type: "strength" | "cardio";
     lastSessionAt: Date | null;
     exercises: StrengthExercise[];
   };
@@ -109,6 +110,7 @@ export function TrainingCard({ training }: TrainingCardProps) {
             {isCardio ? "Start cardio" : "Start workout"}
           </Link>
         </Button>
+        <EditTrainingDialog training={training} />
         <DeleteTrainingButton trainingId={training.id} />
       </div>
     </li>

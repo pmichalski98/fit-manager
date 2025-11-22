@@ -36,6 +36,26 @@ export async function createTraining(input: CreateTrainingInput) {
   return { ok: true, data: created };
 }
 
+export async function updateTraining(
+  trainingId: string,
+  input: CreateTrainingInput,
+) {
+  const userId = await requireUserId();
+  const parsed = trainingFormSchema.parse(input);
+
+  const updated = await trainingRepository.updateTraining({
+    id: trainingId,
+    userId,
+    name: parsed.name,
+    type: parsed.type,
+    exercises: parsed.exercises ?? [],
+  });
+
+  revalidatePath("/training");
+
+  return { ok: true, data: updated };
+}
+
 export async function deleteTraining(trainingId: string) {
   const userId = await requireUserId();
   try {
