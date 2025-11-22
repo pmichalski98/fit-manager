@@ -5,6 +5,17 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
 import { type Control } from "react-hook-form";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   FormControl,
@@ -16,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { type CreateTrainingInput } from "@/modules/training/schemas";
+import { useState } from "react";
 
 export function ExerciseRow({
   id,
@@ -34,6 +46,7 @@ export function ExerciseRow({
     transform: CSS.Transform.toString(transform),
     transition,
   } as React.CSSProperties;
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2">
@@ -58,15 +71,40 @@ export function ExerciseRow({
           </FormItem>
         )}
       />
-      <Button
-        type="button"
-        variant="destructive"
-        size="icon-sm"
-        onClick={onRemove}
-        aria-label="Remove"
-      >
-        <Trash2 className="size-4" />
-      </Button>
+
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogTrigger asChild>
+          <Button
+            type="button"
+            variant="destructive"
+            size="icon-sm"
+            aria-label="Remove"
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete exercise?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this exercise and all its history
+              from past sessions. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onRemove();
+                setShowDeleteAlert(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

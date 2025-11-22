@@ -2,15 +2,24 @@ import { db } from "@/server/db";
 import {
   training,
   trainingExercise,
+  trainingSessionExercise,
   type trainingTypeEnum,
 } from "@/server/db/schema";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 export type CreateTrainingValues = {
   userId: string;
   name: string;
   type: (typeof trainingTypeEnum.enumValues)[number];
   exercises: Array<{ name: string }>;
+};
+
+export type UpdateTrainingValues = {
+  id: string;
+  userId: string;
+  name: string;
+  type: (typeof trainingTypeEnum.enumValues)[number];
+  exercises: Array<{ id?: string; name: string; replace?: boolean }>;
 };
 
 class TrainingRepository {
@@ -37,6 +46,110 @@ class TrainingRepository {
       }
 
       return createdTraining;
+    });
+  }
+
+  async updateTraining(values: UpdateTrainingValues) {
+    return await db.transaction(async (tx) => {
+      const [updatedTraining] = await tx
+        .update(training)
+        .set({
+          name: values.name,
+          // type is not editable
+          updatedAt: new Date(),
+        })
+        .where(
+          and(eq(training.id, values.id), eq(training.userId, values.userId)),
+        )
+        .returning();
+
+      if (!updatedTraining) return null;
+
+      if (values.type === "strength") {
+        // Get existing exercises
+        const existingExercises = await tx
+          .select()
+          .from(trainingExercise)
+          .where(eq(trainingExercise.trainingId, values.id));
+
+        const existingIds = new Set(existingExercises.map((e) => e.id));
+        const inputIds = new Set(
+          values.exercises.map((e) => e.id).filter((id): id is string => !!id),
+        );
+
+        const toDeleteIds = [...existingIds].filter((id) => !inputIds.has(id));
+
+        // 1. Delete removed exercises and their session history
+        if (toDeleteIds.length > 0) {
+          // Delete session history for these exercises
+          await tx
+            .delete(trainingSessionExercise)
+            .where(
+              inArray(trainingSessionExercise.templateExerciseId, toDeleteIds),
+            );
+
+          // Delete the exercises themselves
+          await tx
+            .delete(trainingExercise)
+            .where(inArray(trainingExercise.id, toDeleteIds));
+        }
+
+        // 2. Update existing exercises and create new ones
+        for (let i = 0; i < values.exercises.length; i++) {
+          const ex = values.exercises[i];
+          if (!ex) continue; // Safety check
+
+          if (ex.id && existingIds.has(ex.id)) {
+            // Handle potential "replace" logic here
+            if (ex.replace) {
+              // User chose to replace: treat as delete old + create new
+
+              // Delete session history for this exercise
+              await tx
+                .delete(trainingSessionExercise)
+                .where(eq(trainingSessionExercise.templateExerciseId, ex.id));
+
+              // Instead of deleting the exercise row (which would change the ID if we re-inserted),
+              // or dealing with complex ID swapping, we can just update it but clear history.
+              // But user intent is "New Exercise", so maybe fresh start is cleaner?
+              // Actually, if we just update the name, it's the same ID.
+              // So "Replace" mainly means "Clear history for this ID".
+
+              // Wait, if we keep the ID, old sessions will still point to it unless we delete them.
+              // I just deleted them above. So updating the name now effectively "replaces" it
+              // from a data perspective (history gone, new name).
+
+              await tx
+                .update(trainingExercise)
+                .set({
+                  name: ex.name,
+                  position: i,
+                  updatedAt: new Date(),
+                })
+                .where(eq(trainingExercise.id, ex.id));
+            } else {
+              // User chose to rename (keep history)
+              await tx
+                .update(trainingExercise)
+                .set({
+                  name: ex.name,
+                  position: i,
+                  updatedAt: new Date(),
+                })
+                .where(eq(trainingExercise.id, ex.id));
+            }
+          } else {
+            // Create new exercises
+            await tx.insert(trainingExercise).values({
+              trainingId: values.id,
+              name: ex.name,
+              position: i,
+            });
+          }
+        }
+      }
+
+      return updatedTraining;
     });
   }
 
