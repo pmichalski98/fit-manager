@@ -130,6 +130,17 @@ class SessionRepository {
           );
         }
       }
+      // Only update lastSessionAt if the session date is today
+      const sessionDate = new Date(startAt);
+
+      if (isToday(sessionDate)) {
+        await tx
+          .update(training)
+          .set({
+            lastSessionAt: sessionDate,
+          })
+          .where(eq(training.id, trainingId));
+      }
       return session;
     });
   }

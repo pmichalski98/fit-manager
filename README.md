@@ -1,5 +1,5 @@
 [] - maybe add notes to each exercise/training
-[] - add last trained at after training strength session complete
+[X] - add last trained at after training strength session complete
 [] - AI weekly summaries
 [] - update envs on both machines
 [X] - move logo link to root page in navbar on mobile
@@ -8,3 +8,6 @@
 [] - polish skeletons loaders
 [] - body weight and measurements charts
 [] - charts of progress per exercise
+[] - polish strength session page
+[] - finish training session ending summaries
+[] - already filled for this day is bugged, we need to probably reset state after we click 'save'

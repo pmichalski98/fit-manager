@@ -50,7 +50,7 @@ export function AppSidebar() {
   ];
 
   const activeStyles =
-    "border-sidebar-accent/10 border-r-0 bg-linear-to-r/oklch";
+    "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent text-primary border-l-2 border-primary font-medium dark:from-primary/20 dark:via-primary/10 hover:from-primary/15 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
 
   return (
     <Sidebar>
@@ -71,7 +71,8 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     className={cn(
-                      "hover:border-sidebar-accent from-sidebar-accent via-sidebar/50 to-sidebar/50 h-10 border border-transparent from-5% via-30% hover:bg-linear-to-r/oklch",
+                      "h-10 border-l-2 border-transparent transition-all duration-200",
+                      "hover:from-sidebar-accent hover:via-sidebar-accent/30 hover:bg-gradient-to-r hover:to-transparent",
                       pathname === item.href && activeStyles,
                     )}
                     onClick={() => {
