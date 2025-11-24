@@ -170,7 +170,6 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
   }, [exercisesArr.fields.length, progressByExercise]);
 
   const onSubmit = async (values: StrengthSessionFormValues) => {
-    console.log("onSubmit", values);
     try {
       // Compute client-side summary
       const durationSec = Math.max(
