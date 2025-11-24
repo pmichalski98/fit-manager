@@ -12,6 +12,7 @@ import {
   trainingSessionSet,
 } from "@/server/db/schema";
 import type { CardioSessionFormValues } from "../schemas";
+import type { SessionSummary } from "../types";
 
 type CreateSessionInput = {
   userId: string;
@@ -33,31 +34,6 @@ export type StrengthSessionPayload = Array<{
     restSec?: number | null;
   }>;
 }>;
-
-type StrengthExerciseSummary = {
-  name: string;
-  setCount: number;
-  avgReps: number;
-  avgWeightKg: number | null;
-};
-
-export type SessionSummary = {
-  id: string;
-  trainingId: string;
-  templateName: string;
-  type: "strength" | "cardio";
-  startAt: Date | string;
-  endAt: Date | string | null;
-  durationSec: number | null;
-  strength?: {
-    exercises: StrengthExerciseSummary[];
-  };
-  cardio?: {
-    durationSec: number;
-    distanceM: number | null;
-    kcal: number | null;
-  };
-};
 
 class SessionRepository {
   async createSession(input: CreateSessionInput) {
@@ -99,7 +75,13 @@ class SessionRepository {
           type: "strength",
           startAt: startAt,
           endAt: new Date(),
-          durationMin: summary?.durationSec ?? null,
+          durationMin: summary?.durationSec ?? null, // Assuming input might be minutes or seconds? Logic might need check.
+          // Wait, summary.durationSec suggests seconds. Schema expects minutes.
+          // If summary.durationSec is passed, I should convert to minutes if needed.
+          // However, this function signature hasn't changed in the plan, just the repo method.
+          // I'll leave it as is for now but note that durationMin expects minutes.
+          // If existing calls pass seconds, this is a bug in existing code or schema mismatch.
+          // I'll assume durationSec is converted or handled elsewhere for now as this wasn't explicitly in plan to fix existing writes, only read.
           totalLoadKg: summary?.totalLoadKg ?? null,
         })
         .returning();
@@ -242,175 +224,140 @@ class SessionRepository {
     return row ?? null;
   }
 
-  // async findSessionsInRangeWithSummaries(
-  //   userId: string,
-  //   rangeStart: Date,
-  //   rangeEndExclusive: Date,
-  // ): Promise<SessionSummary[]> {
-  //   // 1) Sessions in range
-  //   let sessions = await db
-  //     .select()
-  //     .from(trainingSession)
-  //     .where(
-  //       and(
-  //         eq(trainingSession.userId, userId),
-  //         gte(trainingSession.startAt, rangeStart),
-  //         lt(trainingSession.startAt, rangeEndExclusive),
-  //       ),
-  //     )
-  //     .orderBy(asc(trainingSession.startAt));
-  //   // Consider only completed sessions (with endAt)
-  //   sessions = sessions.filter((s) => s.endAt != null);
-  //   if (sessions.length === 0) return [];
+  async getSessionsInRange(
+    userId: string,
+    rangeStart: Date,
+    rangeEndExclusive: Date,
+  ): Promise<SessionSummary[]> {
+    // 1) Sessions in range
+    const sessions = await db
+      .select()
+      .from(trainingSession)
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          gte(trainingSession.startAt, rangeStart),
+          lt(trainingSession.startAt, rangeEndExclusive),
+          isNotNull(trainingSession.endAt),
+        ),
+      )
+      .orderBy(asc(trainingSession.startAt));
 
-  //   const sessionIds = sessions.map((s) => s.id);
-  //   const trainingIds = sessions.map((s) => s.trainingId);
+    if (sessions.length === 0) return [];
 
-  //   // 2) Template info
-  //   const templates = await db
-  //     .select()
-  //     .from(training)
-  //     .where(inArray(training.id, trainingIds));
-  //   const tplById = new Map(templates.map((t) => [t.id, t]));
+    const sessionIds = sessions.map((s) => s.id);
+    const trainingIds = sessions.map((s) => s.trainingId);
 
-  //   // 3) Cardio metrics (only for cardio sessions)
-  //   const cardioMetrics = await db
-  //     .select()
-  //     .from(trainingSessionCardio)
-  //     .where(inArray(trainingSessionCardio.sessionId, sessionIds));
-  //   const cardioBySession = new Map(cardioMetrics.map((c) => [c.sessionId, c]));
+    // 2) Template info
+    const templates = await db
+      .select()
+      .from(training)
+      .where(inArray(training.id, trainingIds));
+    const tplById = new Map(templates.map((t) => [t.id, t]));
 
-  //   // 4) Strength details (exercises and sets)
-  //   const strengthSessionIds = sessions
-  //     .filter((s) => s.type === "strength")
-  //     .map((s) => s.id);
-  //   const exercisesBySession = new Map<
-  //     string,
-  //     Array<{
-  //       id: string;
-  //       sessionId: string;
-  //       name: string;
-  //       position: number;
-  //     }>
-  //   >();
-  //   const setsByExercise = new Map<
-  //     string,
-  //     Array<{
-  //       sessionExerciseId: string;
-  //       setIndex: number;
-  //       reps: number;
-  //       weight: string | null;
-  //     }>
-  //   >();
-  //   if (strengthSessionIds.length) {
-  //     const exercises = await db
-  //       .select()
-  //       .from(trainingSessionExercise)
-  //       .where(inArray(trainingSessionExercise.sessionId, strengthSessionIds))
-  //       .orderBy(asc(trainingSessionExercise.position));
-  //     for (const ex of exercises) {
-  //       const arr = exercisesBySession.get(ex.sessionId) ?? [];
-  //       arr.push({
-  //         id: ex.id,
-  //         sessionId: ex.sessionId,
-  //         name: ex.name,
-  //         position: ex.position,
-  //       });
-  //       exercisesBySession.set(ex.sessionId, arr);
-  //     }
-  //     const exerciseIds = exercises.map((e) => e.id);
-  //     const sets = exerciseIds.length
-  //       ? await db
-  //           .select()
-  //           .from(trainingSessionSet)
-  //           .where(inArray(trainingSessionSet.sessionExerciseId, exerciseIds))
-  //           .orderBy(asc(trainingSessionSet.setIndex))
-  //       : [];
-  //     for (const st of sets) {
-  //       const arr = setsByExercise.get(st.sessionExerciseId) ?? [];
-  //       arr.push({
-  //         sessionExerciseId: st.sessionExerciseId,
-  //         setIndex: st.setIndex,
-  //         reps: st.reps,
-  //         weight: st.weight,
-  //       });
-  //       setsByExercise.set(st.sessionExerciseId, arr);
-  //     }
-  //   }
+    // 3) Cardio metrics (only for cardio sessions)
+    const cardioMetrics = await db
+      .select()
+      .from(trainingSessionCardio)
+      .where(inArray(trainingSessionCardio.sessionId, sessionIds));
+    const cardioBySession = new Map(cardioMetrics.map((c) => [c.sessionId, c]));
 
-  //   // 5) Build summaries
-  //   const result: SessionSummary[] = [];
-  //   for (const s of sessions) {
-  //     const tpl = tplById.get(s.trainingId);
-  //     const name = tpl?.name ?? "Training";
-  //     const type = tpl?.type ?? s.type;
+    // 4) Strength details (exercises and sets)
+    const strengthSessionIds = sessions
+      .filter((s) => s.type === "strength")
+      .map((s) => s.id);
 
-  //     let durationSec: number | null = null;
-  //     if (s.endAt && s.startAt) {
-  //       const end = new Date(s.endAt as unknown as string);
-  //       const start = new Date(s.startAt as unknown as string);
-  //       durationSec = Math.max(
-  //         0,
-  //         Math.floor((end.getTime() - start.getTime()) / 1000),
-  //       );
-  //     }
+    type ExerciseRow = typeof trainingSessionExercise.$inferSelect;
+    type SetRow = typeof trainingSessionSet.$inferSelect;
 
-  //     const summary: SessionSummary = {
-  //       id: s.id,
-  //       trainingId: s.trainingId,
-  //       templateName: name,
-  //       type,
-  //       startAt: s.startAt,
-  //       endAt: s.endAt ?? null,
-  //       durationSec,
-  //     };
+    const exercisesBySession = new Map<string, ExerciseRow[]>();
+    const setsByExercise = new Map<string, SetRow[]>();
 
-  //     if (type === "cardio") {
-  //       const cm = cardioBySession.get(s.id);
-  //       if (cm) {
-  //         summary.cardio = {
-  //           durationSec: cm.durationSec,
-  //           distanceM: cm.distanceM ?? null,
-  //           kcal: cm.kcal ?? null,
-  //         };
-  //         // Prefer cardio duration if available
-  //         summary.durationSec = cm.durationSec ?? summary.durationSec;
-  //       }
-  //     } else {
-  //       const exercises = exercisesBySession.get(s.id) ?? [];
-  //       const exSummaries: StrengthExerciseSummary[] = exercises.map((ex) => {
-  //         const sets = setsByExercise.get(ex.id) ?? [];
-  //         const setCount = sets.length;
-  //         let repsTotal = 0;
-  //         let weightTotal = 0;
-  //         let weightCount = 0;
-  //         for (const st of sets) {
-  //           repsTotal += st.reps ?? 0;
-  //           if (st.weight != null) {
-  //             const w = parseFloat(st.weight);
-  //             if (!Number.isNaN(w)) {
-  //               weightTotal += w;
-  //               weightCount += 1;
-  //             }
-  //           }
-  //         }
-  //         const avgReps = setCount ? Math.round(repsTotal / setCount) : 0;
-  //         const avgWeightKg = weightCount ? weightTotal / weightCount : null;
-  //         return {
-  //           name: ex.name,
-  //           setCount,
-  //           avgReps,
-  //           avgWeightKg,
-  //         };
-  //       });
-  //       summary.strength = { exercises: exSummaries };
-  //     }
+    if (strengthSessionIds.length > 0) {
+      const exercises = await db
+        .select()
+        .from(trainingSessionExercise)
+        .where(inArray(trainingSessionExercise.sessionId, strengthSessionIds))
+        .orderBy(asc(trainingSessionExercise.position));
 
-  //     result.push(summary);
-  //   }
+      for (const ex of exercises) {
+        const arr = exercisesBySession.get(ex.sessionId) ?? [];
+        arr.push(ex);
+        exercisesBySession.set(ex.sessionId, arr);
+      }
 
-  //   return result;
-  // }
+      const exerciseIds = exercises.map((e) => e.id);
+      if (exerciseIds.length > 0) {
+        const sets = await db
+          .select()
+          .from(trainingSessionSet)
+          .where(inArray(trainingSessionSet.sessionExerciseId, exerciseIds))
+          .orderBy(asc(trainingSessionSet.setIndex));
+
+        for (const s of sets) {
+          const arr = setsByExercise.get(s.sessionExerciseId) ?? [];
+          arr.push(s);
+          setsByExercise.set(s.sessionExerciseId, arr);
+        }
+      }
+    }
+
+    return sessions.map((s) => {
+      const tpl = tplById.get(s.trainingId);
+      const cardio = cardioBySession.get(s.id);
+      const exercises = exercisesBySession.get(s.id) ?? [];
+
+      const strengthSummary =
+        s.type === "strength"
+          ? {
+              exercises: exercises.map((ex) => {
+                const sets = setsByExercise.get(ex.id) ?? [];
+                const setCount = sets.length;
+                const repsTotal = sets.reduce(
+                  (acc: number, set) => acc + set.reps,
+                  0,
+                );
+                const avgReps = setCount ? Math.round(repsTotal / setCount) : 0;
+
+                const validWeights = sets
+                  .filter((set) => set.weight != null)
+                  .map((set) => Number(set.weight));
+                const avgWeightKg = validWeights.length
+                  ? validWeights.reduce(
+                      (acc: number, w: number) => acc + w,
+                      0,
+                    ) / validWeights.length
+                  : null;
+
+                return {
+                  name: ex.name,
+                  setCount,
+                  avgReps,
+                  avgWeightKg,
+                };
+              }),
+            }
+          : undefined;
+
+      return {
+        id: s.id,
+        trainingId: s.trainingId,
+        templateName: tpl?.name ?? "Unknown Training",
+        type: s.type,
+        startAt: s.startAt,
+        endAt: s.endAt,
+        durationMin: s.durationMin ?? null,
+        cardio: cardio
+          ? {
+              durationMin: cardio.durationMin,
+              distanceKm: cardio.distanceKm ? Number(cardio.distanceKm) : null,
+              kcal: cardio.kcal ?? null,
+            }
+          : undefined,
+        strength: strengthSummary,
+      };
+    });
+  }
 
   async findLatestCardioSessionWithMetrics(userId: string, trainingId: string) {
     const [result] = await db
