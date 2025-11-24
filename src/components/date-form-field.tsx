@@ -65,6 +65,7 @@ export function DateFormField<
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
+                weekStartsOn={1}
                 selected={field.value ? new Date(field.value) : undefined}
                 onSelect={(date) => {
                   if (date) {

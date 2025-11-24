@@ -42,6 +42,7 @@ export function DailyLogForm({
 }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fetchedData, setFetchedData] = useState<DailyLog | null>(null);
 
   const form = useForm<DailyLogFormValues>({
     resolver: zodResolver(dailyLogSchema) as Resolver<DailyLogFormValues>,
@@ -69,11 +70,13 @@ export function DailyLogForm({
       if (!selectedDate) return;
 
       setIsLoading(true);
+      setFetchedData(null);
       try {
         const result = await getDailyLogByDate(selectedDate);
 
         if (result.ok && result.data) {
           console.log("result.data", result.data);
+          setFetchedData(result.data);
           // If data exists for this date, populate the form
           form.setValue("weight", result.data.weight ?? "");
           form.setValue(
@@ -86,6 +89,7 @@ export function DailyLogForm({
           // If no data exists, clear the form fields
           form.setValue("weight", "");
           form.setValue("kcal", undefined);
+          setFetchedData(null);
         }
       } catch (error) {
         console.error("Failed to fetch daily log:", error);
@@ -121,7 +125,14 @@ export function DailyLogForm({
             name="weight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Weight (kg)</FormLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FormLabel>Weight (kg)</FormLabel>
+                  {latestDailyLog?.weight && latestDailyLog.date !== today && (
+                    <FormLabel className="text-primary text-xs">
+                      Previous: {latestDailyLog.weight} kg
+                    </FormLabel>
+                  )}
+                </div>
                 <FormControl>
                   <Input
                     type="number"
@@ -130,11 +141,6 @@ export function DailyLogForm({
                     disabled={isLoading}
                   />
                 </FormControl>
-                {latestDailyLog?.weight && latestDailyLog.date !== today && (
-                  <FormLabel className="text-primary text-xs">
-                    Previous: {latestDailyLog.weight} kg
-                  </FormLabel>
-                )}
 
                 <div className="flex min-h-6 flex-col gap-1">
                   {lastDailyLog?.weight &&
@@ -145,7 +151,7 @@ export function DailyLogForm({
                       </FormDescription>
                     )}
 
-                  {field.value && selectedDate !== today && (
+                  {fetchedData?.weight && selectedDate !== today && (
                     <FormDescription className="text-primary font-bold">
                       Already filled for this day.
                     </FormDescription>
@@ -204,7 +210,7 @@ export function DailyLogForm({
                       </FormDescription>
                     )}
 
-                  {field.value && selectedDate !== today && (
+                  {fetchedData?.kcal && selectedDate !== today && (
                     <FormDescription className="text-primary font-bold">
                       Already filled for this day.
                     </FormDescription>
