@@ -11,3 +11,6 @@
 [] - polish strength session page
 [] - finish training session ending summaries
 [] - already filled for this day is bugged, we need to probably reset state after we click 'save'
+[] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week.
+[] - Quick Stats Cards: Current weight (vs last week), total volume moved this week, active days streak.
+[] - 1rep max estimations
