@@ -1,5 +1,6 @@
 "use client";
 
+import heic2any from "heic2any";
 import { Upload } from "lucide-react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
@@ -35,43 +36,84 @@ function ImagesDragDrop({
 }: ImagesDragDropProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const filesToUse = acceptedFiles.slice(0, 1);
+      const handleDrop = async () => {
+        const filesToUse = acceptedFiles.slice(0, 1);
 
-      if (filesToUse.length === 0) return;
+        if (filesToUse.length === 0) return;
 
-      const invalidType = filesToUse.find(
-        (file) => !ACCEPTED_IMAGE_TYPES.includes(file.type),
-      );
-      if (invalidType) {
-        toast.error("Unsupported file type");
-        return;
-      }
+        let file = filesToUse[0]!;
+        const isHeic =
+          file.type === "image/heic" ||
+          file.type === "image/heif" ||
+          file.name.toLowerCase().endsWith(".heic") ||
+          file.name.toLowerCase().endsWith(".heif");
 
-      const tooLarge = filesToUse.find((file) => file.size > MAX_FILE_SIZE);
-      if (tooLarge) {
-        toast.error("File is too large");
-        return;
-      }
+        if (isHeic) {
+          const toastId = toast.loading("Converting image...");
+          try {
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.8,
+            });
+            const blob = Array.isArray(convertedBlob)
+              ? convertedBlob[0]
+              : convertedBlob;
 
-      // Update react-hook-form value
-      const value = filesToUse[0]!;
+            if (!blob) {
+              throw new Error("Conversion resulted in empty blob");
+            }
 
-      form.setValue("image", value, {
-        shouldValidate: true,
-      });
+            file = new File(
+              [blob],
+              file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+              {
+                type: "image/jpeg",
+              },
+            );
+            toast.dismiss(toastId);
+          } catch (e) {
+            console.error(e);
+            toast.dismiss(toastId);
+            toast.error("Failed to convert image");
+            return;
+          }
+        }
+
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+          toast.error("Unsupported file type");
+          return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error("File is too large");
+          return;
+        }
+
+        // Update react-hook-form value
+        form.setValue("image", file, {
+          shouldValidate: true,
+        });
+      };
+
+      void handleDrop();
     },
     [form],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: ACCEPTED_IMAGE_TYPES.reduce(
-      (acc, type) => {
-        acc[type] = [];
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    ),
+    accept: {
+      ...ACCEPTED_IMAGE_TYPES.reduce(
+        (acc, type) => {
+          acc[type] = [];
+          return acc;
+        },
+        {} as Record<string, string[]>,
+      ),
+      "image/heic": [],
+      "image/heif": [],
+    },
     multiple: false,
     maxFiles: 1,
     maxSize: MAX_FILE_SIZE,
@@ -109,11 +151,8 @@ function ImagesDragDrop({
                 {buttonLabel}
               </Button>
               <p className="text-muted-foreground mt-2 text-xs">
-                Supported formats:{" "}
-                {ACCEPTED_IMAGE_TYPES.map((type) =>
-                  type.split("/")[1]?.toUpperCase(),
-                ).join(", ")}{" "}
-                ( Max {(MAX_FILE_SIZE / 1000000).toFixed(0)} MB )
+                Supported formats: JPEG, PNG, WEBP, HEIC ( Max{" "}
+                {(MAX_FILE_SIZE / 1000000).toFixed(0)} MB )
               </p>
             </div>
           </FormControl>
