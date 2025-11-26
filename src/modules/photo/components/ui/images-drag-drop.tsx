@@ -1,6 +1,5 @@
 "use client";
 
-import heic2any from "heic2any";
 import { Upload } from "lucide-react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
@@ -51,6 +50,7 @@ function ImagesDragDrop({
         if (isHeic) {
           const toastId = toast.loading("Converting image...");
           try {
+            const heic2any = (await import("heic2any")).default;
             const convertedBlob = await heic2any({
               blob: file,
               toType: "image/jpeg",
