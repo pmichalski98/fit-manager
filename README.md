@@ -14,4 +14,3 @@
 [] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week.
 [] - Quick Stats Cards: Current weight (vs last week), total volume moved this week, active days streak.
 [] - 1rep max estimations
-[] -
