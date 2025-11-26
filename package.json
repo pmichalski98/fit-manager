@@ -61,6 +61,7 @@
     "dicebear": "^9.2.4",
     "drizzle-orm": "^0.41.0",
     "embla-carousel-react": "^8.6.0",
+    "heic2any": "^0.0.4",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.552.0",
     "next": "^15.2.3",
