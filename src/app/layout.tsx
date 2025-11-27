@@ -1,8 +1,8 @@
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { LayoutWrapper } from "@/components/layout-wrapper";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
-
 import { type Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -30,6 +30,7 @@ export default function RootLayout({
             <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster richColors />
           </ThemeProvider>
+          <SpeedInsights />
         </body>
       </html>
     </>
