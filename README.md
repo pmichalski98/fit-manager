@@ -23,3 +23,5 @@
 [] - add summary on cardio session and redirect
 [] - see if i can submit training session with one exercise being empty
 [] - add form logs, because sometimes i cant submit training session
+[] - add date unique constraint so i cant put 2 trainings on same day
+[] - fix dashboard table layout shits + filter by date not createdAt
