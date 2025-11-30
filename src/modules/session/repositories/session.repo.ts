@@ -224,6 +224,24 @@ class SessionRepository {
     return row ?? null;
   }
 
+  async getSessionDistribution(userId: string, fromDate?: Date, toDate?: Date) {
+    const whereClause = and(
+      eq(trainingSession.userId, userId),
+      isNotNull(trainingSession.endAt),
+      fromDate ? gte(trainingSession.date, fromDate.toISOString()) : undefined,
+      toDate ? lt(trainingSession.date, toDate.toISOString()) : undefined,
+    );
+
+    return await db
+      .select({
+        date: trainingSession.date,
+        type: trainingSession.type,
+      })
+      .from(trainingSession)
+      .where(whereClause)
+      .orderBy(asc(trainingSession.date));
+  }
+
   async getSessionsInRange(
     userId: string,
     rangeStart: Date,
