@@ -26,7 +26,6 @@ class DailyLogRepository {
   }
 
   async upsertDailyLog(values: DailyLogWithUserId) {
-    console.log("values", values);
     const existing = await this.findDailyLogByUserAndDate(
       values.userId,
       values.date,

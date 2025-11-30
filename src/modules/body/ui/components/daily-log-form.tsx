@@ -75,7 +75,6 @@ export function DailyLogForm({
         const result = await getDailyLogByDate(selectedDate);
 
         if (result.ok && result.data) {
-          console.log("result.data", result.data);
           setFetchedData(result.data);
           // If data exists for this date, populate the form
           form.setValue("weight", result.data.weight ?? "");
