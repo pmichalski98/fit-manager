@@ -6,12 +6,12 @@
 [X] - add editing trainings (position and names) special cases when we only change name or when we completly remove exercise, if we remove exercise then delete all previous records of that in sessions, if we only change name, then we leave data like reps and weight
 [X] - fix dashboard page
 [] - polish skeletons loaders
-[] - body weight and measurements charts
-[] - charts of progress per exercise
+[X] - body weight and measurements charts
+[X] - charts of progress per exercise
 [] - polish strength session page
 [] - finish training session ending summaries
-[] - already filled for this day is bugged, we need to probably reset state after we click 'save'
-[] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week.
+[X] - already filled for this day is bugged, we need to probably reset state after we click 'save'
+[X] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week.
 [] - Quick Stats Cards: Current weight (vs last week), total volume moved this week, active days streak.
 [] - 1rep max estimations
 [] - on mobile i cant remove weight, it defaults to 0
