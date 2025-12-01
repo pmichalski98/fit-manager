@@ -128,18 +128,26 @@ export async function TrainingConsistency() {
 
         <div className="flex flex-col gap-1">
           {/* Month Labels Row */}
-          <div className="text-muted-foreground relative mx-auto flex h-4 text-xs">
-            {monthLabels.map((m, i) => (
-              <span
-                key={i}
-                className="absolute whitespace-nowrap"
-                style={{
-                  left: `${m.index * 16}px`,
-                }}
-              >
-                {m.label}
-              </span>
-            ))}
+          <div className="text-muted-foreground relative h-4 text-xs">
+            {monthLabels.map((m, i) => {
+              const next = monthLabels[i + 1];
+              const endIndex = next ? next.index : weeks.length;
+              const centerOffset = ((endIndex - m.index) * 16) / 2;
+              const leftPosition = m.index * 16 + centerOffset;
+
+              return (
+                <span
+                  key={i}
+                  className="absolute whitespace-nowrap"
+                  style={{
+                    left: `${leftPosition}px`,
+                    transform: "translateX(-50%)",
+                  }}
+                >
+                  {m.label}
+                </span>
+              );
+            })}
           </div>
 
           {/* Grid */}
@@ -148,11 +156,15 @@ export async function TrainingConsistency() {
               <div key={weekIdx} className="flex flex-col gap-1">
                 {week.map((day, dayIdx) => {
                   const key = format(day, "yyyy-MM-dd");
-                  const types = sessionsMap.get(key);
                   const isFuture = isAfter(day, today);
 
+                  if (isFuture) {
+                    return null;
+                  }
+
+                  const types = sessionsMap.get(key);
                   let colorClass = "bg-muted";
-                  if (!isFuture && types && types.length > 0) {
+                  if (types && types.length > 0) {
                     // Check if ONLY cardio
                     const hasStrength = types.includes("strength");
                     const hasCardio = types.includes("cardio");
@@ -161,11 +173,11 @@ export async function TrainingConsistency() {
                       // Mixed: Could be a different color, or just prioritize strength
                       // Let's prioritize strength for now, or maybe a gradient/distinct color?
                       // User asked for distinction.
-                      colorClass = "bg-emerald-600 dark:bg-emerald-500";
+                      colorClass = "bg-chart-1";
                     } else if (hasStrength) {
-                      colorClass = "bg-emerald-600 dark:bg-emerald-500";
+                      colorClass = "bg-chart-2";
                     } else if (hasCardio) {
-                      colorClass = "bg-lime-400 dark:bg-lime-400";
+                      colorClass = "bg-chart-3";
                     }
                   }
 
@@ -188,11 +200,11 @@ export async function TrainingConsistency() {
       {/* Summary Footer */}
       <div className="text-muted-foreground sticky left-0 mt-2 flex items-center justify-end gap-4 border-t pt-4 text-sm">
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-sm bg-emerald-600 dark:bg-emerald-500" />
+          <div className="bg-chart-2 h-3 w-3 rounded-sm" />
           <span>{strengthCount} Strength</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-sm bg-lime-400 dark:bg-lime-400" />
+          <div className="bg-chart-3 h-3 w-3 rounded-sm" />
           <span>{cardioCount} Cardio</span>
         </div>
         <div className="text-muted-foreground/70 ml-2 text-xs">
