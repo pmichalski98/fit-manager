@@ -479,6 +479,38 @@ class SessionRepository {
       })),
     };
   }
+
+  async getExerciseHistory(userId: string, exerciseName: string) {
+    // Get all completed sessions with this exercise
+    const rows = await db
+      .select({
+        date: trainingSession.date,
+        weight: trainingSessionSet.weight,
+      })
+      .from(trainingSession)
+      .innerJoin(
+        trainingSessionExercise,
+        eq(trainingSessionExercise.sessionId, trainingSession.id),
+      )
+      .innerJoin(
+        trainingSessionSet,
+        eq(trainingSessionSet.sessionExerciseId, trainingSessionExercise.id),
+      )
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          eq(trainingSession.type, "strength"),
+          eq(trainingSessionExercise.name, exerciseName),
+          isNotNull(trainingSessionSet.weight),
+        ),
+      )
+      .orderBy(asc(trainingSession.date));
+
+    return rows.map((r) => ({
+      date: r.date,
+      weight: Number(r.weight),
+    }));
+  }
 }
 
 export const sessionRepository = new SessionRepository();
