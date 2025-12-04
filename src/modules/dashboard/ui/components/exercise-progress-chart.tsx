@@ -1,14 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-} from "recharts";
+import { useState, useTransition, useEffect } from "react";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -29,6 +22,8 @@ type ExerciseProgressChartProps = {
   availableExercises: string[];
 };
 
+const STORAGE_KEY = "fit-manager-last-exercise";
+
 export function ExerciseProgressChart({
   availableExercises,
 }: ExerciseProgressChartProps) {
@@ -36,17 +31,40 @@ export function ExerciseProgressChart({
   const [data, setData] = useState<{ date: string; weight: number }[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  const handleExerciseChange = (value: string) => {
-    setSelectedExercise(value);
+  const fetchProgress = (exercise: string) => {
     startTransition(async () => {
       try {
-        const result = await getExerciseProgress(value);
+        const result = await getExerciseProgress(exercise);
         setData(result);
       } catch (error) {
         toast.error("Failed to fetch exercise progress");
         console.error(error);
       }
     });
+  };
+
+  useEffect(() => {
+    if (availableExercises.length === 0) return;
+
+    const saved = localStorage.getItem(STORAGE_KEY);
+    let exerciseToSelect = "";
+
+    if (saved && availableExercises.includes(saved)) {
+      exerciseToSelect = saved;
+    } else if (availableExercises.length > 0) {
+      exerciseToSelect = availableExercises[0] ?? "";
+    }
+
+    if (exerciseToSelect) {
+      setSelectedExercise(exerciseToSelect);
+      fetchProgress(exerciseToSelect);
+    }
+  }, []); // Run once on mount
+
+  const handleExerciseChange = (value: string) => {
+    setSelectedExercise(value);
+    localStorage.setItem(STORAGE_KEY, value);
+    fetchProgress(value);
   };
 
   return (
