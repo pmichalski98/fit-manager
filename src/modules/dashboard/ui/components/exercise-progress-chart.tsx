@@ -28,8 +28,14 @@ export function ExerciseProgressChart({
   availableExercises,
 }: ExerciseProgressChartProps) {
   const [selectedExercise, setSelectedExercise] = useState<string>("");
-  const [data, setData] = useState<{ date: string; weight: number }[]>([]);
+  const [data, setData] = useState<
+    { date: string; weight: number; reps: number; oneRepMax: number }[]
+  >([]);
   const [isPending, startTransition] = useTransition();
+
+  // Calculate current estimated 1RM (based on latest data point)
+  const lastDataPoint = data[data.length - 1];
+  const currentOneRepMax = lastDataPoint ? lastDataPoint.oneRepMax : 0;
 
   const fetchProgress = (exercise: string) => {
     startTransition(async () => {
@@ -70,7 +76,17 @@ export function ExerciseProgressChart({
   return (
     <div className="space-y-4 overflow-hidden rounded-xl border p-6 shadow-sm">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <h3 className="font-semibold">Exercise Progress (Max Weight)</h3>
+        <div className="space-y-1">
+          <h3 className="font-semibold">Exercise Progress</h3>
+          {currentOneRepMax > 0 && (
+            <p className="text-muted-foreground text-sm">
+              Est. 1RM:{" "}
+              <span className="text-foreground font-medium">
+                {currentOneRepMax} kg
+              </span>
+            </p>
+          )}
+        </div>
         <Select value={selectedExercise} onValueChange={handleExerciseChange}>
           <SelectTrigger className="w-full sm:w-[280px]">
             <SelectValue placeholder="Select exercise" />
@@ -145,6 +161,27 @@ export function ExerciseProgressChart({
                       } catch {
                         return value;
                       }
+                    }}
+                    formatter={(value, name, item) => {
+                      if (name === "weight") {
+                        return (
+                          <>
+                            <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
+                              Weight
+                              <span className="text-foreground ml-auto font-mono font-medium">
+                                {value} kg
+                              </span>
+                            </div>
+                            <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
+                              Reps
+                              <span className="text-foreground ml-auto font-mono font-medium">
+                                {(item.payload as { reps: number }).reps}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      }
+                      return null;
                     }}
                   />
                 }
