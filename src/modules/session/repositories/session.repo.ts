@@ -486,6 +486,7 @@ class SessionRepository {
       .select({
         date: trainingSession.date,
         weight: trainingSessionSet.weight,
+        reps: trainingSessionSet.reps,
       })
       .from(trainingSession)
       .innerJoin(
@@ -509,6 +510,7 @@ class SessionRepository {
     return rows.map((r) => ({
       date: r.date,
       weight: Number(r.weight),
+      reps: r.reps,
     }));
   }
 }

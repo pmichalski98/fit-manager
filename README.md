@@ -25,3 +25,4 @@
 [] - add date unique constraint so i cant put 2 trainings on same day
 [] - fix dashboard table layout shits + filter by date not createdAt
 [] - add some session refreshing so i dont have to log often
+[] - body fat estimations with and without AI

@@ -63,17 +63,47 @@ export async function getExerciseProgress(exerciseName: string) {
   );
 
   // history returns multiple sets per day. We want max weight per day.
-  const maxWeightByDate = new Map<string, number>();
+  const maxWeightByDate = new Map<string, { weight: number; reps: number }>();
+  const maxOneRepMaxByDate = new Map<string, number>();
 
   for (const record of history) {
     const dateStr = format(record.date, "yyyy-MM-dd");
-    const currentMax = maxWeightByDate.get(dateStr) ?? 0;
+
+    // Max Weight
+    const currentMax = maxWeightByDate.get(dateStr)?.weight ?? 0;
     if (record.weight > currentMax) {
-      maxWeightByDate.set(dateStr, record.weight);
+      maxWeightByDate.set(dateStr, {
+        weight: record.weight,
+        reps: record.reps,
+      });
+    }
+
+    // Estimated 1RM (Brzycki Formula)
+    // 1RM = Weight * (36 / (37 - Reps))
+    // We skip sets with >= 37 reps to avoid division by zero or negative numbers
+    if (record.reps < 37) {
+      const estimated1RM = record.weight * (36 / (37 - record.reps));
+      const currentMax1RM = maxOneRepMaxByDate.get(dateStr) ?? 0;
+      if (estimated1RM > currentMax1RM) {
+        maxOneRepMaxByDate.set(dateStr, estimated1RM);
+      }
     }
   }
 
-  return Array.from(maxWeightByDate.entries())
-    .map(([date, weight]) => ({ date, weight }))
+  const allDates = new Set([
+    ...maxWeightByDate.keys(),
+    ...maxOneRepMaxByDate.keys(),
+  ]);
+
+  return Array.from(allDates)
+    .map((date) => {
+      const weightData = maxWeightByDate.get(date);
+      return {
+        date,
+        weight: weightData?.weight ?? 0,
+        reps: weightData?.reps ?? 0,
+        oneRepMax: Math.round(maxOneRepMaxByDate.get(date) ?? 0),
+      };
+    })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
