@@ -5,6 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getConsistencyGraphData } from "@/modules/dashboard/actions";
 import {
   startOfWeek,
@@ -190,14 +195,31 @@ export async function TrainingConsistency() {
                       }
                     }
 
+                    const formattedDate = format(day, "MMM d, yyyy");
+                    const formattedTypes = types
+                      ? types
+                          .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+                          .join(", ")
+                      : "No training";
+
                     return (
-                      <div
-                        key={dayIdx}
-                        className={`h-3 w-3 rounded-[2px] ${colorClass}`}
-                        title={`${format(day, "MMM d, yyyy")}${
-                          types ? `: ${types.join(", ")}` : ""
-                        }`}
-                      />
+                      <div key={dayIdx} className="h-3 w-3">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`h-full w-full rounded-[2px] ${colorClass}`}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-center">
+                              <div className="font-bold">{formattedTypes}</div>
+                              <div className="text-muted-foreground text-xs">
+                                {formattedDate}
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     );
                   })}
                 </div>
