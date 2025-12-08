@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { AddPhotoDialog } from "@/modules/photo/components/ui/add-photo-dialog";
+import { PhotoGallerySkeleton } from "@/modules/photo/components/ui/photo-gallery-skeleton";
 import PhotoGalleryView from "@/modules/photo/components/views/photo-gallery-view";
 
 export default async function PhotoPage() {
@@ -17,7 +18,7 @@ export default async function PhotoPage() {
         <AddPhotoDialog />
       </div>
 
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<PhotoGallerySkeleton />}>
         <PhotoGalleryView />
       </Suspense>
     </div>
