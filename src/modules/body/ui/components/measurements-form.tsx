@@ -78,7 +78,7 @@ export function MeasurementsForm({ last }: Props) {
             <Input type="number" inputMode="decimal" {...field} />
           </FormControl>
           {last?.[name] ? (
-            <FormLabel className="text-primary text-xs font-semibold">
+            <FormLabel className="text-primary/70 text-xs font-semibold">
               Previous: {last?.[name]} cm {last.date}
             </FormLabel>
           ) : null}
