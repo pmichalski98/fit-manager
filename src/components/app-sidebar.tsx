@@ -62,7 +62,6 @@ export function AppSidebar() {
           </p>
         </Link>
       </SidebarHeader>
-      <Separator className="bg-sidebar-border" />
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -94,7 +93,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <Separator className="bg-sidebar-border" />
       </SidebarContent>
     </Sidebar>
   );

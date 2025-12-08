@@ -1,6 +1,7 @@
 import { getDailyLogHistory } from "../../actions";
 import { KcalChartGraph } from "./kcal-chart-graph";
 import { WeightChartGraph } from "./weight-chart-graph";
+import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
 
 export async function BodyCharts() {
   const data = await getDailyLogHistory();
@@ -28,23 +29,27 @@ export async function BodyCharts() {
     }));
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-10 md:grid-cols-2">
       {weightData.length > 0 && (
-        <div className="space-y-4 overflow-hidden rounded-xl border p-6 shadow-sm">
-          <h3 className="font-semibold">Weight History</h3>
-          <div className="h-[300px] w-full">
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>Weight History</CardTitle>
+          </CardHeader>
+          <CardContent>
             <WeightChartGraph data={weightData} />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {kcalData.length > 0 && (
-        <div className="space-y-4 overflow-hidden rounded-xl border p-6 shadow-sm">
-          <h3 className="font-semibold">Caloric Intake History</h3>
-          <div className="h-[300px] w-full">
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>Caloric Intake History</CardTitle>
+          </CardHeader>
+          <CardContent>
             <KcalChartGraph data={kcalData} />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
