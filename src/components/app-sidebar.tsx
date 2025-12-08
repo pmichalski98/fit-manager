@@ -50,7 +50,7 @@ export function AppSidebar() {
   ];
 
   const activeStyles =
-    "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent text-primary border-l-2 border-primary font-medium dark:from-primary/20 dark:via-primary/10 hover:from-primary/15 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
+    "bg-gradient-to-r from-primary/20 via-primary/10 to-transparent text-primary border-l-2 border-primary font-medium dark:from-primary/20 dark:via-primary/10 hover:from-primary/15 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
 
   return (
     <Sidebar>
