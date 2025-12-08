@@ -12,7 +12,7 @@
 [] - finish training session ending summaries
 [X] - already filled for this day is bugged, we need to probably reset state after we click 'save'
 [X] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week
-[] - 1rep max estimations
+[X] - 1rep max estimations
 [] - on mobile i cant remove weight, it defaults to 0
 [] - on mobile when i remove all sets from exercise i cant add
 [] - add option to just clear exercise in session because i didnt do it in that session
