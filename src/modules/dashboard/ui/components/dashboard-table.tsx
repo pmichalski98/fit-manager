@@ -127,7 +127,7 @@ export async function DashboardTable({
 
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="bg-card">
         <TableRow>
           <TableHead>Metric</TableHead>
           {dayDates.map((d, idx) => (

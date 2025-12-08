@@ -38,7 +38,7 @@ export default async function DashboardPage(props: PageProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-10">
       <h1 className="text-3xl font-bold">Dashboard</h1>
 
       <Suspense
