@@ -167,6 +167,27 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
     return null;
   }, [exercisesArr.fields.length, progressByExercise]);
 
+  const handleRemoveExercise = useCallback(
+    (exIndex: number) => {
+      const exercise = exercisesArr.fields[exIndex];
+      if (!exercise) return;
+
+      const exerciseData = form.getValues(`exercises.${exIndex}`);
+      exercisesArr.remove(exIndex);
+
+      toast(`Removed ${exercise.name}`, {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            exercisesArr.insert(exIndex, exerciseData);
+            toast.success(`Restored ${exercise.name}`);
+          },
+        },
+      });
+    },
+    [exercisesArr, form],
+  );
+
   const onSubmit = async (values: StrengthSessionFormValues) => {
     try {
       // Compute client-side summary
@@ -292,9 +313,22 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
             {exercisesArr.fields.map((field, exIndex) => (
               <Card key={field.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    {field.position + 1}. {field.name}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">
+                      {field.position + 1}. {field.name}
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+                      disabled={isSubmitting}
+                      onClick={() => handleRemoveExercise(exIndex)}
+                      title="Remove exercise"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ExerciseSets
