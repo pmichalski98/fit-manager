@@ -639,9 +639,7 @@ function ExerciseSets({
                     disabled={!!doneMap[f.id] || disabled}
                     onChange={(e) =>
                       field.onChange(
-                        e.target.value === ""
-                          ? undefined
-                          : Number(e.target.value),
+                        e.target.value === "" ? null : Number(e.target.value),
                       )
                     }
                   />

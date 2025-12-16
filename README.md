@@ -16,9 +16,9 @@
 [] - on mobile i cant remove weight, it defaults to 0
 [] - on mobile when i remove all sets from exercise i cant add
 [] - add option to just clear exercise in session because i didnt do it in that session
-[] - on mobile fix 'done' checkbox styling
-[] - complete session should be full width on mobile and some padding on bottom
-[] - after i click complete session, button is not disabled and i dont see loading state
+[X] - on mobile fix 'done' checkbox styling
+[X] - complete session should be full width on mobile and some padding on bottom
+[X] - after i click complete session, button is not disabled and i dont see loading state
 [] - add summary on cardio session and redirect
 [] - see if i can submit training session with one exercise being empty
 [] - add form logs, because sometimes i cant submit training session
