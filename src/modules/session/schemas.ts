@@ -14,7 +14,7 @@ export const strengthSessionSchema = z.object({
             z.object({
               setIndex: z.coerce.number().int().nonnegative(),
               reps: z.coerce.number().int().positive(),
-              weight: z.coerce.number().min(0).optional().nullable(),
+              weight: z.number().min(0).optional().nullable(),
               rpe: z.coerce.number().min(0).max(10).optional().nullable(),
               rir: z.coerce.number().min(0).max(10).optional().nullable(),
               restSec: z.coerce
