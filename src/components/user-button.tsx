@@ -47,6 +47,7 @@ export default function UserButton() {
       <DropdownMenu>
         <DropdownMenuTrigger className="dark:bg-input/30 dark:hover:bg-input/50 not-visited:hover:bg-accent/10 flex items-center justify-between gap-1 overflow-hidden rounded-lg border p-3 px-4 py-1.5">
           <Avatar>
+            {" "}
             {user.image ? (
               <AvatarImage src={user.image} />
             ) : (

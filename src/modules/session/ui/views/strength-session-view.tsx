@@ -10,19 +10,12 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { History } from "lucide-react";
+import { History, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -36,6 +29,7 @@ import {
   type StrengthSessionFormValues,
 } from "@/modules/session/schemas";
 import { completeStrengthSession } from "@/modules/session/actions";
+import { SessionSummaryDialog } from "@/modules/session/ui/components/session-summary-dialog";
 
 type TemplateExercise = { id: string; name: string; position: number };
 
@@ -122,7 +116,7 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
     defaultValues: { exercises: defaultExercises, trainingId },
   });
 
-  console.log("form.formState.errors", form.formState.errors);
+  // console.log("form.formState.errors", form.formState.errors);
 
   const exercisesArr = useFieldArray({
     control: form.control,
@@ -264,7 +258,7 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b py-4">
+      <div className="bg-background sticky top-16 z-40 flex items-center justify-between pt-2 pb-4">
         <h1 className="text-2xl font-bold">{template.name}</h1>
         <div className="text-muted-foreground">Time: {elapsed}</div>
       </div>
@@ -292,92 +286,46 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             {exercisesArr.fields.map((field, exIndex) => (
-              <div key={field.id} className="rounded-md border p-4">
-                <div className="mb-3 font-medium">
-                  {field.position + 1}. {field.name}
-                </div>
-                <ExerciseSets
-                  control={form.control}
-                  exIndex={exIndex}
-                  prevSets={prevSetsByPosition[field.position] ?? []}
-                  prevExerciseLastDoneAt={
-                    exIndex > 0
-                      ? (mostRecentDoneByExercise[exIndex - 1] ?? null)
-                      : null
-                  }
-                  sessionStartAtMs={sessionStartAtMs}
-                  onMostRecentChange={onExerciseMostRecentChange}
-                  onProgressChange={onExerciseProgressChange}
-                  isActive={activeExerciseIndex === exIndex}
-                />
-              </div>
+              <Card key={field.id}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">
+                    {field.position + 1}. {field.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ExerciseSets
+                    control={form.control}
+                    exIndex={exIndex}
+                    prevSets={prevSetsByPosition[field.position] ?? []}
+                    prevExerciseLastDoneAt={
+                      exIndex > 0
+                        ? (mostRecentDoneByExercise[exIndex - 1] ?? null)
+                        : null
+                    }
+                    sessionStartAtMs={sessionStartAtMs}
+                    onMostRecentChange={onExerciseMostRecentChange}
+                    onProgressChange={onExerciseProgressChange}
+                    isActive={activeExerciseIndex === exIndex}
+                  />
+                </CardContent>
+              </Card>
             ))}
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="submit">Complete session</Button>
+          <div className="bg-background sticky bottom-0 z-40 -mx-4 px-4 py-4 sm:static sm:mx-0 sm:flex sm:justify-end sm:px-0">
+            <Button className="w-full text-center sm:w-auto" type="submit">
+              Complete session
+            </Button>
           </div>
         </form>
       </Form>
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Training summary</DialogTitle>
-            <DialogDescription>
-              Here’s a quick recap of your session. Closing will take you to the
-              dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Total time</span>
-              <span className="font-medium tabular-nums">
-                {(() => {
-                  const sec = summary?.durationSec ?? null;
-                  if (sec == null) return elapsed;
-                  const h = Math.floor(sec / 3600)
-                    .toString()
-                    .padStart(2, "0");
-                  const m = Math.floor((sec % 3600) / 60)
-                    .toString()
-                    .padStart(2, "0");
-                  const s = Math.floor(sec % 60)
-                    .toString()
-                    .padStart(2, "0");
-                  return `${h}:${m}:${s}`;
-                })()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Total load</span>
-              <span className="font-medium tabular-nums">
-                {(summary?.totalLoadKg ?? 0).toFixed(2)} kg
-              </span>
-            </div>
-            {summary && summary.progress.length > 0 ? (
-              <div className="pt-2">
-                <div className="mb-1 font-medium">Progress</div>
-                <ul className="list-disc space-y-1 pl-5">
-                  {summary.progress.map((p, idx) => (
-                    <li key={idx} className="text-sm">
-                      {p.name}: +{p.delta.toFixed(2)} kg volume
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="text-muted-foreground text-sm">
-                No volume increase vs last session.
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="button" onClick={() => handleClose(false)}>
-              Go to dashboard
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SessionSummaryDialog
+        open={open}
+        onOpenChange={handleClose}
+        summary={summary}
+        elapsedTime={elapsed}
+        onClose={() => handleClose(false)}
+      />
     </div>
   );
 }
@@ -558,107 +506,9 @@ function ExerciseSets({
         // single set row
         <div
           key={f.id}
-          className="grid grid-cols-3 items-center gap-2 sm:grid-cols-6"
+          className="bg-muted/40 mb-2 grid grid-cols-3 items-center gap-2 rounded-lg border p-3 last:mb-0 sm:grid-cols-6"
         >
-          <FormField
-            control={control}
-            name={`exercises.${exIndex}.sets.${setIdx}.setIndex`}
-            render={(_field) => (
-              <FormItem>
-                <FormLabel className="text-xs">Set</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={setIdx + 1}
-                    readOnly
-                    disabled={!!doneMap[f.id]}
-                    tabIndex={-1}
-                  />
-                </FormControl>
-                <div className="invisible text-[10px]">placeholder</div>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`exercises.${exIndex}.sets.${setIdx}.reps`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs">Reps</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    value={field.value ?? ""}
-                    className={deltaClass(
-                      compare(
-                        typeof field.value === "string"
-                          ? field.value === ""
-                            ? undefined
-                            : Number(field.value)
-                          : (field.value as number | undefined),
-                        prevSets?.[setIdx]?.reps,
-                      ),
-                    )}
-                    disabled={!!doneMap[f.id]}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === "" ? "" : Number(e.target.value),
-                      )
-                    }
-                  />
-                </FormControl>
-                <div className="text-muted-foreground text-[10px]">
-                  prev: {prevSets?.[setIdx]?.reps ?? "—"}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`exercises.${exIndex}.sets.${setIdx}.weight`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs">Weight</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    inputMode="decimal"
-                    min={0}
-                    placeholder="0 = Bodyweight"
-                    value={field.value ?? ""}
-                    className={deltaClass(
-                      compare(
-                        typeof field.value === "number"
-                          ? field.value
-                          : undefined,
-                        prevSets?.[setIdx]?.weight,
-                      ),
-                    )}
-                    disabled={!!doneMap[f.id]}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ""
-                          ? undefined
-                          : Number(e.target.value),
-                      )
-                    }
-                  />
-                </FormControl>
-                <div className="text-muted-foreground text-[10px]">
-                  prev:{" "}
-                  {prevSets?.[setIdx]?.weight === 0
-                    ? "Bodyweight"
-                    : (prevSets?.[setIdx]?.weight ?? "—")}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="col-span-3 flex justify-end sm:col-span-3">
+          <div className="order-first col-span-3 flex items-center justify-between sm:order-last sm:col-span-3">
             <label className="mr-auto inline-flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
@@ -679,31 +529,139 @@ function ExerciseSets({
             </label>
             <Button
               type="button"
-              variant="outline"
-              tabIndex={-1}
-              onClick={() => {
-                const lastSet = sets?.[sets.length - 1];
-                append({
-                  setIndex: fields.length,
-                  reps: lastSet?.reps ?? 5,
-                  weight: lastSet?.weight ?? undefined,
-                });
-              }}
-            >
-              Add set
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="ml-2"
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive ml-2 h-8 w-8"
               tabIndex={-1}
               onClick={() => remove(setIdx)}
             >
-              Remove
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+          <FormField
+            control={control}
+            name={`exercises.${exIndex}.sets.${setIdx}.setIndex`}
+            render={(_field) => (
+              <FormItem>
+                <FormLabel className="text-xs">Set</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={setIdx + 1}
+                    readOnly
+                    disabled={!!doneMap[f.id]}
+                    tabIndex={-1}
+                    className="bg-background"
+                  />
+                </FormControl>
+                <div className="invisible text-[10px]">placeholder</div>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`exercises.${exIndex}.sets.${setIdx}.reps`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Reps</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={field.value ?? ""}
+                    className={`${deltaClass(
+                      compare(
+                        typeof field.value === "string"
+                          ? field.value === ""
+                            ? undefined
+                            : Number(field.value)
+                          : (field.value as number | undefined),
+                        prevSets?.[setIdx]?.reps,
+                      ),
+                    )} bg-background`}
+                    disabled={!!doneMap[f.id]}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                {prevSets?.[setIdx]?.reps != null ? (
+                  <div className="text-muted-foreground text-[10px]">
+                    prev: {prevSets[setIdx].reps}
+                  </div>
+                ) : (
+                  <div className="invisible text-[10px]">placeholder</div>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`exercises.${exIndex}.sets.${setIdx}.weight`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Weight</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    inputMode="decimal"
+                    min={0}
+                    placeholder="0 = Bodyweight"
+                    value={field.value ?? ""}
+                    className={`${deltaClass(
+                      compare(
+                        typeof field.value === "number"
+                          ? field.value
+                          : undefined,
+                        prevSets?.[setIdx]?.weight,
+                      ),
+                    )} bg-background`}
+                    disabled={!!doneMap[f.id]}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                {prevSets?.[setIdx]?.weight != null ? (
+                  <div className="text-muted-foreground text-[10px]">
+                    prev:{" "}
+                    {prevSets[setIdx].weight === 0
+                      ? "Bodyweight"
+                      : prevSets[setIdx].weight}
+                  </div>
+                ) : (
+                  <div className="invisible text-[10px]">placeholder</div>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       ))}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => {
+          const lastSet = sets?.[sets.length - 1];
+          append({
+            setIndex: fields.length,
+            reps: lastSet?.reps ?? 5,
+            weight: lastSet?.weight ?? undefined,
+          });
+        }}
+      >
+        <Plus className="mr-2 h-4 w-4" /> Add set
+      </Button>
     </div>
   );
 }
