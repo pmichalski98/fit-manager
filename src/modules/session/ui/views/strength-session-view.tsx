@@ -10,7 +10,7 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { History, Trash2, Plus } from "lucide-react";
+import { History, Trash2, Plus, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,6 +115,10 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
     ) as Resolver<StrengthSessionFormValues>,
     defaultValues: { exercises: defaultExercises, trainingId },
   });
+
+  const {
+    formState: { isSubmitting },
+  } = form;
 
   // console.log("form.formState.errors", form.formState.errors);
 
@@ -306,6 +310,7 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
                     onMostRecentChange={onExerciseMostRecentChange}
                     onProgressChange={onExerciseProgressChange}
                     isActive={activeExerciseIndex === exIndex}
+                    disabled={isSubmitting}
                   />
                 </CardContent>
               </Card>
@@ -313,7 +318,14 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
           </div>
 
           <div className="bg-background sticky bottom-0 z-40 -mx-4 px-4 py-4 sm:static sm:mx-0 sm:flex sm:justify-end sm:px-0">
-            <Button className="w-full text-center sm:w-auto" type="submit">
+            <Button
+              className="w-full text-center sm:w-auto"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Complete session
             </Button>
           </div>
@@ -339,6 +351,7 @@ function ExerciseSets({
   onMostRecentChange,
   onProgressChange,
   isActive,
+  disabled,
 }: {
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   exIndex: number;
@@ -348,6 +361,7 @@ function ExerciseSets({
   onMostRecentChange: (index: number, mostRecent: number | null) => void;
   onProgressChange: (index: number, done: number, total: number) => void;
   isActive: boolean;
+  disabled?: boolean;
 }) {
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [restBySetId, setRestBySetId] = useState<Record<string, number>>({});
@@ -533,6 +547,7 @@ function ExerciseSets({
               size="icon"
               className="text-destructive hover:bg-destructive/10 hover:text-destructive ml-2 h-8 w-8"
               tabIndex={-1}
+              disabled={disabled}
               onClick={() => remove(setIdx)}
             >
               <Trash2 className="h-4 w-4" />
@@ -550,7 +565,7 @@ function ExerciseSets({
                     min={0}
                     value={setIdx + 1}
                     readOnly
-                    disabled={!!doneMap[f.id]}
+                    disabled={!!doneMap[f.id] || disabled}
                     tabIndex={-1}
                     className="bg-background"
                   />
@@ -580,7 +595,7 @@ function ExerciseSets({
                         prevSets?.[setIdx]?.reps,
                       ),
                     )} bg-background`}
-                    disabled={!!doneMap[f.id]}
+                    disabled={!!doneMap[f.id] || disabled}
                     onChange={(e) =>
                       field.onChange(
                         e.target.value === "" ? "" : Number(e.target.value),
@@ -621,7 +636,7 @@ function ExerciseSets({
                         prevSets?.[setIdx]?.weight,
                       ),
                     )} bg-background`}
-                    disabled={!!doneMap[f.id]}
+                    disabled={!!doneMap[f.id] || disabled}
                     onChange={(e) =>
                       field.onChange(
                         e.target.value === ""
@@ -651,6 +666,7 @@ function ExerciseSets({
         type="button"
         variant="outline"
         className="w-full"
+        disabled={disabled}
         onClick={() => {
           const lastSet = sets?.[sets.length - 1];
           append({
