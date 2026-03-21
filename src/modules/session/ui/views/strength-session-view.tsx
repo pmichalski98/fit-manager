@@ -18,7 +18,6 @@ import {
   RotateCcw,
   Check,
   CloudOff,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,11 +36,9 @@ import {
   strengthSessionSchema,
   type StrengthSessionFormValues,
 } from "@/modules/session/schemas";
-import {
-  completeStrengthSession,
-  discardSession,
-} from "@/modules/session/actions";
+import { completeStrengthSession } from "@/modules/session/actions";
 import { SessionSummaryDialog } from "@/modules/session/ui/components/session-summary-dialog";
+import { DiscardSessionButton } from "@/modules/session/ui/components/discard-session-button";
 import type { InProgressSession } from "@/modules/session/types";
 import {
   useAutoSave,
@@ -365,16 +362,6 @@ export function StrengthSessionView({
     [router],
   );
 
-  const handleDiscard = useCallback(async () => {
-    try {
-      await discardSession(sessionId);
-      toast.success("Session discarded");
-      router.push("/training");
-    } catch {
-      toast.error("Failed to discard session");
-    }
-  }, [sessionId, router]);
-
   return (
     <div className="space-y-6">
       <div className="bg-background/80 sticky top-16 z-40 flex items-center justify-between pt-2 pb-4 backdrop-blur-xl">
@@ -386,16 +373,7 @@ export function StrengthSessionView({
           <span className="text-muted-foreground text-sm tabular-nums">
             {elapsed}
           </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8"
-            onClick={handleDiscard}
-            title="Discard session"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <DiscardSessionButton sessionId={sessionId} />
         </div>
       </div>
       {isResuming ? (
@@ -403,7 +381,7 @@ export function StrengthSessionView({
           <RotateCcw className="h-4 w-4" />
           <AlertDescription>
             <span className="font-medium">Resuming session</span>{" "}
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground" suppressHydrationWarning>
               started{" "}
               {new Date(inProgress!.startAt).toLocaleString(undefined, {
                 month: "short",

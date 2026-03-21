@@ -34,6 +34,5 @@ I read through strength-session-view.tsx — it's 716 lines in a single componen
 - Swipeable exercise navigation — instead of scrolling through all exercises vertically, show one exercise at a time with swipe left/right to switch. A small progress indicator at the top shows where you are.
   This dramatically reduces visual clutter.
 - Collapsible exercises — alternatively, keep the vertical list but auto-collapse completed exercises so only the active one is expanded.
-- Quick-fill from previous — one tap to copy all sets from the last session, then just adjust what changed.
 
 [] - potential move this project to vps instead of vercel
