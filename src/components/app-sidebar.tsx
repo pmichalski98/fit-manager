@@ -50,14 +50,14 @@ export function AppSidebar() {
   ];
 
   const activeStyles =
-    "bg-gradient-to-r from-primary/20 via-primary/10 to-transparent text-primary border-l-2 border-primary font-medium dark:from-primary/20 dark:via-primary/10 hover:from-primary/15 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
+    "bg-gradient-to-r from-primary/15 via-primary/8 to-transparent text-primary border-l-2 border-primary font-semibold dark:from-primary/20 dark:via-primary/10 hover:from-primary/20 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
 
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-3">
         <Link href="/" className="flex items-center gap-3">
           <Image src="/logo.png" alt="Fit Manager" width={39} height={39} />
-          <p className="text-base font-semibold tracking-tight text-black dark:text-white">
+          <p className="text-base font-bold tracking-tight text-foreground">
             Fitness Manager
           </p>
         </Link>

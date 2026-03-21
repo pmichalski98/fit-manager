@@ -38,8 +38,11 @@ export default async function DashboardPage(props: PageProps) {
   }
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground text-sm">Your weekly overview and progress at a glance.</p>
+      </div>
 
       <Suspense
         fallback={
@@ -68,18 +71,18 @@ export default async function DashboardPage(props: PageProps) {
         <ExerciseProgressChart availableExercises={availableExercises} />
       </Suspense>
 
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground">Weekly overview (Mon–Sun)</p>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold tracking-tight">Weekly overview</h2>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" size="sm">
             <Link href={`?week=${formatDateYYYYMMDD(previousMonday)}`}>
               Previous
             </Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" size="sm">
             <Link href={`?week=${formatDateYYYYMMDD(nextMonday)}`}>Next</Link>
           </Button>
-          <Button asChild variant="ghost">
+          <Button asChild variant="ghost" size="sm">
             <Link href="?">This week</Link>
           </Button>
         </div>

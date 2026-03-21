@@ -8,8 +8,8 @@ export default async function TrainingPage() {
     <div className="space-y-8">
       <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-bold">Training</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Training</h1>
+          <p className="text-muted-foreground text-sm">
             Create a new training template.
           </p>
         </div>

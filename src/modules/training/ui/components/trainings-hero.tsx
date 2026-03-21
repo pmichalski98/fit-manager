@@ -4,7 +4,7 @@ export function TrainingsHero({
   trainingsLength: number;
 }) {
   return (
-    <section className="border-border/60 from-primary/10 rounded-3xl border bg-linear-to-br to-transparent p-6 shadow-sm">
+    <section className="bg-card from-primary/8 rounded-2xl border bg-gradient-to-br to-transparent p-6 shadow-md">
       <div className="flex flex-col gap-2">
         <p className="text-foreground text-sm font-semibold">
           Training library

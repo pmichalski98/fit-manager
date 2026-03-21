@@ -177,7 +177,7 @@ export async function TrainingConsistency() {
                     }
 
                     const types = sessionsMap.get(key);
-                    let colorClass = "bg-secondary-foreground/30";
+                    let colorClass = "bg-muted dark:bg-secondary-foreground/30";
                     if (types && types.length > 0) {
                       // Check if ONLY cardio
                       const hasStrength = types.includes("strength");

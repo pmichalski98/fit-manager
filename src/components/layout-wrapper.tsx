@@ -19,7 +19,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <SidebarInset className="max-h-svh overflow-x-hidden overflow-y-auto">
         <AppHeader />
-        <div className="flex flex-1 flex-col p-4">{children}</div>
+        <div className="flex flex-1 flex-col p-4 md:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
