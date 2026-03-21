@@ -5,8 +5,15 @@ import { TrainingsHero } from "../components/trainings-hero";
 export async function TrainingsView() {
   const { data: trainings } = await getAllTrainingsWithExercises();
 
-  const strengthTrainings = trainings.filter((t) => t.type === "strength");
-  const cardioTrainings = trainings.filter((t) => t.type === "cardio");
+  const sortByActive = <T extends { isActive: boolean }>(items: T[]) =>
+    [...items].sort((a, b) => Number(b.isActive) - Number(a.isActive));
+
+  const strengthTrainings = sortByActive(
+    trainings.filter((t) => t.type === "strength"),
+  );
+  const cardioTrainings = sortByActive(
+    trainings.filter((t) => t.type === "cardio"),
+  );
 
   return (
     <div className="space-y-8">

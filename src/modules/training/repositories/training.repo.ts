@@ -209,6 +209,21 @@ class TrainingRepository {
     return { ...t, exercises: exs };
   }
 
+  async toggleTrainingActive(userId: string, trainingId: string) {
+    const [t] = await db
+      .select({ isActive: training.isActive })
+      .from(training)
+      .where(and(eq(training.userId, userId), eq(training.id, trainingId)));
+    if (!t) return null;
+
+    const [updated] = await db
+      .update(training)
+      .set({ isActive: !t.isActive, updatedAt: new Date() })
+      .where(and(eq(training.userId, userId), eq(training.id, trainingId)))
+      .returning();
+    return updated;
+  }
+
   async deleteTraining(userId: string, trainingId: string) {
     return await db
       .delete(training)
