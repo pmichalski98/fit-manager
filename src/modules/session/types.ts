@@ -5,6 +5,22 @@ export type StrengthExerciseSummary = {
   avgWeightKg: number | null;
 };
 
+export type InProgressSession = {
+  sessionId: string;
+  startAt: string;
+  exercises: Array<{
+    name: string;
+    position: number;
+    templateExerciseId: string | null;
+    sets: Array<{
+      setIndex: number;
+      reps: number | null;
+      weight: number | null;
+      isDone: boolean;
+    }>;
+  }>;
+};
+
 export type SessionSummary = {
   id: string;
   trainingId: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   useForm,
@@ -10,7 +10,16 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { History, Trash2, Plus, Loader2 } from "lucide-react";
+import {
+  History,
+  Trash2,
+  Plus,
+  Loader2,
+  RotateCcw,
+  Check,
+  CloudOff,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +37,17 @@ import {
   strengthSessionSchema,
   type StrengthSessionFormValues,
 } from "@/modules/session/schemas";
-import { completeStrengthSession } from "@/modules/session/actions";
+import {
+  completeStrengthSession,
+  discardSession,
+} from "@/modules/session/actions";
 import { SessionSummaryDialog } from "@/modules/session/ui/components/session-summary-dialog";
+import type { InProgressSession } from "@/modules/session/types";
+import {
+  useAutoSave,
+  type SaveStatus,
+} from "@/modules/session/ui/hooks/use-auto-save";
+import { useWakeLock } from "@/modules/session/ui/hooks/use-wake-lock";
 
 type TemplateExercise = { id: string; name: string; position: number };
 
@@ -45,11 +63,25 @@ type Props = {
     }>;
   };
   trainingId: string;
+  sessionId: string;
+  inProgress: InProgressSession | null;
 };
 
-export function StrengthSessionView({ template, last, trainingId }: Props) {
+export function StrengthSessionView({
+  template,
+  last,
+  trainingId,
+  sessionId,
+  inProgress,
+}: Props) {
   const router = useRouter();
-  const sessionStartAtMs = useMemo(() => new Date().getTime(), []);
+  const isResuming = inProgress !== null && inProgress.exercises.length > 0;
+
+  // Restore timer from in-progress session or start fresh
+  const sessionStartAtMs = useMemo(
+    () => (inProgress ? new Date(inProgress.startAt).getTime() : Date.now()),
+    [inProgress],
+  );
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
     const start = sessionStartAtMs;
@@ -69,9 +101,38 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
     return () => clearInterval(i);
   }, [sessionStartAtMs]);
 
+  // Build initial isDone map from in-progress data
+  const initialDoneMap = useMemo(() => {
+    if (!inProgress?.exercises.length) return null;
+    const map: Record<string, Record<number, boolean>> = {};
+    for (const ex of inProgress.exercises) {
+      const exKey = String(ex.position);
+      map[exKey] = {};
+      for (const s of ex.sets) {
+        map[exKey][s.setIndex] = s.isDone;
+      }
+    }
+    return map;
+  }, [inProgress]);
+
   const defaultExercises = useMemo<
     StrengthSessionFormValues["exercises"]
   >(() => {
+    // If resuming, restore from in-progress data
+    if (isResuming && inProgress) {
+      return inProgress.exercises.map((e) => ({
+        templateExerciseId: e.templateExerciseId ?? undefined,
+        name: e.name,
+        position: e.position,
+        sets: e.sets.map((s) => ({
+          setIndex: s.setIndex,
+          reps: s.reps ?? 5,
+          weight: s.weight ?? undefined,
+        })),
+      }));
+    }
+
+    // Otherwise, initialize from template + last session
     return template.exercises.map((e) => {
       const lastEx = last?.exercises.find((le) => le.position === e.position);
       const sets = lastEx?.sets?.length
@@ -91,7 +152,7 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
         sets,
       };
     });
-  }, [template.exercises, last]);
+  }, [template.exercises, last, isResuming, inProgress]);
 
   const prevSetsByPosition = useMemo<
     Record<number, Array<{ reps: number; weight?: number }>>
@@ -126,6 +187,28 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
     control: form.control,
     name: "exercises",
   });
+
+  // Shared done-map ref for auto-save (keyed by exIndex → setIndex → boolean)
+  const doneMapRef = useRef<Record<string, Record<string, boolean>>>({});
+  const [doneTrigger, setDoneTrigger] = useState(0);
+  const updateDoneMapRef = useCallback(
+    (exIndex: number, _setId: string, setIndex: number, isDone: boolean) => {
+      const exKey = String(exIndex);
+      if (!doneMapRef.current[exKey]) doneMapRef.current[exKey] = {};
+      doneMapRef.current[exKey][String(setIndex)] = isDone;
+      setDoneTrigger((c) => c + 1);
+    },
+    [],
+  );
+
+  // Auto-save and wake lock
+  const { saveStatus } = useAutoSave(
+    sessionId,
+    form.control,
+    doneMapRef,
+    doneTrigger,
+  );
+  useWakeLock();
 
   const [mostRecentDoneByExercise, setMostRecentDoneByExercise] = useState<
     Record<number, number | null>
@@ -246,6 +329,7 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
       await completeStrengthSession({
         startedAt: new Date(sessionStartAtMs).toISOString(),
         ...values,
+        sessionId,
         durationSec,
         totalLoadKg,
         progress: progressFull,
@@ -281,13 +365,57 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
     [router],
   );
 
+  const handleDiscard = useCallback(async () => {
+    try {
+      await discardSession(sessionId);
+      toast.success("Session discarded");
+      router.push("/training");
+    } catch {
+      toast.error("Failed to discard session");
+    }
+  }, [sessionId, router]);
+
   return (
     <div className="space-y-6">
       <div className="bg-background/80 sticky top-16 z-40 flex items-center justify-between pt-2 pb-4 backdrop-blur-xl">
-        <h1 className="text-2xl font-bold">{template.name}</h1>
-        <div className="text-muted-foreground">Time: {elapsed}</div>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{template.name}</h1>
+          <SaveStatusIndicator status={saveStatus} />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-muted-foreground text-sm tabular-nums">
+            {elapsed}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+            onClick={handleDiscard}
+            title="Discard session"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-      {last?.exercises?.some((e) => (e.sets?.length ?? 0) > 0) ? (
+      {isResuming ? (
+        <Alert className="border-blue-500/30 bg-blue-500/10">
+          <RotateCcw className="h-4 w-4" />
+          <AlertDescription>
+            <span className="font-medium">Resuming session</span>{" "}
+            <span className="text-muted-foreground">
+              started{" "}
+              {new Date(inProgress!.startAt).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              . Your progress has been restored.
+            </span>
+          </AlertDescription>
+        </Alert>
+      ) : last?.exercises?.some((e) => (e.sets?.length ?? 0) > 0) ? (
         <Alert className="bg-muted/40 border-border">
           <History />
           <AlertDescription>
@@ -345,6 +473,10 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
                     onProgressChange={onExerciseProgressChange}
                     isActive={activeExerciseIndex === exIndex}
                     disabled={isSubmitting}
+                    initialDoneState={
+                      initialDoneMap?.[String(field.position)] ?? null
+                    }
+                    onDoneChange={updateDoneMapRef}
                   />
                 </CardContent>
               </Card>
@@ -376,6 +508,32 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
   );
 }
 
+function SaveStatusIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+  return (
+    <span className="text-muted-foreground flex items-center gap-1 text-xs">
+      {status === "saving" && (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Saving…</span>
+        </>
+      )}
+      {status === "saved" && (
+        <>
+          <Check className="h-3 w-3 text-emerald-500" />
+          <span className="text-emerald-500">Saved</span>
+        </>
+      )}
+      {status === "error" && (
+        <>
+          <CloudOff className="h-3 w-3 text-rose-500" />
+          <span className="text-rose-500">Save failed</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 function ExerciseSets({
   control,
   exIndex,
@@ -386,6 +544,8 @@ function ExerciseSets({
   onProgressChange,
   isActive,
   disabled,
+  initialDoneState,
+  onDoneChange,
 }: {
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   exIndex: number;
@@ -396,6 +556,13 @@ function ExerciseSets({
   onProgressChange: (index: number, done: number, total: number) => void;
   isActive: boolean;
   disabled?: boolean;
+  initialDoneState: Record<number, boolean> | null;
+  onDoneChange: (
+    exIndex: number,
+    setId: string,
+    setIndex: number,
+    isDone: boolean,
+  ) => void;
 }) {
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [restBySetId, setRestBySetId] = useState<Record<string, number>>({});
@@ -413,6 +580,25 @@ function ExerciseSets({
     control,
     name: `exercises.${exIndex}.sets`,
   });
+
+  // Restore done state from in-progress session on mount
+  const [didRestoreDone, setDidRestoreDone] = useState(false);
+  useEffect(() => {
+    if (didRestoreDone || !initialDoneState || fields.length === 0) return;
+    const restored: Record<string, boolean> = {};
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i]!;
+      if (initialDoneState[i]) {
+        restored[field.id] = true;
+        onDoneChange(exIndex, field.id, i, true);
+      }
+    }
+    if (Object.keys(restored).length > 0) {
+      setDoneMap(restored);
+    }
+    setDidRestoreDone(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDoneState, fields, didRestoreDone]);
 
   useEffect(() => {
     onMostRecentChange(exIndex, localMostRecentDoneAt);
@@ -460,8 +646,13 @@ function ExerciseSets({
     onProgressChange(exIndex, done, total);
   }, [exIndex, fields, doneMap, onProgressChange]);
 
-  const handleToggleDone = (id: string, nextValue: boolean) => {
+  const handleToggleDone = (
+    id: string,
+    setIndex: number,
+    nextValue: boolean,
+  ) => {
     setDoneMap((prev) => ({ ...prev, [id]: nextValue }));
+    onDoneChange(exIndex, id, setIndex, nextValue);
     if (nextValue) {
       const now = Date.now();
       const baseline =
@@ -561,7 +752,9 @@ function ExerciseSets({
               <input
                 type="checkbox"
                 checked={!!doneMap[f.id]}
-                onChange={(e) => handleToggleDone(f.id, e.target.checked)}
+                onChange={(e) =>
+                  handleToggleDone(f.id, setIdx, e.target.checked)
+                }
               />
               Done
               {(() => {
