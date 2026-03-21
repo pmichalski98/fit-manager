@@ -480,6 +480,173 @@ class SessionRepository {
     };
   }
 
+  async createInProgressSession(userId: string, trainingId: string) {
+    const [row] = await db
+      .insert(trainingSession)
+      .values({
+        userId,
+        trainingId,
+        type: "strength",
+        status: "in_progress",
+        startAt: new Date(),
+      })
+      .returning({ id: trainingSession.id, startAt: trainingSession.startAt });
+    if (!row) throw new Error("Failed to create in-progress session");
+    return row;
+  }
+
+  async upsertSessionProgress(
+    sessionId: string,
+    exercises: Array<{
+      templateExerciseId?: string | null;
+      name: string;
+      position: number;
+      sets: Array<{
+        setIndex: number;
+        reps: number | null;
+        weight: number | null;
+        isDone: boolean;
+      }>;
+    }>,
+  ) {
+    await db.transaction(async (tx) => {
+      // Delete existing exercises (cascade deletes sets)
+      await tx
+        .delete(trainingSessionExercise)
+        .where(eq(trainingSessionExercise.sessionId, sessionId));
+
+      // Re-insert all exercises and sets
+      for (const ex of exercises) {
+        const [insertedEx] = await tx
+          .insert(trainingSessionExercise)
+          .values({
+            sessionId,
+            templateExerciseId: ex.templateExerciseId ?? null,
+            name: ex.name,
+            position: ex.position,
+          })
+          .returning();
+        if (!insertedEx) throw new Error("Failed to insert exercise");
+
+        if (ex.sets.length > 0) {
+          await tx.insert(trainingSessionSet).values(
+            ex.sets.map((s) => ({
+              sessionExerciseId: insertedEx.id,
+              setIndex: s.setIndex,
+              reps: s.reps ?? 0,
+              weight: s.weight != null ? String(s.weight) : null,
+              isDone: s.isDone,
+            })),
+          );
+        }
+      }
+    });
+  }
+
+  async finalizeSession(
+    sessionId: string,
+    summary: {
+      durationSec: number | null;
+      totalLoadKg: number | null;
+    },
+  ) {
+    const now = new Date();
+    await db.transaction(async (tx) => {
+      const [session] = await tx
+        .update(trainingSession)
+        .set({
+          status: "completed",
+          endAt: now,
+          durationMin: summary.durationSec,
+          totalLoadKg: summary.totalLoadKg,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(trainingSession.id, sessionId),
+            eq(trainingSession.status, "in_progress"),
+          ),
+        )
+        .returning();
+      if (!session) throw new Error("Session not found or already completed");
+
+      // Update training lastSessionAt
+      if (isToday(session.startAt)) {
+        await tx
+          .update(training)
+          .set({ lastSessionAt: session.startAt })
+          .where(eq(training.id, session.trainingId));
+      }
+    });
+  }
+
+  async findInProgressSession(userId: string, trainingId: string) {
+    // Find the in-progress session
+    const [session] = await db
+      .select()
+      .from(trainingSession)
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          eq(trainingSession.trainingId, trainingId),
+          eq(trainingSession.status, "in_progress"),
+        ),
+      )
+      .orderBy(desc(trainingSession.startAt))
+      .limit(1);
+
+    if (!session) return null;
+
+    // Get exercises and sets
+    const exercises = await db
+      .select()
+      .from(trainingSessionExercise)
+      .where(eq(trainingSessionExercise.sessionId, session.id))
+      .orderBy(asc(trainingSessionExercise.position));
+
+    const exerciseIds = exercises.map((e) => e.id);
+    let sets: (typeof trainingSessionSet.$inferSelect)[] = [];
+    if (exerciseIds.length > 0) {
+      sets = await db
+        .select()
+        .from(trainingSessionSet)
+        .where(inArray(trainingSessionSet.sessionExerciseId, exerciseIds))
+        .orderBy(asc(trainingSessionSet.setIndex));
+    }
+
+    const setsByExercise = new Map<
+      string,
+      (typeof trainingSessionSet.$inferSelect)[]
+    >();
+    for (const s of sets) {
+      const arr = setsByExercise.get(s.sessionExerciseId) ?? [];
+      arr.push(s);
+      setsByExercise.set(s.sessionExerciseId, arr);
+    }
+
+    return {
+      sessionId: session.id,
+      startAt: session.startAt.toISOString(),
+      exercises: exercises.map((ex) => ({
+        name: ex.name,
+        position: ex.position,
+        templateExerciseId: ex.templateExerciseId,
+        sets: (setsByExercise.get(ex.id) ?? []).map((s) => ({
+          setIndex: s.setIndex,
+          reps: s.reps,
+          weight: s.weight != null ? Number(s.weight) : null,
+          isDone: s.isDone,
+        })),
+      })),
+    };
+  }
+
+  async deleteSession(sessionId: string) {
+    await db
+      .delete(trainingSession)
+      .where(eq(trainingSession.id, sessionId));
+  }
+
   async getExerciseHistory(userId: string, exerciseName: string) {
     // Get all completed sessions with this exercise
     const rows = await db

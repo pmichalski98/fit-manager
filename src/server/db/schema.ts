@@ -145,6 +145,10 @@ export const photo = createTable("photo", (d) => ({
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
 }));
 export const trainingTypeEnum = pgEnum("training_type", ["strength", "cardio"]);
+export const sessionStatusEnum = pgEnum("session_status", [
+  "in_progress",
+  "completed",
+]);
 
 export const training = createTable("training", (d) => ({
   id: d.uuid("id").primaryKey().defaultRandom(),
@@ -193,6 +197,7 @@ export const trainingSession = createTable("training_session", (d) => ({
     .notNull()
     .references(() => training.id, { onDelete: "cascade" }),
   type: trainingTypeEnum("type").notNull(),
+  status: sessionStatusEnum("status").notNull().default("completed"),
   startAt: d.timestamp("start_at").notNull().defaultNow(),
   endAt: d.timestamp("end_at"),
   // Derived/summary fields
@@ -241,6 +246,7 @@ export const trainingSessionSet = createTable(
     setIndex: d.integer("set_index").notNull(),
     reps: d.integer("reps").notNull(),
     weight: d.numeric("weight", { precision: 6, scale: 2 }),
+    isDone: d.boolean("is_done").notNull().default(false),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
