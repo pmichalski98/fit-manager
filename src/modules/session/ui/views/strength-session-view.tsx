@@ -283,7 +283,7 @@ export function StrengthSessionView({ template, last, trainingId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-background sticky top-16 z-40 flex items-center justify-between pt-2 pb-4">
+      <div className="bg-background/80 sticky top-16 z-40 flex items-center justify-between pt-2 pb-4 backdrop-blur-xl">
         <h1 className="text-2xl font-bold">{template.name}</h1>
         <div className="text-muted-foreground">Time: {elapsed}</div>
       </div>

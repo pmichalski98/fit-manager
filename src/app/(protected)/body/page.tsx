@@ -7,8 +7,8 @@ export default async function BodyPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Body</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight">Body</h1>
+        <p className="text-muted-foreground text-sm">
           Track your body measurements and progress here.
         </p>
       </div>

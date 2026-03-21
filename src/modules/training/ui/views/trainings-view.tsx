@@ -20,7 +20,7 @@ export async function TrainingsView() {
       <TrainingsHero trainingsLength={trainings.length} />
 
       {trainings.length === 0 ? (
-        <div className="border-border/60 rounded-2xl border border-dashed p-8 text-center">
+        <div className="rounded-2xl border border-dashed p-8 text-center">
           <p className="text-foreground text-lg font-medium">
             No trainings yet
           </p>

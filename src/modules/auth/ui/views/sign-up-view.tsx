@@ -227,7 +227,7 @@ export default function SignUpView() {
               </div>
             </form>
           </Form>
-          <div className="bg-primary relative hidden flex-col items-center justify-center gap-y-4 md:flex">
+          <div className="bg-primary relative hidden flex-col items-center justify-center gap-y-4 rounded-r-xl md:flex">
             <Image src="/dark_logo.png" alt="logo" width={400} height={400} />
           </div>
         </CardContent>

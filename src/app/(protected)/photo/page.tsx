@@ -9,8 +9,8 @@ export default async function PhotoPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Photos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Photos</h1>
+          <p className="text-muted-foreground text-sm">
             Upload progress photos with date and weight.
           </p>
         </div>

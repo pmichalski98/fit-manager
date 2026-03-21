@@ -35,10 +35,10 @@ export function TrainingCard({ training }: TrainingCardProps) {
 
   return (
     <li
-      className={`border-border/50 bg-card flex flex-col gap-4 rounded-3xl border px-6 py-5 shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${
+      className={`bg-card flex flex-col gap-4 rounded-2xl border px-6 py-5 shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
         isCardio
-          ? "border-orange-500/30 bg-linear-to-br from-orange-500/5 to-transparent"
-          : ""
+          ? "border-orange-500/25 bg-gradient-to-br from-orange-500/5 to-transparent"
+          : "border-border"
       } ${isInactive ? "opacity-50" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
