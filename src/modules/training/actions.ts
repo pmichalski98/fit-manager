@@ -56,6 +56,21 @@ export async function updateTraining(
   return { ok: true, data: updated };
 }
 
+export async function toggleTrainingActive(trainingId: string) {
+  const userId = await requireUserId();
+  try {
+    const updated = await trainingRepository.toggleTrainingActive(
+      userId,
+      trainingId,
+    );
+    revalidatePath("/training");
+    return { ok: true, data: updated };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, error: "Internal server error" };
+  }
+}
+
 export async function deleteTraining(trainingId: string) {
   const userId = await requireUserId();
   try {

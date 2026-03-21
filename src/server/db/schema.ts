@@ -150,6 +150,7 @@ export const training = createTable("training", (d) => ({
   id: d.uuid("id").primaryKey().defaultRandom(),
   name: d.text("name").notNull(),
   type: trainingTypeEnum("type").notNull(),
+  isActive: d.boolean("is_active").notNull().default(true),
   createdAt: d.timestamp("created_at").notNull().defaultNow(),
   updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   lastSessionAt: d.timestamp("last_session_at"),

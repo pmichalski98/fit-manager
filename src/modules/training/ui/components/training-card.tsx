@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { DeleteTrainingButton } from "../components/delete-training-button";
 import { EditTrainingDialog } from "./edit-training-dialog";
+import { ToggleActiveButton } from "./toggle-active-button";
 
 type StrengthExercise = {
   id: string;
@@ -21,6 +22,7 @@ type TrainingCardProps = {
     id: string;
     name: string;
     type: "strength" | "cardio";
+    isActive: boolean;
     lastSessionAt: Date | null;
     exercises: StrengthExercise[];
   };
@@ -29,6 +31,7 @@ type TrainingCardProps = {
 export function TrainingCard({ training }: TrainingCardProps) {
   const exercises = training.exercises ?? [];
   const isCardio = training.type === "cardio";
+  const isInactive = !training.isActive;
 
   return (
     <li
@@ -36,7 +39,7 @@ export function TrainingCard({ training }: TrainingCardProps) {
         isCardio
           ? "border-orange-500/30 bg-linear-to-br from-orange-500/5 to-transparent"
           : ""
-      }`}
+      } ${isInactive ? "opacity-50" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -110,6 +113,10 @@ export function TrainingCard({ training }: TrainingCardProps) {
             {isCardio ? "Start cardio" : "Start workout"}
           </Link>
         </Button>
+        <ToggleActiveButton
+          trainingId={training.id}
+          isActive={training.isActive}
+        />
         <EditTrainingDialog training={training} />
         <DeleteTrainingButton trainingId={training.id} />
       </div>
