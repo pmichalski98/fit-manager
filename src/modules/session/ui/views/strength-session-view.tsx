@@ -18,20 +18,14 @@ import {
   RotateCcw,
   Check,
   CloudOff,
+  Timer,
+  CheckCircle2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormField } from "@/components/ui/form";
+import { NumberStepper } from "@/modules/session/ui/components/number-stepper";
 import {
   strengthSessionSchema,
   type StrengthSessionFormValues,
@@ -45,6 +39,12 @@ import {
   type SaveStatus,
 } from "@/modules/session/ui/hooks/use-auto-save";
 import { useWakeLock } from "@/modules/session/ui/hooks/use-wake-lock";
+import { useMediaQuery } from "@/modules/session/ui/hooks/use-media-query";
+import { SwipeableExerciseNav } from "@/modules/session/ui/components/swipeable-exercise-nav";
+import { ExerciseProgressDots } from "@/modules/session/ui/components/exercise-progress-dots";
+import { ExerciseSidebar } from "@/modules/session/ui/components/exercise-sidebar";
+import { useSessionKeyboardShortcuts } from "@/modules/session/ui/hooks/use-session-keyboard-shortcuts";
+import { cn } from "@/lib/utils";
 
 type TemplateExercise = { id: string; name: string; position: number };
 
@@ -74,7 +74,6 @@ export function StrengthSessionView({
   const router = useRouter();
   const isResuming = inProgress !== null && inProgress.exercises.length > 0;
 
-  // Restore timer from in-progress session or start fresh
   const sessionStartAtMs = useMemo(
     () => (inProgress ? new Date(inProgress.startAt).getTime() : Date.now()),
     [inProgress],
@@ -98,7 +97,6 @@ export function StrengthSessionView({
     return () => clearInterval(i);
   }, [sessionStartAtMs]);
 
-  // Build initial isDone map from in-progress data
   const initialDoneMap = useMemo(() => {
     if (!inProgress?.exercises.length) return null;
     const map: Record<string, Record<number, boolean>> = {};
@@ -115,7 +113,6 @@ export function StrengthSessionView({
   const defaultExercises = useMemo<
     StrengthSessionFormValues["exercises"]
   >(() => {
-    // If resuming, restore from in-progress data
     if (isResuming && inProgress) {
       return inProgress.exercises.map((e) => ({
         templateExerciseId: e.templateExerciseId ?? undefined,
@@ -129,7 +126,6 @@ export function StrengthSessionView({
       }));
     }
 
-    // Otherwise, initialize from template + last session
     return template.exercises.map((e) => {
       const lastEx = last?.exercises.find((le) => le.position === e.position);
       const sets = lastEx?.sets?.length
@@ -178,14 +174,11 @@ export function StrengthSessionView({
     formState: { isSubmitting },
   } = form;
 
-  // console.log("form.formState.errors", form.formState.errors);
-
   const exercisesArr = useFieldArray({
     control: form.control,
     name: "exercises",
   });
 
-  // Shared done-map ref for auto-save (keyed by exIndex → setIndex → boolean)
   const doneMapRef = useRef<Record<string, Record<string, boolean>>>({});
   const [doneTrigger, setDoneTrigger] = useState(0);
   const updateDoneMapRef = useCallback(
@@ -198,7 +191,6 @@ export function StrengthSessionView({
     [],
   );
 
-  // Auto-save and wake lock
   const { saveStatus } = useAutoSave(
     sessionId,
     form.control,
@@ -206,6 +198,9 @@ export function StrengthSessionView({
     doneTrigger,
   );
   useWakeLock();
+
+  const isMobile = useMediaQuery("(max-width: 639px)");
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
 
   const [mostRecentDoneByExercise, setMostRecentDoneByExercise] = useState<
     Record<number, number | null>
@@ -241,11 +236,48 @@ export function StrengthSessionView({
   const activeExerciseIndex = useMemo(() => {
     for (let i = 0; i < exercisesArr.fields.length; i++) {
       const p = progressByExercise[i];
-      if (!p) return i; // assume not completed until we know
+      if (!p) return i;
       if (p.done < p.total) return i;
     }
     return null;
   }, [exercisesArr.fields.length, progressByExercise]);
+
+  useEffect(() => {
+    if (isMobile && activeExerciseIndex != null) {
+      setCurrentExerciseIndex(activeExerciseIndex);
+    }
+  }, [isMobile, activeExerciseIndex]);
+
+  const exerciseNames = useMemo(
+    () => exercisesArr.fields.map((f) => f.name),
+    [exercisesArr.fields],
+  );
+
+  const exerciseRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const handleSidebarClick = useCallback((index: number) => {
+    exerciseRefs.current[index]?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, []);
+
+  const handleToggleNextDone = useCallback(() => {
+    document.dispatchEvent(new CustomEvent("session:toggle-next-done"));
+  }, []);
+
+  useSessionKeyboardShortcuts({
+    activeExerciseIndex,
+    exerciseCount: exercisesArr.fields.length,
+    onToggleNextDone: handleToggleNextDone,
+    onNavigateExercise: handleSidebarClick,
+  });
+
+  // Expose addSet for mobile — lives outside swipe container
+  const addSetCallbacksRef = useRef<Record<number, () => void>>({});
+  const handleAddSetMobile = useCallback(() => {
+    const cb = addSetCallbacksRef.current[currentExerciseIndex];
+    if (cb) cb();
+  }, [currentExerciseIndex]);
 
   const handleRemoveExercise = useCallback(
     (exIndex: number) => {
@@ -270,7 +302,6 @@ export function StrengthSessionView({
 
   const onSubmit = async (values: StrengthSessionFormValues) => {
     try {
-      // Compute client-side summary
       const durationSec = Math.max(
         0,
         Math.floor((Date.now() - sessionStartAtMs) / 1000),
@@ -286,7 +317,6 @@ export function StrengthSessionView({
           return acc + vol;
         }, 0) ?? 0;
 
-      // Build progress vs last by position
       const prevByPosition: Record<
         number,
         Array<{ reps: number; weight?: number }>
@@ -363,19 +393,26 @@ export function StrengthSessionView({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="bg-background/80 sticky top-16 z-40 flex items-center justify-between pt-2 pb-4 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{template.name}</h1>
-          <SaveStatusIndicator status={saveStatus} />
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-muted-foreground text-sm tabular-nums">
-            {elapsed}
-          </span>
-          <DiscardSessionButton sessionId={sessionId} />
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="bg-background/80 sticky top-16 z-40 border-b border-border/50 pt-2 pb-3 backdrop-blur-xl">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-bold">{template.name}</h1>
+            <SaveStatusIndicator status={saveStatus} />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5">
+              <Timer className="h-3.5 w-3.5 text-primary" />
+              <span className="text-sm font-semibold tabular-nums">
+                {elapsed}
+              </span>
+            </div>
+            <DiscardSessionButton sessionId={sessionId} />
+          </div>
         </div>
       </div>
+
       {isResuming ? (
         <Alert className="border-blue-500/30 bg-blue-500/10">
           <RotateCcw className="h-4 w-4" />
@@ -414,61 +451,104 @@ export function StrengthSessionView({
       ) : null}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            {exercisesArr.fields.map((field, exIndex) => (
-              <Card key={field.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">
-                      {field.position + 1}. {field.name}
-                    </CardTitle>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8"
-                      disabled={isSubmitting}
-                      onClick={() => handleRemoveExercise(exIndex)}
-                      title="Remove exercise"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ExerciseSets
-                    control={form.control}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {isMobile ? (
+            <>
+              {/* Mobile: progress bar + swipeable cards */}
+              <ExerciseProgressDots
+                exerciseNames={exerciseNames}
+                progressByExercise={progressByExercise}
+                currentIndex={currentExerciseIndex}
+                onDotClick={setCurrentExerciseIndex}
+              />
+
+              <SwipeableExerciseNav
+                currentIndex={currentExerciseIndex}
+                onIndexChange={setCurrentExerciseIndex}
+              >
+                {exercisesArr.fields.map((field, exIndex) => (
+                  <ExerciseCard
+                    key={field.id}
+                    field={field}
                     exIndex={exIndex}
+                    control={form.control}
                     prevSets={prevSetsByPosition[field.position] ?? []}
-                    prevExerciseLastDoneAt={
-                      exIndex > 0
-                        ? (mostRecentDoneByExercise[exIndex - 1] ?? null)
-                        : null
-                    }
+                    mostRecentDoneByExercise={mostRecentDoneByExercise}
                     sessionStartAtMs={sessionStartAtMs}
                     onMostRecentChange={onExerciseMostRecentChange}
                     onProgressChange={onExerciseProgressChange}
-                    isActive={activeExerciseIndex === exIndex}
-                    disabled={isSubmitting}
-                    initialDoneState={
-                      initialDoneMap?.[String(field.position)] ?? null
-                    }
-                    onDoneChange={updateDoneMapRef}
+                    activeExerciseIndex={activeExerciseIndex}
+                    isSubmitting={isSubmitting}
+                    initialDoneMap={initialDoneMap}
+                    updateDoneMapRef={updateDoneMapRef}
+                    onRemove={handleRemoveExercise}
+                    addSetCallbacksRef={addSetCallbacksRef}
+                    hideAddSet
                   />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </SwipeableExerciseNav>
 
-          <div className="bg-background sticky bottom-0 z-40 -mx-4 px-4 py-4 sm:static sm:mx-0 sm:flex sm:justify-end sm:px-0">
+              {/* Add set button — outside swipe container so it's always visible */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-dashed"
+                disabled={isSubmitting}
+                onClick={handleAddSetMobile}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add set
+              </Button>
+            </>
+          ) : (
+            /* Desktop/tablet: sidebar + vertical scroll */
+            <div className="flex gap-6">
+              <ExerciseSidebar
+                exercises={exercisesArr.fields}
+                progressByExercise={progressByExercise}
+                activeExerciseIndex={activeExerciseIndex}
+                onExerciseClick={handleSidebarClick}
+              />
+              <div className="min-w-0 flex-1 space-y-4">
+                {exercisesArr.fields.map((field, exIndex) => (
+                  <div
+                    key={field.id}
+                    ref={(el) => {
+                      exerciseRefs.current[exIndex] = el;
+                    }}
+                  >
+                    <ExerciseCard
+                      field={field}
+                      exIndex={exIndex}
+                      control={form.control}
+                      prevSets={prevSetsByPosition[field.position] ?? []}
+                      mostRecentDoneByExercise={mostRecentDoneByExercise}
+                      sessionStartAtMs={sessionStartAtMs}
+                      onMostRecentChange={onExerciseMostRecentChange}
+                      onProgressChange={onExerciseProgressChange}
+                      activeExerciseIndex={activeExerciseIndex}
+                      isSubmitting={isSubmitting}
+                      initialDoneMap={initialDoneMap}
+                      updateDoneMapRef={updateDoneMapRef}
+                      onRemove={handleRemoveExercise}
+                      addSetCallbacksRef={addSetCallbacksRef}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-background sticky bottom-0 z-40 -mx-4 border-t border-border/50 px-4 py-3 sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:px-0 sm:py-0">
             <Button
               className="w-full text-center sm:w-auto"
               type="submit"
+              size="lg"
               disabled={isSubmitting}
             >
-              {isSubmitting && (
+              {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
               )}
               Complete session
             </Button>
@@ -498,8 +578,8 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
       )}
       {status === "saved" && (
         <>
-          <Check className="h-3 w-3 text-emerald-500" />
-          <span className="text-emerald-500">Saved</span>
+          <Check className="h-3 w-3 text-primary" />
+          <span className="text-primary">Saved</span>
         </>
       )}
       {status === "error" && (
@@ -509,6 +589,105 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
         </>
       )}
     </span>
+  );
+}
+
+function ExerciseCard({
+  field,
+  exIndex,
+  control,
+  prevSets,
+  mostRecentDoneByExercise,
+  sessionStartAtMs,
+  onMostRecentChange,
+  onProgressChange,
+  activeExerciseIndex,
+  isSubmitting,
+  initialDoneMap,
+  updateDoneMapRef,
+  onRemove,
+  addSetCallbacksRef,
+  hideAddSet,
+}: {
+  field: { id: string; name: string; position: number };
+  exIndex: number;
+  control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
+  prevSets: Array<{ reps: number; weight?: number }>;
+  mostRecentDoneByExercise: Record<number, number | null>;
+  sessionStartAtMs: number;
+  onMostRecentChange: (index: number, mostRecent: number | null) => void;
+  onProgressChange: (index: number, done: number, total: number) => void;
+  activeExerciseIndex: number | null;
+  isSubmitting: boolean;
+  initialDoneMap: Record<string, Record<number, boolean>> | null;
+  updateDoneMapRef: (
+    exIndex: number,
+    setId: string,
+    setIndex: number,
+    isDone: boolean,
+  ) => void;
+  onRemove: (exIndex: number) => void;
+  addSetCallbacksRef: React.MutableRefObject<Record<number, () => void>>;
+  hideAddSet?: boolean;
+}) {
+  const isActive = activeExerciseIndex === exIndex;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border bg-card p-4 shadow-sm transition-all sm:p-5",
+        isActive && "ring-1 ring-primary/20",
+      )}
+    >
+      {/* Exercise header */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold",
+              isActive
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {field.position + 1}
+          </span>
+          <span className="text-base font-semibold">{field.name}</span>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+          disabled={isSubmitting}
+          onClick={() => onRemove(exIndex)}
+          title="Remove exercise"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      <ExerciseSets
+        control={control}
+        exIndex={exIndex}
+        prevSets={prevSets}
+        prevExerciseLastDoneAt={
+          exIndex > 0
+            ? (mostRecentDoneByExercise[exIndex - 1] ?? null)
+            : null
+        }
+        sessionStartAtMs={sessionStartAtMs}
+        onMostRecentChange={onMostRecentChange}
+        onProgressChange={onProgressChange}
+        isActive={isActive}
+        disabled={isSubmitting}
+        initialDoneState={
+          initialDoneMap?.[String(field.position)] ?? null
+        }
+        onDoneChange={updateDoneMapRef}
+        addSetCallbacksRef={addSetCallbacksRef}
+        hideAddSet={hideAddSet}
+      />
+    </div>
   );
 }
 
@@ -524,6 +703,8 @@ function ExerciseSets({
   disabled,
   initialDoneState,
   onDoneChange,
+  addSetCallbacksRef,
+  hideAddSet,
 }: {
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   exIndex: number;
@@ -541,6 +722,8 @@ function ExerciseSets({
     setIndex: number,
     isDone: boolean,
   ) => void;
+  addSetCallbacksRef: React.MutableRefObject<Record<number, () => void>>;
+  hideAddSet?: boolean;
 }) {
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [restBySetId, setRestBySetId] = useState<Record<string, number>>({});
@@ -559,7 +742,21 @@ function ExerciseSets({
     name: `exercises.${exIndex}.sets`,
   });
 
-  // Restore done state from in-progress session on mount
+  // Register addSet callback for mobile floating button
+  useEffect(() => {
+    addSetCallbacksRef.current[exIndex] = () => {
+      const lastSet = sets?.[sets.length - 1];
+      append({
+        setIndex: fields.length,
+        reps: lastSet?.reps ?? 5,
+        weight: lastSet?.weight ?? undefined,
+      });
+    };
+    return () => {
+      delete addSetCallbacksRef.current[exIndex];
+    };
+  }, [exIndex, sets, fields.length, append, addSetCallbacksRef]);
+
   const [didRestoreDone, setDidRestoreDone] = useState(false);
   useEffect(() => {
     if (didRestoreDone || !initialDoneState || fields.length === 0) return;
@@ -579,11 +776,25 @@ function ExerciseSets({
   }, [initialDoneState, fields, didRestoreDone]);
 
   useEffect(() => {
+    if (!isActive) return;
+    const handler = () => {
+      for (let i = 0; i < fields.length; i++) {
+        if (!doneMap[fields[i]!.id]) {
+          handleToggleDone(fields[i]!.id, i, true);
+          break;
+        }
+      }
+    };
+    document.addEventListener("session:toggle-next-done", handler);
+    return () =>
+      document.removeEventListener("session:toggle-next-done", handler);
+  }, [isActive, fields, doneMap]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     onMostRecentChange(exIndex, localMostRecentDoneAt);
   }, [exIndex, localMostRecentDoneAt, onMostRecentChange]);
 
   useEffect(() => {
-    // only run timer for the active exercise
     if (!isActive) {
       setCurrentRest("00:00:00");
       return;
@@ -614,7 +825,6 @@ function ExerciseSets({
     sessionStartAtMs,
   ]);
 
-  // report progress (done vs total) to parent to compute active exercise
   useEffect(() => {
     const total = fields.length;
     const done = fields.reduce(
@@ -661,42 +871,28 @@ function ExerciseSets({
   };
 
   const formatMs = (ms: number) => {
-    const h = Math.floor(ms / 3600000)
-      .toString()
-      .padStart(2, "0");
-    const m = Math.floor((ms % 3600000) / 60000)
+    const m = Math.floor(ms / 60000)
       .toString()
       .padStart(2, "0");
     const s = Math.floor((ms % 60000) / 1000)
       .toString()
       .padStart(2, "0");
-    return `${h}:${m}:${s}`;
-  };
-
-  const compare = (
-    current: number | undefined,
-    previous: number | undefined,
-  ) => {
-    if (previous == null || current == null) return "neutral" as const;
-    if (current > previous) return "up" as const;
-    if (current < previous) return "down" as const;
-    return "equal" as const;
-  };
-
-  const deltaClass = (delta: "up" | "down" | "equal" | "neutral") => {
-    if (delta === "up")
-      return "bg-emerald-500/15 dark:bg-emerald-500/15 border-emerald-500/40 focus-visible:ring-emerald-500/40";
-    if (delta === "down")
-      return "bg-rose-500/15 dark:bg-rose-500/15 border-rose-500/40 focus-visible:ring-rose-500/40";
-    return "";
+    return `${m}:${s}`;
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-2">
-      <div className="text-muted-foreground flex items-center justify-between text-xs">
-        <span>Current rest</span>
-        <span className="tabular-nums">{isActive ? currentRest : "—"}</span>
-      </div>
+    <div className="space-y-2">
+      {/* Rest timer — prominent when active */}
+      {isActive && (
+        <div className="flex items-center justify-between rounded-lg bg-primary/5 px-3 py-2 dark:bg-primary/10">
+          <span className="text-xs font-medium text-primary">Rest timer</span>
+          <span className="text-sm font-bold tabular-nums text-primary">
+            {currentRest}
+          </span>
+        </div>
+      )}
+
+      {/* Set comparison badge */}
       {(() => {
         const prevCount = prevSets.length;
         const currentCount = fields.length;
@@ -704,183 +900,157 @@ function ExerciseSets({
         if (currentCount === prevCount)
           return (
             <div className="text-muted-foreground text-xs">
-              Same number of sets as last time ({prevCount})
+              {prevCount} sets — same as last time
             </div>
           );
         if (currentCount > prevCount)
           return (
-            <div className="text-xs text-emerald-400/80">
-              More sets than last time (+{currentCount - prevCount})
+            <div className="text-xs font-medium text-emerald-500">
+              +{currentCount - prevCount} more set
+              {currentCount - prevCount > 1 ? "s" : ""} than last time
             </div>
           );
         return (
-          <div className="text-xs text-rose-400/80">
-            Fewer sets than last time ({currentCount}/{prevCount})
+          <div className="text-xs font-medium text-rose-400">
+            {currentCount}/{prevCount} sets vs last time
           </div>
         );
       })()}
-      {fields.map((f, setIdx) => (
-        // single set row
-        <div
-          key={f.id}
-          className="bg-muted/40 mb-2 grid grid-cols-3 items-center gap-2 rounded-lg border p-3 last:mb-0 sm:grid-cols-6"
-        >
-          <div className="order-first col-span-3 flex items-center justify-between sm:order-last sm:col-span-3">
-            <label className="mr-auto inline-flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={!!doneMap[f.id]}
-                onChange={(e) =>
-                  handleToggleDone(f.id, setIdx, e.target.checked)
-                }
-              />
-              Done
-              {(() => {
-                const restValue = restBySetId[f.id];
-                if (restValue === undefined) return null;
-                return (
-                  <span className="text-muted-foreground ml-2">
-                    Rest:{" "}
-                    <span className="tabular-nums">{formatMs(restValue)}</span>
+
+      {/* Set rows */}
+      {fields.map((f, setIdx) => {
+        const isDone = !!doneMap[f.id];
+        const restValue = restBySetId[f.id];
+
+        return (
+          <div
+            key={f.id}
+            className={cn(
+              "rounded-xl border p-3 transition-all",
+              isDone
+                ? "border-primary/20 bg-primary/5 dark:bg-primary/10"
+                : "border-border bg-muted/30 dark:bg-muted/20",
+            )}
+          >
+            {/* Set header */}
+            <div className="mb-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1 text-xs font-bold",
+                    isDone
+                      ? "bg-primary/15 text-primary"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {setIdx + 1}
+                </span>
+
+                {/* Done toggle button */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleToggleDone(f.id, setIdx, !isDone)
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
+                    isDone
+                      ? "bg-primary/15 text-primary"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80",
+                  )}
+                >
+                  {isDone ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <div className="h-3.5 w-3.5 rounded-sm border border-current opacity-40" />
+                  )}
+                  {isDone ? "Done" : "Mark done"}
+                </button>
+
+                {restValue !== undefined && (
+                  <span className="text-muted-foreground text-[11px] tabular-nums">
+                    rest {formatMs(restValue)}
                   </span>
-                );
-              })()}
-            </label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive ml-2 h-8 w-8"
-              tabIndex={-1}
-              disabled={disabled}
-              onClick={() => remove(setIdx)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-          <FormField
-            control={control}
-            name={`exercises.${exIndex}.sets.${setIdx}.setIndex`}
-            render={(_field) => (
-              <FormItem>
-                <FormLabel className="text-xs">Set</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={setIdx + 1}
-                    readOnly
-                    disabled={!!doneMap[f.id] || disabled}
-                    tabIndex={-1}
-                    className="bg-background"
-                  />
-                </FormControl>
-                <div className="invisible text-[10px]">placeholder</div>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`exercises.${exIndex}.sets.${setIdx}.reps`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs">Reps</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
+                )}
+              </div>
+              <button
+                type="button"
+                className="text-muted-foreground/40 hover:text-destructive p-1 transition-colors"
+                tabIndex={-1}
+                disabled={disabled}
+                onClick={() => remove(setIdx)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Steppers */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={control}
+                name={`exercises.${exIndex}.sets.${setIdx}.reps`}
+                render={({ field }) => (
+                  <NumberStepper
+                    label="Reps"
+                    value={
+                      typeof field.value === "string"
+                        ? field.value === ""
+                          ? null
+                          : Number(field.value)
+                        : (field.value as number | null | undefined)
+                    }
+                    onChange={(v) => field.onChange(v ?? "")}
+                    min={1}
+                    step={1}
                     inputMode="numeric"
-                    value={field.value ?? ""}
-                    className={`${deltaClass(
-                      compare(
-                        typeof field.value === "string"
-                          ? field.value === ""
-                            ? undefined
-                            : Number(field.value)
-                          : (field.value as number | undefined),
-                        prevSets?.[setIdx]?.reps,
-                      ),
-                    )} bg-background`}
-                    disabled={!!doneMap[f.id] || disabled}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === "" ? "" : Number(e.target.value),
-                      )
-                    }
+                    disabled={isDone || disabled}
+                    previousValue={prevSets?.[setIdx]?.reps}
                   />
-                </FormControl>
-                {prevSets?.[setIdx]?.reps != null ? (
-                  <div className="text-muted-foreground text-[10px]">
-                    prev: {prevSets[setIdx].reps}
-                  </div>
-                ) : (
-                  <div className="invisible text-[10px]">placeholder</div>
                 )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`exercises.${exIndex}.sets.${setIdx}.weight`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs">Weight</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    inputMode="decimal"
+              />
+              <FormField
+                control={control}
+                name={`exercises.${exIndex}.sets.${setIdx}.weight`}
+                render={({ field }) => (
+                  <NumberStepper
+                    label="Weight"
+                    value={
+                      typeof field.value === "number" ? field.value : null
+                    }
+                    onChange={(v) => field.onChange(v)}
                     min={0}
-                    placeholder="0 = Bodyweight"
-                    value={field.value ?? ""}
-                    className={`${deltaClass(
-                      compare(
-                        typeof field.value === "number"
-                          ? field.value
-                          : undefined,
-                        prevSets?.[setIdx]?.weight,
-                      ),
-                    )} bg-background`}
-                    disabled={!!doneMap[f.id] || disabled}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === "" ? null : Number(e.target.value),
-                      )
-                    }
+                    step={2.5}
+                    inputMode="decimal"
+                    placeholder="BW"
+                    disabled={isDone || disabled}
+                    previousValue={prevSets?.[setIdx]?.weight}
                   />
-                </FormControl>
-                {prevSets?.[setIdx]?.weight != null ? (
-                  <div className="text-muted-foreground text-[10px]">
-                    prev:{" "}
-                    {prevSets[setIdx].weight === 0
-                      ? "Bodyweight"
-                      : prevSets[setIdx].weight}
-                  </div>
-                ) : (
-                  <div className="invisible text-[10px]">placeholder</div>
                 )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      ))}
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        disabled={disabled}
-        onClick={() => {
-          const lastSet = sets?.[sets.length - 1];
-          append({
-            setIndex: fields.length,
-            reps: lastSet?.reps ?? 5,
-            weight: lastSet?.weight ?? undefined,
-          });
-        }}
-      >
-        <Plus className="mr-2 h-4 w-4" /> Add set
-      </Button>
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Add set — visible on desktop, hidden on mobile (moved outside swipe container) */}
+      {!hideAddSet && (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full border-dashed"
+          disabled={disabled}
+          onClick={() => {
+            const lastSet = sets?.[sets.length - 1];
+            append({
+              setIndex: fields.length,
+              reps: lastSet?.reps ?? 5,
+              weight: lastSet?.weight ?? undefined,
+            });
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add set
+        </Button>
+      )}
     </div>
   );
 }

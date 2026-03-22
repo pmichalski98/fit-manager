@@ -208,4 +208,13 @@ button,
   input[type="number"] {
     -moz-appearance: textfield;
   }
+
+  /* Hide scrollbar for swipeable containers */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
