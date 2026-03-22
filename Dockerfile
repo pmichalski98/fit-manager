@@ -1,10 +1,10 @@
-FROM node:20-alpine AS base
+FROM oven/bun:1.2 AS base
 
 # --- Install dependencies ---
 FROM base AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
 # --- Build application ---
 FROM base AS builder
@@ -19,7 +19,7 @@ ENV NEXT_PUBLIC_S3_BUCKET_URL=$NEXT_PUBLIC_S3_BUCKET_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_ENV_VALIDATION=1
 
-RUN npm run build
+RUN bun run build
 
 # --- Production image ---
 FROM base AS runner
@@ -37,4 +37,5 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
-CMD ["node", "server.js"]
+ENV HOSTNAME=0.0.0.0
+CMD ["bun", "server.js"]
