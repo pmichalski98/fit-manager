@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CircleDot, Circle } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseSidebarProps {
@@ -18,16 +18,13 @@ export function ExerciseSidebar({
 }: ExerciseSidebarProps) {
   return (
     <nav
-      className="sticky top-32 hidden h-fit w-52 shrink-0 lg:block"
+      className="sticky top-32 hidden h-fit w-60 shrink-0 lg:block"
       aria-label="Exercises"
     >
-      <div className="text-muted-foreground mb-3 text-[11px] font-medium uppercase tracking-wide">
+      <div className="text-muted-foreground mb-2 text-[11px] font-medium uppercase tracking-wide">
         Exercises
       </div>
-      <div className="relative space-y-0.5">
-        {/* Vertical connector line */}
-        <div className="bg-border absolute top-3 bottom-3 left-[17px] w-px" />
-
+      <div className="flex flex-col gap-0.5">
         {exercises.map((ex, i) => {
           const p = progressByExercise[i];
           const isComplete = p ? p.done >= p.total : false;
@@ -40,25 +37,29 @@ export function ExerciseSidebar({
               type="button"
               onClick={() => onExerciseClick(i)}
               className={cn(
-                "relative flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left text-sm transition-all",
+                "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-all",
                 isActive
                   ? "bg-primary/10 text-foreground font-medium"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
               aria-current={isActive ? "true" : undefined}
             >
-              <div className="relative z-10 flex h-5 w-5 items-center justify-center">
+              {/* Status indicator */}
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center">
                 {isComplete ? (
                   <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                    <Check className="h-3 w-3 text-primary-foreground" />
+                    <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                   </div>
                 ) : isActive ? (
-                  <CircleDot className="h-5 w-5 text-primary" />
+                  <div className="h-3 w-3 rounded-full bg-primary shadow-[0_0_0_3px] shadow-primary/20" />
                 ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground/40" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
                 )}
               </div>
-              <span className="min-w-0 flex-1 truncate">{ex.name}</span>
+
+              <span className="min-w-0 flex-1 break-words text-[13px] leading-tight">
+                {ex.name}
+              </span>
               {setLabel && (
                 <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                   {setLabel}

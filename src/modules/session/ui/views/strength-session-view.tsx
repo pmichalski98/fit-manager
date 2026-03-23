@@ -395,15 +395,15 @@ export function StrengthSessionView({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-background/80 sticky top-16 z-40 border-b border-border/50 pt-2 pb-3 backdrop-blur-xl">
+      <div className="bg-background/80 border-border/50 sticky top-16 z-40 border-b pt-2 pb-3 backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold">{template.name}</h1>
             <SaveStatusIndicator status={saveStatus} />
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5">
-              <Timer className="h-3.5 w-3.5 text-primary" />
+            <div className="bg-muted/60 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5">
+              <Timer className="text-primary h-3.5 w-3.5" />
               <span className="text-sm font-semibold tabular-nums">
                 {elapsed}
               </span>
@@ -508,13 +508,14 @@ export function StrengthSessionView({
                 activeExerciseIndex={activeExerciseIndex}
                 onExerciseClick={handleSidebarClick}
               />
-              <div className="min-w-0 flex-1 space-y-4">
+              <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-4 xl:grid-cols-2">
                 {exercisesArr.fields.map((field, exIndex) => (
                   <div
                     key={field.id}
                     ref={(el) => {
                       exerciseRefs.current[exIndex] = el;
                     }}
+                    className="max-w-lg scroll-mt-36"
                   >
                     <ExerciseCard
                       field={field}
@@ -538,7 +539,7 @@ export function StrengthSessionView({
             </div>
           )}
 
-          <div className="bg-background sticky bottom-0 z-40 -mx-4 border-t border-border/50 px-4 py-3 sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:px-0 sm:py-0">
+          <div className="bg-background border-border/50 sticky bottom-0 z-40 -mx-4 border-t px-4 py-3 sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:px-0 sm:py-0">
             <Button
               className="w-full text-center sm:w-auto"
               type="submit"
@@ -578,7 +579,7 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
       )}
       {status === "saved" && (
         <>
-          <Check className="h-3 w-3 text-primary" />
+          <Check className="text-primary h-3 w-3" />
           <span className="text-primary">Saved</span>
         </>
       )}
@@ -635,8 +636,8 @@ function ExerciseCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 shadow-sm transition-all sm:p-5",
-        isActive && "ring-1 ring-primary/20",
+        "bg-card rounded-xl border p-4 shadow-sm transition-all sm:p-5",
+        isActive && "ring-primary/20 ring-1",
       )}
     >
       {/* Exercise header */}
@@ -671,18 +672,14 @@ function ExerciseCard({
         exIndex={exIndex}
         prevSets={prevSets}
         prevExerciseLastDoneAt={
-          exIndex > 0
-            ? (mostRecentDoneByExercise[exIndex - 1] ?? null)
-            : null
+          exIndex > 0 ? (mostRecentDoneByExercise[exIndex - 1] ?? null) : null
         }
         sessionStartAtMs={sessionStartAtMs}
         onMostRecentChange={onMostRecentChange}
         onProgressChange={onProgressChange}
         isActive={isActive}
         disabled={isSubmitting}
-        initialDoneState={
-          initialDoneMap?.[String(field.position)] ?? null
-        }
+        initialDoneState={initialDoneMap?.[String(field.position)] ?? null}
         onDoneChange={updateDoneMapRef}
         addSetCallbacksRef={addSetCallbacksRef}
         hideAddSet={hideAddSet}
@@ -884,9 +881,9 @@ function ExerciseSets({
     <div className="space-y-2">
       {/* Rest timer — prominent when active */}
       {isActive && (
-        <div className="flex items-center justify-between rounded-lg bg-primary/5 px-3 py-2 dark:bg-primary/10">
-          <span className="text-xs font-medium text-primary">Rest timer</span>
-          <span className="text-sm font-bold tabular-nums text-primary">
+        <div className="bg-primary/5 dark:bg-primary/10 flex items-center justify-between rounded-lg px-3 py-2">
+          <span className="text-primary text-xs font-medium">Rest timer</span>
+          <span className="text-primary text-sm font-bold tabular-nums">
             {currentRest}
           </span>
         </div>
@@ -949,9 +946,7 @@ function ExerciseSets({
                 {/* Done toggle button */}
                 <button
                   type="button"
-                  onClick={() =>
-                    handleToggleDone(f.id, setIdx, !isDone)
-                  }
+                  onClick={() => handleToggleDone(f.id, setIdx, !isDone)}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
                     isDone
@@ -1014,9 +1009,7 @@ function ExerciseSets({
                 render={({ field }) => (
                   <NumberStepper
                     label="Weight"
-                    value={
-                      typeof field.value === "number" ? field.value : null
-                    }
+                    value={typeof field.value === "number" ? field.value : null}
                     onChange={(v) => field.onChange(v)}
                     min={0}
                     step={2.5}
