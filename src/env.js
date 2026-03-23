@@ -2,6 +2,10 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const env = createEnv({
+  onValidationError: (error) => {
+    console.error("❌ Invalid environment variables:", JSON.stringify(error.flatten().fieldErrors, null, 2));
+    throw new Error("Invalid environment variables");
+  },
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
    * isn't built with invalid env vars.
