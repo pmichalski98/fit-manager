@@ -10,6 +10,8 @@ RUN bun install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+# bun.lockb needed for Turbopack root detection
+COPY package.json bun.lockb ./
 COPY . .
 
 ARG NEXT_PUBLIC_APP_URL
@@ -27,15 +29,20 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+COPY --from=builder --chown=bun:bun /app/public ./public
+COPY --from=builder --chown=bun:bun /app/.next/standalone ./
+COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Include drizzle migrations + config for automatic DB migrations on startup
+COPY --from=builder --chown=bun:bun /app/drizzle ./drizzle
+COPY --from=builder --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=bun:bun /app/src/env.js ./src/env.js
+COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
+COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=builder --chown=bun:bun /app/scripts/entrypoint.sh ./entrypoint.sh
 
-USER nextjs
+USER bun
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-CMD ["bun", "server.js"]
+CMD ["sh", "./entrypoint.sh"]

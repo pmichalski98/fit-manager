@@ -74,7 +74,7 @@ jobs:
 
             printf '%s\n' "POSTGRES_USER=fitmanager" "POSTGRES_PASSWORD=${DB_PASSWORD}" "POSTGRES_DB=fitmanager" > .env.db
 
-            printf '%s\n' 'services:' '  app:' "    image: ${APP_IMAGE}" '    container_name: fit-manager-app' '    restart: unless-stopped' '    env_file: .env.app' '    ports:' '      - "3002:3000"' '    depends_on:' '      db:' '        condition: service_healthy' '  db:' '    image: postgres:16-alpine' '    container_name: fit-manager-postgres' '    restart: unless-stopped' '    env_file: .env.db' '    volumes:' '      - pgdata:/var/lib/postgresql/data' '    healthcheck:' '      test: ["CMD-SHELL", "pg_isready -U fitmanager -d fitmanager"]' '      interval: 5s' '      timeout: 5s' '      retries: 5' 'volumes:' '  pgdata:' > docker-compose.yml
+            printf '%s\n' 'services:' '  app:' "    image: ${APP_IMAGE}" '    container_name: fit-manager-app' '    restart: unless-stopped' '    env_file: .env.app' '    ports:' '      - "3002:3000"' '    depends_on:' '      db:' '        condition: service_healthy' '  db:' '    image: postgres:17-alpine' '    container_name: fit-manager-postgres' '    restart: unless-stopped' '    env_file: .env.db' '    volumes:' '      - pgdata:/var/lib/postgresql/data' '    healthcheck:' '      test: ["CMD-SHELL", "pg_isready -U fitmanager -d fitmanager"]' '      interval: 5s' '      timeout: 5s' '      retries: 5' 'volumes:' '  pgdata:' > docker-compose.yml
 
             echo "$GH_PAT" | docker login ghcr.io -u "$GH_USER" --password-stdin
             docker compose pull
