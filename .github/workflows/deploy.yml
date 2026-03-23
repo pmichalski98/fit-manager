@@ -52,8 +52,8 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
-          GB_CLIENT_ID_OAUTH: ${{ secrets.GB_CLIENT_ID_OAUTH }}
-          GB_CLIENT_SECRET_OAUTH: ${{ secrets.GB_CLIENT_SECRET_OAUTH }}
+          GH_CLIENT_ID_OAUTH: ${{ secrets.GH_CLIENT_ID_OAUTH }}
+          GH_CLIENT_SECRET_OAUTH: ${{ secrets.GH_CLIENT_SECRET_OAUTH }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -65,17 +65,17 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          envs: GH_PAT,GH_USER,APP_IMAGE,DB_PASSWORD,BETTER_AUTH_SECRET,BETTER_AUTH_URL,GB_CLIENT_ID_OAUTH,GB_CLIENT_SECRET_OAUTH,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,OPENAI_API_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET_NAME
+          envs: GH_PAT,GH_USER,APP_IMAGE,DB_PASSWORD,BETTER_AUTH_SECRET,BETTER_AUTH_URL,GH_CLIENT_ID_OAUTH,GH_CLIENT_SECRET_OAUTH,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,OPENAI_API_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET_NAME
           script: |
             set -e
             mkdir -p ~/fit-manager && cd ~/fit-manager
 
-            cat > .env.app <<EOF
+            cat > .env.app <<EOA
             DATABASE_URL=postgresql://fitmanager:${DB_PASSWORD}@db:5432/fitmanager
             BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
             BETTER_AUTH_URL=${BETTER_AUTH_URL}
-            GITHUB_CLIENT_ID=${GB_CLIENT_ID_OAUTH}
-            GITHUB_CLIENT_SECRET=${GB_CLIENT_SECRET_OAUTH}
+            GITHUB_CLIENT_ID=${GH_CLIENT_ID_OAUTH}
+            GITHUB_CLIENT_SECRET=${GH_CLIENT_SECRET_OAUTH}
             GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
             GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
             OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -83,13 +83,13 @@ jobs:
             AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
             AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
             NODE_ENV=production
-            EOF
+            EOA
 
-            cat > .env.db <<EOF
+            cat > .env.db <<EOD
             POSTGRES_USER=fitmanager
             POSTGRES_PASSWORD=${DB_PASSWORD}
             POSTGRES_DB=fitmanager
-            EOF
+            EOD
 
             cat > docker-compose.yml <<EOF
             services:
@@ -128,5 +128,5 @@ jobs:
 
             echo "Waiting for services..."
             sleep 5
-            curl -sf --retry 5 --retry-delay 3 --retry-all-errors http://localhost:3002 || (echo "App health check failed!" && exit 1)
+            curl -sf --retry 5 --retry-delay 3 --retry-all-errors http://localhost:3002 || (echo "App health check failed! Logs:" && docker logs fit-manager-app --tail 50 && exit 1)
             echo "fit-manager is healthy!"
