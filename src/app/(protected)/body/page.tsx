@@ -6,9 +6,9 @@ import { Suspense } from "react";
 export default async function BodyPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Body</h1>
-        <p className="text-muted-foreground text-sm">
+      <div className="text-center md:text-left">
+        <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Body</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
           Track your body measurements and progress here.
         </p>
       </div>

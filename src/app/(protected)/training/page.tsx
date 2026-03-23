@@ -7,9 +7,9 @@ export default async function TrainingPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Training</h1>
-          <p className="text-muted-foreground text-sm">
+        <div className="text-center md:text-left">
+          <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Training</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Create a new training template.
           </p>
         </div>

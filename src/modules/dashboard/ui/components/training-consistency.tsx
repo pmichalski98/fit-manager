@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -128,9 +129,10 @@ export async function TrainingConsistency() {
           <CardTitle>Training Activity</CardTitle>
         </CardHeader>
         {/* Graph Container */}
-        <CardContent className="flex min-w-[600px] gap-2">
-          {/* Weekday Labels Column */}
-          <div className="text-card-foreground bg-card sticky left-0 flex h-[118px] flex-col justify-between pr-2 text-xs">
+        <CardContent className="flex gap-2">
+          {/* Weekday Labels Column - stays fixed */}
+          <div className="text-card-foreground flex shrink-0 flex-col justify-between text-xs">
+            <div className="h-4" />
             <div className="h-3" />
             <div className="h-3 leading-3">Mon</div>
             <div className="h-3" />
@@ -140,95 +142,94 @@ export async function TrainingConsistency() {
             <div className="h-3" />
           </div>
 
-          <div className="flex flex-col gap-1">
-            {/* Month Labels Row */}
-            <div className="text-card-foreground relative h-4 text-xs">
-              {monthLabels.map((m, i) => {
-                const next = monthLabels[i + 1];
-                const endIndex = next ? next.index : weeks.length;
-                const centerOffset = ((endIndex - m.index) * 16) / 2;
-                const leftPosition = m.index * 16 + centerOffset;
+          {/* Scrollable grid area */}
+          <div className="no-scrollbar min-w-0 flex-1 overflow-x-auto">
+            <div className="flex min-w-[460px] flex-col gap-1">
+              {/* Month Labels Row */}
+              <div className="text-card-foreground relative h-4 text-xs">
+                {monthLabels.map((m, i) => {
+                  const next = monthLabels[i + 1];
+                  const endIndex = next ? next.index : weeks.length;
+                  const centerOffset = ((endIndex - m.index) * 16) / 2;
+                  const leftPosition = m.index * 16 + centerOffset;
 
-                return (
-                  <span
-                    key={i}
-                    className="absolute whitespace-nowrap"
-                    style={{
-                      left: `${leftPosition}px`,
-                      transform: "translateX(-50%)",
-                    }}
-                  >
-                    {m.label}
-                  </span>
-                );
-              })}
-            </div>
+                  return (
+                    <span
+                      key={i}
+                      className="absolute whitespace-nowrap"
+                      style={{
+                        left: `${leftPosition}px`,
+                        transform: "translateX(-50%)",
+                      }}
+                    >
+                      {m.label}
+                    </span>
+                  );
+                })}
+              </div>
 
-            {/* Grid */}
-            <div className="flex gap-1">
-              {weeks.map((week, weekIdx) => (
-                <div key={weekIdx} className="flex flex-col gap-1">
-                  {week.map((day, dayIdx) => {
-                    const key = format(day, "yyyy-MM-dd");
-                    const isFuture = isAfter(day, today);
+              {/* Grid */}
+              <div className="flex gap-1">
+                {weeks.map((week, weekIdx) => (
+                  <div key={weekIdx} className="flex flex-col gap-1">
+                    {week.map((day, dayIdx) => {
+                      const key = format(day, "yyyy-MM-dd");
+                      const isFuture = isAfter(day, today);
 
-                    if (isFuture) {
-                      return null;
-                    }
-
-                    const types = sessionsMap.get(key);
-                    let colorClass = "bg-muted dark:bg-secondary-foreground/30";
-                    if (types && types.length > 0) {
-                      // Check if ONLY cardio
-                      const hasStrength = types.includes("strength");
-                      const hasCardio = types.includes("cardio");
-
-                      if (hasStrength && hasCardio) {
-                        // Mixed: Could be a different color, or just prioritize strength
-                        // Let's prioritize strength for now, or maybe a gradient/distinct color?
-                        // User asked for distinction.
-                        colorClass = "bg-chart-1";
-                      } else if (hasStrength) {
-                        colorClass = "bg-chart-2";
-                      } else if (hasCardio) {
-                        colorClass = "bg-chart-3";
+                      if (isFuture) {
+                        return null;
                       }
-                    }
 
-                    const formattedDate = format(day, "MMM d, yyyy");
-                    const formattedTypes = types
-                      ? types
-                          .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
-                          .join(", ")
-                      : "No training";
+                      const types = sessionsMap.get(key);
+                      let colorClass = "bg-muted dark:bg-secondary-foreground/30";
+                      if (types && types.length > 0) {
+                        const hasStrength = types.includes("strength");
+                        const hasCardio = types.includes("cardio");
 
-                    return (
-                      <div key={dayIdx} className="h-3 w-3">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={`h-full w-full rounded-[2px] ${colorClass}`}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="text-center">
-                              <div className="font-bold">{formattedTypes}</div>
-                              <div className="text-muted-foreground text-xs">
-                                {formattedDate}
+                        if (hasStrength && hasCardio) {
+                          colorClass = "bg-chart-1";
+                        } else if (hasStrength) {
+                          colorClass = "bg-chart-2";
+                        } else if (hasCardio) {
+                          colorClass = "bg-chart-3";
+                        }
+                      }
+
+                      const formattedDate = format(day, "MMM d, yyyy");
+                      const formattedTypes = types
+                        ? types
+                            .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+                            .join(", ")
+                        : "No training";
+
+                      return (
+                        <div key={dayIdx} className="h-3 w-3">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={`h-full w-full rounded-[2px] ${colorClass}`}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="text-center">
+                                <div className="font-bold">{formattedTypes}</div>
+                                <div className="text-muted-foreground text-xs">
+                                  {formattedDate}
+                                </div>
                               </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="text-card-foreground flex items-center justify-end gap-4 text-sm">
+        <CardFooter className="text-card-foreground flex flex-wrap items-center justify-end gap-3 text-sm md:gap-4">
           <div className="flex items-center gap-2 text-xs">
             <div className="bg-chart-2 h-3 w-3 rounded-sm" />
             <span>{strengthCount} Strength</span>
@@ -245,5 +246,60 @@ export async function TrainingConsistency() {
 
       {/* Summary Footer */}
     </div>
+  );
+}
+
+const SKELETON_WEEKS = 18;
+const SKELETON_ROWS = 7;
+
+export function TrainingConsistencySkeleton() {
+  return (
+    <Card className="bg-card">
+      <CardHeader>
+        <Skeleton className="h-5 w-36" />
+      </CardHeader>
+      <CardContent className="flex gap-2">
+        {/* Day labels */}
+        <div className="flex shrink-0 flex-col justify-between text-xs text-muted-foreground">
+          <div className="h-4" />
+          <div className="h-3" />
+          <Skeleton className="h-3 w-6" />
+          <div className="h-3" />
+          <Skeleton className="h-3 w-6" />
+          <div className="h-3" />
+          <Skeleton className="h-3 w-4" />
+          <div className="h-3" />
+        </div>
+        {/* Grid */}
+        <div className="min-w-0 flex-1">
+          {/* Month labels */}
+          <div className="mb-1 flex h-4 gap-[52px]">
+            <Skeleton className="h-3 w-7" />
+            <Skeleton className="h-3 w-7" />
+            <Skeleton className="h-3 w-7" />
+            <Skeleton className="h-3 w-7" />
+          </div>
+          {/* Dot grid */}
+          <div className="flex gap-1">
+            {Array.from({ length: SKELETON_WEEKS }).map((_, w) => (
+              <div key={w} className="flex flex-col gap-1">
+                {Array.from({ length: SKELETON_ROWS }).map((_, d) => (
+                  <div
+                    key={d}
+                    className="size-3 animate-pulse rounded-[2px] bg-muted dark:bg-secondary-foreground/20"
+                    style={{ animationDelay: `${(w * 7 + d) * 15}ms` }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="flex items-center justify-end gap-3 md:gap-4">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-14" />
+      </CardFooter>
+    </Card>
   );
 }

@@ -1,53 +1,26 @@
 "use client";
 
-import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import {
-  DumbbellIcon,
-  HeartIcon,
-  ImageIcon,
-  LayoutDashboardIcon,
-} from "lucide-react";
+import { NAV_ITEMS } from "@/lib/navigation";
+import { ThemeButton } from "@/components/theme-button";
+import { SidebarUserButton } from "@/components/sidebar-user-button";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { openMobile, setOpenMobile, isMobile } = useSidebar();
-  const firstSection = [
-    {
-      label: "Dashboard",
-      icon: <LayoutDashboardIcon />,
-      href: "/dashboard",
-    },
-    {
-      label: "Training",
-      icon: <DumbbellIcon />,
-      href: "/training",
-    },
-    {
-      label: "Body",
-      icon: <HeartIcon />,
-      href: "/body",
-    },
-    {
-      label: "Photo",
-      icon: <ImageIcon />,
-      href: "/photo",
-    },
-  ];
 
   const activeStyles =
     "bg-gradient-to-r from-primary/15 via-primary/8 to-transparent text-primary border-l-2 border-primary font-semibold dark:from-primary/20 dark:via-primary/10 hover:from-primary/20 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
@@ -66,7 +39,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {firstSection.map((item) => (
+              {NAV_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     className={cn(
@@ -74,15 +47,10 @@ export function AppSidebar() {
                       "hover:from-sidebar-accent hover:via-sidebar-accent/30 hover:bg-gradient-to-r hover:to-transparent",
                       pathname === item.href && activeStyles,
                     )}
-                    onClick={() => {
-                      if (isMobile && openMobile) {
-                        setOpenMobile(false);
-                      }
-                    }}
                     asChild
                   >
                     <Link href={item.href}>
-                      {item.icon}
+                      <item.icon />
                       <span className="text-sm font-medium tracking-tight">
                         {item.label}
                       </span>
@@ -94,6 +62,15 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="gap-2 border-t px-3 py-3">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            Preferences
+          </span>
+          <ThemeButton />
+        </div>
+        <SidebarUserButton />
+      </SidebarFooter>
     </Sidebar>
   );
 }

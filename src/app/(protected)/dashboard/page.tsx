@@ -5,7 +5,7 @@ import { formatDateYYYYMMDD } from "@/lib/utils";
 import { resolveWeekContext } from "@/modules/dashboard/utils";
 import { DashboardTable } from "@/modules/dashboard/ui/components/dashboard-table";
 import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashboard-skeleton";
-import { TrainingConsistency } from "@/modules/dashboard/ui/components/training-consistency";
+import { TrainingConsistency, TrainingConsistencySkeleton } from "@/modules/dashboard/ui/components/training-consistency";
 import { BodyCharts } from "@/modules/dashboard/ui/components/body-charts";
 import { ExerciseProgressChart } from "@/modules/dashboard/ui/components/exercise-progress-chart";
 import { getAvailableExerciseNames } from "@/modules/dashboard/actions";
@@ -39,16 +39,12 @@ export default async function DashboardPage(props: PageProps) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">Your weekly overview and progress at a glance.</p>
+      <div className="text-center md:text-left">
+        <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Dashboard</h1>
+        <p className="text-muted-foreground mt-1 text-sm">Your weekly overview and progress at a glance.</p>
       </div>
 
-      <Suspense
-        fallback={
-          <div className="bg-muted/20 h-[180px] w-full animate-pulse rounded-xl border" />
-        }
-      >
+      <Suspense fallback={<TrainingConsistencySkeleton />}>
         <TrainingConsistency />
       </Suspense>
 
