@@ -59,17 +59,20 @@ export function useAutoSave(
 
   // Debounce saves — 1 second after last change
   // doneTrigger increments on every done-checkbox toggle to trigger a save
-  const isFirstRender = useRef(true);
+  const doSaveRef = useRef(doSave);
   useEffect(() => {
-    // Skip auto-save on initial mount
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    doSaveRef.current = doSave;
+  }, [doSave]);
+
+  const changeCountRef = useRef(0);
+  useEffect(() => {
+    // Skip the first two triggers (initial mount + useWatch population)
+    changeCountRef.current += 1;
+    if (changeCountRef.current <= 2) return;
 
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(doSave, 1000);
-  }, [exercises, doneTrigger, doSave]);
+    timerRef.current = setTimeout(() => doSaveRef.current(), 1000);
+  }, [exercises, doneTrigger]);
 
   return { saveStatus, saveNow: doSave };
 }
