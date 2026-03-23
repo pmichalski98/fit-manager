@@ -504,7 +504,20 @@ export function StrengthSessionView({
                 progressByExercise={progressByExercise}
                 activeExerciseIndex={activeExerciseIndex}
                 onExerciseClick={handleSidebarClick}
-              />
+              >
+                <Button
+                  className="w-full"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                  )}
+                  Complete session
+                </Button>
+              </ExerciseSidebar>
               <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-4 xl:grid-cols-2">
                 {exercisesArr.fields.map((field, exIndex) => (
                   <div
@@ -536,9 +549,9 @@ export function StrengthSessionView({
             </div>
           )}
 
-          <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 sm:static sm:mx-0 sm:flex sm:justify-end sm:px-0 sm:py-0">
+          <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 lg:hidden">
             <Button
-              className="w-full text-center sm:w-auto"
+              className="w-full text-center"
               type="submit"
               size="lg"
               disabled={isSubmitting}
