@@ -52,38 +52,36 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
-          GITHUB_CLIENT_ID_OAUTH: ${{ secrets.GH_CLIENT_ID_OAUTH }}
-          GITHUB_CLIENT_SECRET_OAUTH: ${{ secrets.GH_CLIENT_SECRET_OAUTH }}
+          GB_CLIENT_ID_OAUTH: ${{ secrets.GB_CLIENT_ID_OAUTH }}
+          GB_CLIENT_SECRET_OAUTH: ${{ secrets.GB_CLIENT_SECRET_OAUTH }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          envs: GH_PAT,GH_USER,APP_IMAGE,DB_PASSWORD,BETTER_AUTH_SECRET,BETTER_AUTH_URL,GITHUB_CLIENT_ID_OAUTH,GITHUB_CLIENT_SECRET_OAUTH,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,OPENAI_API_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET_NAME,SENTRY_AUTH_TOKEN
+          envs: GH_PAT,GH_USER,APP_IMAGE,DB_PASSWORD,BETTER_AUTH_SECRET,BETTER_AUTH_URL,GB_CLIENT_ID_OAUTH,GB_CLIENT_SECRET_OAUTH,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,OPENAI_API_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET_NAME
           script: |
-            set -eu
+            set -e
             mkdir -p ~/fit-manager && cd ~/fit-manager
 
             cat > .env.app <<EOF
             DATABASE_URL=postgresql://fitmanager:${DB_PASSWORD}@db:5432/fitmanager
             BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
             BETTER_AUTH_URL=${BETTER_AUTH_URL}
-            GITHUB_CLIENT_ID=${GH_CLIENT_ID_OAUTH}
-            GITHUB_CLIENT_SECRET=${GH_CLIENT_SECRET_OAUTH}
+            GITHUB_CLIENT_ID=${GB_CLIENT_ID_OAUTH}
+            GITHUB_CLIENT_SECRET=${GB_CLIENT_SECRET_OAUTH}
             GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
             GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
             OPENAI_API_KEY=${OPENAI_API_KEY}
             AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
             AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
             AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
-            SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
             NODE_ENV=production
             EOF
 
