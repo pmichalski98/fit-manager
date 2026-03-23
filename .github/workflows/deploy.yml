@@ -71,55 +71,55 @@ jobs:
             mkdir -p ~/fit-manager && cd ~/fit-manager
 
             cat > .env.app <<EOA
-            DATABASE_URL=postgresql://fitmanager:${DB_PASSWORD}@db:5432/fitmanager
-            BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-            BETTER_AUTH_URL=${BETTER_AUTH_URL}
-            GITHUB_CLIENT_ID=${GH_CLIENT_ID_OAUTH}
-            GITHUB_CLIENT_SECRET=${GH_CLIENT_SECRET_OAUTH}
-            GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-            GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-            OPENAI_API_KEY=${OPENAI_API_KEY}
-            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-            AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
-            NODE_ENV=production
-            EOA
+DATABASE_URL=postgresql://fitmanager:${DB_PASSWORD}@db:5432/fitmanager
+BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+BETTER_AUTH_URL=${BETTER_AUTH_URL}
+GITHUB_CLIENT_ID=${GH_CLIENT_ID_OAUTH}
+GITHUB_CLIENT_SECRET=${GH_CLIENT_SECRET_OAUTH}
+GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+OPENAI_API_KEY=${OPENAI_API_KEY}
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+NODE_ENV=production
+EOA
 
             cat > .env.db <<EOD
-            POSTGRES_USER=fitmanager
-            POSTGRES_PASSWORD=${DB_PASSWORD}
-            POSTGRES_DB=fitmanager
-            EOD
+POSTGRES_USER=fitmanager
+POSTGRES_PASSWORD=${DB_PASSWORD}
+POSTGRES_DB=fitmanager
+EOD
 
             cat > docker-compose.yml <<EOF
-            services:
-              app:
-                image: ${APP_IMAGE}
-                container_name: fit-manager-app
-                restart: unless-stopped
-                env_file: .env.app
-                ports:
-                  - "3002:3000"
-                depends_on:
-                  db:
-                    condition: service_healthy
+services:
+  app:
+    image: ${APP_IMAGE}
+    container_name: fit-manager-app
+    restart: unless-stopped
+    env_file: .env.app
+    ports:
+      - "3002:3000"
+    depends_on:
+      db:
+        condition: service_healthy
 
-              db:
-                image: postgres:16-alpine
-                container_name: fit-manager-postgres
-                restart: unless-stopped
-                env_file: .env.db
-                volumes:
-                  - pgdata:/var/lib/postgresql/data
-                healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U fitmanager -d fitmanager"]
-                  interval: 5s
-                  timeout: 5s
-                  retries: 5
+  db:
+    image: postgres:16-alpine
+    container_name: fit-manager-postgres
+    restart: unless-stopped
+    env_file: .env.db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitmanager -d fitmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-            volumes:
-              pgdata:
-            EOF
+volumes:
+  pgdata:
+EOF
 
             echo "$GH_PAT" | docker login ghcr.io -u "$GH_USER" --password-stdin
             docker compose pull
