@@ -8,6 +8,7 @@ interface ExerciseSidebarProps {
   progressByExercise: Record<number, { done: number; total: number }>;
   activeExerciseIndex: number | null;
   onExerciseClick: (index: number) => void;
+  children?: React.ReactNode;
 }
 
 export function ExerciseSidebar({
@@ -15,6 +16,7 @@ export function ExerciseSidebar({
   progressByExercise,
   activeExerciseIndex,
   onExerciseClick,
+  children,
 }: ExerciseSidebarProps) {
   return (
     <nav
@@ -69,6 +71,7 @@ export function ExerciseSidebar({
           );
         })}
       </div>
+      {children && <div className="mt-4">{children}</div>}
     </nav>
   );
 }
