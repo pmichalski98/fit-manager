@@ -265,6 +265,12 @@ export function StrengthSessionView({
     document.dispatchEvent(new CustomEvent("session:toggle-next-done"));
   }, []);
 
+  const [showBanner, setShowBanner] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShowBanner(false), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
   useSessionKeyboardShortcuts({
     activeExerciseIndex,
     exerciseCount: exercisesArr.fields.length,
@@ -394,8 +400,8 @@ export function StrengthSessionView({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-background/80 border-border/50 sticky top-16 z-40 border-b pt-2 pb-3 backdrop-blur-xl">
+      {/* Header — negative top margin absorbs layout padding so sticky position is seamless */}
+      <div className="bg-background/80 border-border/50 sticky top-0 z-40 -mx-4 -mt-6 border-b px-4 pt-6 pb-3 backdrop-blur-xl md:-mx-6 md:px-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold">{template.name}</h1>
@@ -413,42 +419,44 @@ export function StrengthSessionView({
         </div>
       </div>
 
-      {isResuming ? (
-        <Alert className="border-blue-500/30 bg-blue-500/10">
-          <RotateCcw className="h-4 w-4" />
-          <AlertDescription>
-            <span className="font-medium">Resuming session</span>{" "}
-            <span className="text-muted-foreground" suppressHydrationWarning>
-              started{" "}
-              {new Date(inProgress!.startAt).toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-              . Your progress has been restored.
-            </span>
-          </AlertDescription>
-        </Alert>
-      ) : last?.exercises?.some((e) => (e.sets?.length ?? 0) > 0) ? (
-        <Alert className="bg-muted/40 border-border">
-          <History />
-          <AlertDescription>
-            <span className="font-medium">
-              Using values from your last session
-            </span>{" "}
-            <span className="text-muted-foreground">
-              (
-              {new Date(last.session.startAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-              ) — adjust as needed.
-            </span>
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      {showBanner && (
+        isResuming ? (
+          <Alert className="border-blue-500/30 bg-blue-500/10 animate-in fade-in duration-200">
+            <RotateCcw className="h-4 w-4" />
+            <AlertDescription>
+              <span className="font-medium">Resuming session</span>{" "}
+              <span className="text-muted-foreground" suppressHydrationWarning>
+                started{" "}
+                {new Date(inProgress!.startAt).toLocaleString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                . Your progress has been restored.
+              </span>
+            </AlertDescription>
+          </Alert>
+        ) : last?.exercises?.some((e) => (e.sets?.length ?? 0) > 0) ? (
+          <Alert className="bg-muted/40 border-border animate-in fade-in duration-200">
+            <History />
+            <AlertDescription>
+              <span className="font-medium">
+                Using values from your last session
+              </span>{" "}
+              <span className="text-muted-foreground">
+                (
+                {new Date(last.session.startAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+                ) — adjust as needed.
+              </span>
+            </AlertDescription>
+          </Alert>
+        ) : null
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -483,21 +491,10 @@ export function StrengthSessionView({
                     updateDoneMapRef={updateDoneMapRef}
                     onRemove={handleRemoveExercise}
                     addSetCallbacksRef={addSetCallbacksRef}
-                    hideAddSet
+                    onAddSet={handleAddSetMobile}
                   />
                 ))}
               </SwipeableExerciseNav>
-
-              {/* Add set button — outside swipe container so it's always visible */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full border-dashed"
-                disabled={isSubmitting}
-                onClick={handleAddSetMobile}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add set
-              </Button>
             </>
           ) : (
             /* Desktop/tablet: sidebar + vertical scroll */
@@ -539,7 +536,7 @@ export function StrengthSessionView({
             </div>
           )}
 
-          <div className="bg-background border-border/50 sticky bottom-0 z-40 -mx-4 border-t px-4 py-3 sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:px-0 sm:py-0">
+          <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 sm:static sm:mx-0 sm:flex sm:justify-end sm:px-0 sm:py-0">
             <Button
               className="w-full text-center sm:w-auto"
               type="submit"
@@ -608,6 +605,7 @@ function ExerciseCard({
   updateDoneMapRef,
   onRemove,
   addSetCallbacksRef,
+  onAddSet,
   hideAddSet,
 }: {
   field: { id: string; name: string; position: number };
@@ -629,6 +627,7 @@ function ExerciseCard({
   ) => void;
   onRemove: (exIndex: number) => void;
   addSetCallbacksRef: React.MutableRefObject<Record<number, () => void>>;
+  onAddSet?: () => void;
   hideAddSet?: boolean;
 }) {
   const isActive = activeExerciseIndex === exIndex;
@@ -655,17 +654,31 @@ function ExerciseCard({
           </span>
           <span className="text-base font-semibold">{field.name}</span>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
-          disabled={isSubmitting}
-          onClick={() => onRemove(exIndex)}
-          title="Remove exercise"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {onAddSet && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground h-8 gap-1 px-2 text-xs"
+              disabled={isSubmitting}
+              onClick={onAddSet}
+            >
+              <Plus className="h-3.5 w-3.5" /> Set
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+            disabled={isSubmitting}
+            onClick={() => onRemove(exIndex)}
+            title="Remove exercise"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <ExerciseSets
         control={control}
@@ -682,7 +695,7 @@ function ExerciseCard({
         initialDoneState={initialDoneMap?.[String(field.position)] ?? null}
         onDoneChange={updateDoneMapRef}
         addSetCallbacksRef={addSetCallbacksRef}
-        hideAddSet={hideAddSet}
+        hideAddSet={onAddSet ? true : hideAddSet}
       />
     </div>
   );
