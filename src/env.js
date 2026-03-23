@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   onValidationError: (error) => {
-    console.error("❌ Invalid environment variables:", JSON.stringify(error.flatten().fieldErrors, null, 2));
+    console.error("❌ Invalid environment variables:", JSON.stringify(error, null, 2));
     throw new Error("Invalid environment variables");
   },
   /**
