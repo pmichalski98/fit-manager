@@ -33,37 +33,52 @@ export function ExerciseSidebar({
           const isActive = i === activeExerciseIndex;
           const setLabel = p ? `${p.done}/${p.total}` : "";
 
+          const fillPercent = p && p.total > 0 ? (p.done / p.total) * 100 : 0;
+
           return (
             <button
               key={i}
               type="button"
               onClick={() => onExerciseClick(i)}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-all",
+                "relative flex w-full items-center gap-2.5 overflow-hidden rounded-lg px-2.5 py-2 text-left text-sm transition-all",
                 isActive
-                  ? "bg-primary/10 text-foreground font-medium"
+                  ? "text-foreground font-medium"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
               aria-current={isActive ? "true" : undefined}
             >
+              {/* Progress fill background */}
+              <div
+                className={cn(
+                  "absolute inset-y-0 left-0 rounded-lg transition-all duration-300",
+                  isComplete
+                    ? "bg-primary/15"
+                    : fillPercent > 0
+                      ? "bg-primary/10"
+                      : isActive
+                        ? "bg-primary/5"
+                        : "",
+                )}
+                style={{ width: fillPercent > 0 ? `${fillPercent}%` : isActive ? "100%" : "0%" }}
+              />
+
               {/* Status indicator */}
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
                 {isComplete ? (
                   <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
                     <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                   </div>
-                ) : isActive ? (
-                  <div className="h-3 w-3 rounded-full bg-primary shadow-[0_0_0_3px] shadow-primary/20" />
                 ) : (
                   <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
                 )}
               </div>
 
-              <span className="min-w-0 flex-1 break-words text-[13px] leading-tight">
+              <span className="relative min-w-0 flex-1 break-words text-[13px] leading-tight">
                 {ex.name}
               </span>
               {setLabel && (
-                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                <span className="text-muted-foreground relative shrink-0 text-xs tabular-nums">
                   {setLabel}
                 </span>
               )}
