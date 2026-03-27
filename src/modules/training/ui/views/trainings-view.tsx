@@ -1,6 +1,5 @@
 import { getAllTrainingsWithExercises } from "@/modules/training/actions";
 import { TrainingCard } from "../components/training-card";
-import { TrainingsHero } from "../components/trainings-hero";
 
 export async function TrainingsView() {
   const { data: trainings } = await getAllTrainingsWithExercises();
@@ -17,8 +16,6 @@ export async function TrainingsView() {
 
   return (
     <div className="space-y-8">
-      <TrainingsHero trainingsLength={trainings.length} />
-
       {trainings.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-8 text-center">
           <p className="text-foreground text-lg font-medium">

@@ -46,6 +46,7 @@ export function CardioSessionView({ template, last }: Props) {
     defaultValues: {
       avgHr: last?.metrics?.avgHr ?? undefined,
       avgSpeedKmh: last?.metrics?.avgSpeedKmh ?? undefined,
+      maxSpeedKmh: last?.metrics?.maxSpeedKmh ?? undefined,
       avgPowerW: last?.metrics?.avgPowerW ?? undefined,
       notes: last?.metrics?.notes ?? "",
       durationMin: last?.metrics?.durationMin ?? 0,
@@ -113,6 +114,11 @@ export function CardioSessionView({ template, last }: Props) {
               control={form.control}
               name="avgSpeedKmh"
               label="Avg Speed (km/h)"
+            />
+            <NumberFormField
+              control={form.control}
+              name="maxSpeedKmh"
+              label="Max Speed (km/h)"
             />
             <NumberFormField
               control={form.control}

@@ -1,0 +1,1 @@
+ALTER TABLE "fit-manager_training_session_cardio" ADD COLUMN "max_speed_kmh" numeric(5, 2);
