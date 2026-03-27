@@ -33,11 +33,9 @@ COPY --from=builder --chown=bun:bun /app/public ./public
 COPY --from=builder --chown=bun:bun /app/.next/standalone ./
 COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
 
-# Include drizzle migrations + config for automatic DB migrations on startup
+# Include drizzle migrations + runtime deps for automatic DB migrations on startup
 COPY --from=builder --chown=bun:bun /app/drizzle ./drizzle
-COPY --from=builder --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder --chown=bun:bun /app/src/env.js ./src/env.js
-COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
 COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=builder --chown=bun:bun /app/node_modules/postgres ./node_modules/postgres
 COPY --from=builder --chown=bun:bun /app/scripts ./scripts
