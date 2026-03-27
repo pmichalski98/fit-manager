@@ -16,31 +16,42 @@ const s3Client = new S3Client({
   },
 });
 
-export async function uploadImageToS3(file: File) {
-  const imageId = crypto.randomUUID();
-  const arrayBuffer = await file.arrayBuffer();
-  const body = Buffer.from(arrayBuffer);
+function buildS3Url(key: string): string {
+  return `https://${env.AWS_S3_BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
+}
 
+export async function uploadBufferToS3(
+  buffer: Buffer,
+  key: string,
+  contentType: string,
+) {
   try {
     await s3Client.send(
       new PutObjectCommand({
         Bucket: env.AWS_S3_BUCKET_NAME,
-        Key: imageId,
-        Body: body,
-        ContentType: file.type,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
       }),
     );
 
-    return `https://${env.AWS_S3_BUCKET_NAME}.s3.${REGION}.amazonaws.com/${imageId}`;
+    return buildS3Url(key);
   } catch (error) {
     console.error(error);
-    throw new Error("Failed to upload image to S3");
+    throw new Error("Failed to upload buffer to S3");
   }
+}
+
+export async function uploadImageToS3(file: File) {
+  const key = crypto.randomUUID();
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return uploadBufferToS3(buffer, key, file.type);
 }
 
 export async function deleteImageFromS3(imageUrl: string) {
   try {
-    const key = imageUrl.split("/").pop();
+    const url = new URL(imageUrl);
+    const key = url.pathname.slice(1); // removes leading "/"
 
     if (!key) {
       throw new Error("Invalid image URL");

@@ -15,6 +15,20 @@
       "when": 1774274633238,
       "tag": "0001_init-schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774465466665,
+      "tag": "0002_lying_jasper_sitwell",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774557177536,
+      "tag": "0003_equal_zaran",
+      "breakpoints": true
     }
   ]
 }
