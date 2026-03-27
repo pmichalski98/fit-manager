@@ -1,3 +1,4 @@
+import { StravaConnectCard } from "@/modules/strava/ui/strava-connect-card";
 import { TrainingForm } from "@/modules/training/ui/components/training-form";
 import { TrainingsSkeleton } from "@/modules/training/ui/components/trainings-skeleton";
 import { TrainingsView } from "@/modules/training/ui/views/trainings-view";
@@ -15,6 +16,9 @@ export default async function TrainingPage() {
         </div>
         <TrainingForm />
       </div>
+
+      <StravaConnectCard />
+
       <h2 className="text-2xl font-semibold">Your trainings</h2>
 
       <Suspense fallback={<TrainingsSkeleton />}>

@@ -14,6 +14,20 @@ import {
 import type { CardioSessionFormValues } from "../schemas";
 import type { SessionSummary } from "../types";
 
+function cardioFieldsFromInput(input: CardioSessionFormValues) {
+  return {
+    durationMin: input.durationMin ?? null,
+    distanceKm: input.distanceKm ?? null,
+    kcal: input.kcal ?? null,
+    avgHr: input.avgHr ?? null,
+    avgSpeedKmh: input.avgSpeedKmh ?? null,
+    maxSpeedKmh: input.maxSpeedKmh ?? null,
+    avgPowerW: input.avgPowerW ?? null,
+    notes: input.notes ?? null,
+    cadence: input.cadence ?? null,
+  };
+}
+
 type CreateSessionInput = {
   userId: string;
   trainingId: string;
@@ -157,16 +171,7 @@ class SessionRepository {
         }
         await db
           .update(trainingSessionCardio)
-          .set({
-            durationMin: input.durationMin ?? null,
-            distanceKm: input.distanceKm ?? null,
-            kcal: input.kcal ?? null,
-            avgHr: input.avgHr ?? null,
-            avgSpeedKmh: input.avgSpeedKmh ?? null,
-            avgPowerW: input.avgPowerW ?? null,
-            notes: input.notes ?? null,
-            cadence: input.cadence ?? null,
-          })
+          .set(cardioFieldsFromInput(input))
           .where(eq(trainingSessionCardio.sessionId, exists.id));
         return updated;
       });
@@ -187,14 +192,7 @@ class SessionRepository {
         throw new Error("Failed to insert session");
       }
       await tx.insert(trainingSessionCardio).values({
-        durationMin: input.durationMin ?? null,
-        distanceKm: input.distanceKm ?? null,
-        kcal: input.kcal ?? null,
-        avgHr: input.avgHr ?? null,
-        avgSpeedKmh: input.avgSpeedKmh ?? null,
-        avgPowerW: input.avgPowerW ?? null,
-        notes: input.notes ?? null,
-        cadence: input.cadence ?? null,
+        ...cardioFieldsFromInput(input),
         createdAt: new Date(),
         updatedAt: new Date(),
         sessionId: session.id,

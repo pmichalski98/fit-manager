@@ -29,6 +29,27 @@
       "when": 1774557177536,
       "tag": "0003_equal_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774645329762,
+      "tag": "0004_nosy_wild_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774648322162,
+      "tag": "0005_overconfident_calypso",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774649387943,
+      "tag": "0006_fat_ikaris",
+      "breakpoints": true
     }
   ]
 }

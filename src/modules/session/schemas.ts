@@ -55,6 +55,7 @@ export const cardioSessionSchema = z.object({
   avgHr: z.coerce.number().int().positive().optional().nullable(),
   cadence: z.coerce.number().int().positive().optional().nullable(),
   avgSpeedKmh: z.coerce.string().optional().nullable(),
+  maxSpeedKmh: z.coerce.string().optional().nullable(),
   avgPowerW: z.coerce.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
   trainingId: z.uuid(),

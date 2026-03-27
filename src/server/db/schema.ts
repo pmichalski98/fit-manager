@@ -155,19 +155,25 @@ export const sessionStatusEnum = pgEnum("session_status", [
   "completed",
 ]);
 
-export const training = createTable("training", (d) => ({
-  id: d.uuid("id").primaryKey().defaultRandom(),
-  name: d.text("name").notNull(),
-  type: trainingTypeEnum("type").notNull(),
-  isActive: d.boolean("is_active").notNull().default(true),
-  createdAt: d.timestamp("created_at").notNull().defaultNow(),
-  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  lastSessionAt: d.timestamp("last_session_at"),
-  userId: d
-    .text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-}));
+export const training = createTable(
+  "training",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    name: d.text("name").notNull(),
+    type: trainingTypeEnum("type").notNull(),
+    isActive: d.boolean("is_active").notNull().default(true),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+    lastSessionAt: d.timestamp("last_session_at"),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  }),
+  (t) => [
+    uniqueIndex("training_user_name_type_unique").on(t.userId, t.name, t.type),
+  ],
+);
 
 export const trainingExercise = createTable(
   "training_exercise",
@@ -190,29 +196,65 @@ export const trainingExercise = createTable(
   ],
 );
 
+// ─── Strava Integration ─────────────────────────────────────────────────────
+
+export const stravaAccount = createTable(
+  "strava_account",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    stravaAthleteId: d.text("strava_athlete_id").notNull(),
+    accessToken: d.text("access_token").notNull(),
+    refreshToken: d.text("refresh_token").notNull(),
+    expiresAt: d.timestamp("expires_at").notNull(),
+    scope: d.text("scope"),
+    webhookSubscriptionId: d.text("webhook_subscription_id"),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => [
+    uniqueIndex("strava_account_user_unique").on(t.userId),
+    uniqueIndex("strava_account_athlete_unique").on(t.stravaAthleteId),
+  ],
+);
+
+export type StravaAccount = typeof stravaAccount.$inferSelect;
+
 // Training session lifecycle and results
-export const trainingSession = createTable("training_session", (d) => ({
-  id: d.uuid("id").primaryKey().defaultRandom(),
-  userId: d
-    .text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  trainingId: d
-    .uuid("training_id")
-    .notNull()
-    .references(() => training.id, { onDelete: "cascade" }),
-  type: trainingTypeEnum("type").notNull(),
-  status: sessionStatusEnum("status").notNull().default("completed"),
-  startAt: d.timestamp("start_at").notNull().defaultNow(),
-  endAt: d.timestamp("end_at"),
-  // Derived/summary fields
-  durationMin: d.integer("duration_min"),
-  totalLoadKg: d.integer("total_load_kg"),
-  notes: d.text("notes"),
-  date: d.date("date").notNull().defaultNow(),
-  createdAt: d.timestamp("created_at").notNull().defaultNow(),
-  updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-}));
+export const trainingSession = createTable(
+  "training_session",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    trainingId: d
+      .uuid("training_id")
+      .notNull()
+      .references(() => training.id, { onDelete: "cascade" }),
+    type: trainingTypeEnum("type").notNull(),
+    status: sessionStatusEnum("status").notNull().default("completed"),
+    startAt: d.timestamp("start_at").notNull().defaultNow(),
+    endAt: d.timestamp("end_at"),
+    // Derived/summary fields
+    durationMin: d.integer("duration_min"),
+    totalLoadKg: d.integer("total_load_kg"),
+    notes: d.text("notes"),
+    stravaActivityId: d.text("strava_activity_id"),
+    date: d.date("date").notNull().defaultNow(),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => [
+    uniqueIndex("training_session_strava_activity_unique").on(
+      t.stravaActivityId,
+    ),
+  ],
+);
 
 export type TrainingSession = typeof trainingSession.$inferSelect;
 
@@ -277,6 +319,7 @@ export const trainingSessionCardio = createTable(
     avgHr: d.integer("avg_hr"),
     cadence: d.integer("cadence"),
     avgSpeedKmh: d.numeric("avg_speed_kmh", { precision: 5, scale: 2 }),
+    maxSpeedKmh: d.numeric("max_speed_kmh", { precision: 5, scale: 2 }),
     avgPowerW: d.integer("avg_power_w"),
     notes: d.text("notes"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),

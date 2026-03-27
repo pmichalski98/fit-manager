@@ -1,0 +1,2 @@
+ALTER TABLE "fit-manager_strava_account" ADD COLUMN "webhook_subscription_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "training_user_name_type_unique" ON "fit-manager_training" USING btree ("user_id","name","type");
