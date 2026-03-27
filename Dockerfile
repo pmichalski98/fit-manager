@@ -39,6 +39,7 @@ COPY --from=builder --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder --chown=bun:bun /app/src/env.js ./src/env.js
 COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
 COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=builder --chown=bun:bun /app/node_modules/postgres ./node_modules/postgres
 COPY --from=builder --chown=bun:bun /app/scripts ./scripts
 
 USER bun

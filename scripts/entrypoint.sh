@@ -2,7 +2,8 @@
 set -e
 
 echo "Running database migrations..."
-bunx drizzle-kit migrate 2>&1 || echo "Migration warning (may already be applied)"
+bunx drizzle-kit migrate
+echo "Migrations complete."
 
 echo "Starting application..."
 exec bun server.js
