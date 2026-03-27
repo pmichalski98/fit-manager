@@ -2,7 +2,13 @@ import OpenAI from "openai";
 import { env } from "@/env";
 import { uploadBufferToS3 } from "@/server/s3";
 
-const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 export type MacroEstimate = {
   kcalPer100g: number;
@@ -15,7 +21,7 @@ export type MacroEstimate = {
 export async function estimateMacros(
   productName: string,
 ): Promise<MacroEstimate> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     response_format: { type: "json_object" },
     messages: [
@@ -54,7 +60,7 @@ export async function categorizeProduct(
   if (categoryNames.length === 0) return null;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -88,7 +94,7 @@ export async function generateFoodPhoto(
   productName: string,
 ): Promise<string | null> {
   try {
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "dall-e-3",
       prompt: `Appetizing overhead food photo of ${productName}, food photography, clean white background, natural lighting, minimal styling. Square format.`,
       n: 1,
