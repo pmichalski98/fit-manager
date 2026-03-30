@@ -1,0 +1,1 @@
+DROP TABLE "fit-manager_off_product" CASCADE;

@@ -381,6 +381,7 @@ export const foodProduct = createTable(
     fatPer100g: d.numeric("fat_per_100g", { precision: 7, scale: 2 }).notNull(),
     fiberPer100g: d.numeric("fiber_per_100g", { precision: 7, scale: 2 }),
     defaultServingG: d.integer("default_serving_g").notNull().default(100),
+    portionLabel: d.text("portion_label"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
@@ -395,22 +396,6 @@ export const foodProduct = createTable(
 );
 
 export type FoodProduct = typeof foodProduct.$inferSelect;
-
-// ─── OpenFoodFacts Reference Data ────────────────────────────────────────────
-
-export const offProduct = createTable("off_product", (d) => ({
-  code: d.text("code").primaryKey(),
-  name: d.text("name").notNull(),
-  brands: d.text("brands"),
-  imageUrl: d.text("image_url"),
-  kcalPer100g: d.real("kcal_per_100g"),
-  proteinPer100g: d.real("protein_per_100g"),
-  carbsPer100g: d.real("carbs_per_100g"),
-  fatPer100g: d.real("fat_per_100g"),
-  fiberPer100g: d.real("fiber_per_100g"),
-}));
-
-export type OffProduct = typeof offProduct.$inferSelect;
 
 export const mealTypeEnum = pgEnum("meal_type", [
   "breakfast",

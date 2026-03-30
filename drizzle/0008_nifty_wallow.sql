@@ -1,0 +1,1 @@
+ALTER TABLE "fit-manager_food_product" ADD COLUMN "portion_label" text;

@@ -9,7 +9,6 @@ import {
   macrosToDbStrings,
   type FoodProductInput,
 } from "./schemas";
-import { offRepository } from "./repositories/off.repo";
 import {
   estimateMacros,
   categorizeProduct,
@@ -17,93 +16,20 @@ import {
 } from "./services/ai-nutrition";
 import { shoppingRepository } from "../shopping/repositories/shopping.repo";
 
-export type OpenFoodFactsProduct = {
-  code: string;
-  name: string;
-  brand: string | null;
-  imageUrl: string | null;
-  kcalPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-  fiberPer100g: number | null;
-};
-
 export async function searchFood(query: string) {
   const userId = await requireUserId();
 
   try {
     console.log(`[searchFood] Query: "${query}"`);
 
-    // Search local DB and OFF reference table in parallel
-    const [localResults, offResults] = await Promise.all([
-      foodRepository.searchByName(userId, query),
-      offRepository.search(query),
-    ]);
+    const localResults = await foodRepository.searchByName(userId, query);
 
-    console.log(
-      `[searchFood] Results — local: ${localResults.length}, online: ${offResults.length}`,
-    );
+    console.log(`[searchFood] Results — local: ${localResults.length}`);
 
-    // Get source IDs already in local DB to deduplicate
-    const existingSourceIds = new Set(
-      localResults
-        .filter((p) => p.sourceId)
-        .map((p) => `${p.source}:${p.sourceId}`),
-    );
-
-    const onlineResults = offResults
-      .filter((p) => !existingSourceIds.has(`openfoodfacts:${p.code}`))
-      .map((p) => ({
-        code: p.code,
-        name: p.name,
-        brand: p.brands,
-        imageUrl: p.imageUrl,
-        kcalPer100g: p.kcalPer100g ?? 0,
-        proteinPer100g: p.proteinPer100g ?? 0,
-        carbsPer100g: p.carbsPer100g ?? 0,
-        fatPer100g: p.fatPer100g ?? 0,
-        fiberPer100g: p.fiberPer100g,
-      }));
-
-    return { ok: true as const, data: { local: localResults, online: onlineResults } };
+    return { ok: true as const, data: { local: localResults } };
   } catch (error) {
     console.error("Search food error:", error);
     return { ok: false as const, error: "Failed to search food" };
-  }
-}
-
-export async function importFromOpenFoodFacts(product: OpenFoodFactsProduct) {
-  const userId = await requireUserId();
-
-  try {
-    // Check if already imported
-    const existing = await foodRepository.findBySourceId(
-      userId,
-      "openfoodfacts",
-      product.code,
-    );
-    if (existing) return { ok: true as const, data: existing };
-
-    const created = await foodRepository.create({
-      userId,
-      name: product.name,
-      brand: product.brand,
-      source: "openfoodfacts",
-      sourceId: product.code,
-      imageUrl: product.imageUrl,
-      isVerified: false,
-      ...macrosToDbStrings(product),
-    });
-
-    // AI categorization in background (non-blocking)
-    void assignCategoryInBackground(created.id, userId, product.name, product.brand).catch(console.error);
-
-    revalidatePath("/food");
-    return { ok: true as const, data: created };
-  } catch (error) {
-    console.error("Import from OpenFoodFacts error:", error);
-    return { ok: false as const, error: "Failed to import product" };
   }
 }
 
@@ -120,6 +46,8 @@ export async function estimateWithAI(productName: string) {
       sourceId: `ai-${Date.now()}`,
       isVerified: false,
       ...macrosToDbStrings(macros),
+      ...(macros.portionG ? { defaultServingG: Math.round(macros.portionG) } : {}),
+      ...(macros.portionLabel ? { portionLabel: macros.portionLabel } : {}),
     });
 
     // AI categorization + photo in background
