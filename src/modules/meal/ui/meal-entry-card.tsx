@@ -112,7 +112,7 @@ export function MealEntryCard({ entry, product }: Props) {
       </div>
 
       {/* Actions */}
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
         {entry.notes && (
           <Popover>
             <PopoverTrigger asChild>

@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, BookmarkIcon, SaveIcon } from "lucide-react";
+import { PlusIcon, BookmarkIcon, SaveIcon, CopyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ type Props = {
   onAddProductClick: (mealType: MealType) => void;
   onAddTemplateClick: (mealType: MealType) => void;
   onSaveAsTemplate: (mealType: MealType) => void;
+  onCopyMeal?: (mealType: MealType) => void;
 };
 
 export function MealSection({
@@ -26,6 +27,7 @@ export function MealSection({
   onAddProductClick,
   onAddTemplateClick,
   onSaveAsTemplate,
+  onCopyMeal,
 }: Props) {
   const totalKcal = entries.reduce(
     (sum, e) => sum + Number(e.entry.kcal ?? 0),
@@ -73,6 +75,12 @@ export function MealSection({
                 <BookmarkIcon className="mr-2 h-4 w-4" />
                 Add saved meal
               </DropdownMenuItem>
+              {entries.length > 0 && onCopyMeal && (
+                <DropdownMenuItem onClick={() => onCopyMeal(mealType)}>
+                  <CopyIcon className="mr-2 h-4 w-4" />
+                  Copy to another day
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

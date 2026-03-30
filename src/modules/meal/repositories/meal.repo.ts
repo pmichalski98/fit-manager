@@ -74,6 +74,37 @@ class MealRepository {
     return (result?.maxPosition ?? -1) + 1;
   }
 
+  async getRecentProducts(userId: string, limit = 8) {
+    const recentEntries = await db
+      .select({
+        foodProductId: mealEntry.foodProductId,
+        lastUsed: sql<Date>`MAX(${mealEntry.createdAt})`.as("last_used"),
+      })
+      .from(mealEntry)
+      .where(eq(mealEntry.userId, userId))
+      .groupBy(mealEntry.foodProductId)
+      .orderBy(sql`MAX(${mealEntry.createdAt}) DESC`)
+      .limit(limit);
+
+    if (recentEntries.length === 0) return [];
+
+    const productIds = recentEntries.map((e) => e.foodProductId);
+
+    const products = await db
+      .select()
+      .from(foodProduct)
+      .where(
+        sql`${foodProduct.id} IN (${sql.join(
+          productIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})`,
+      );
+
+    // Return in same order as query
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    return productIds.map((id) => productMap.get(id)).filter(Boolean) as typeof products;
+  }
+
   async create(values: CreateMealEntryValues) {
     const [result] = await db.insert(mealEntry).values(values).returning();
     return result!;

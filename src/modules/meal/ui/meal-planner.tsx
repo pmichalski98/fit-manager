@@ -5,24 +5,24 @@ import { ChevronLeftIcon, ChevronRightIcon, CookingPotIcon, Loader2Icon } from "
 import { format, addDays, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { DayColumn } from "./day-column";
+import { MobileMealGrid } from "./mobile-meal-grid";
 import { FoodSearchDialog } from "@/modules/food/ui/food-search-dialog";
 import { MealTemplateDialog } from "./meal-template-dialog";
 import { SaveTemplateDialog } from "./save-template-dialog";
 import { CreateMealDialog } from "./create-meal-dialog";
+import { CopyMealDialog } from "./copy-meal-dialog";
 import { getMealPlanForDays } from "../actions";
-import type { MealType, DaySummary, MacroGoals } from "../schemas";
+import { EMPTY_SUMMARY, parseLocalDate, type MealType, type MacroGoals, type PlanData, type SummaryData } from "../schemas";
 import type { MealEntry, FoodProduct } from "@/server/db/schema";
 
 const DAYS_SHOWN = 3;
-
-type PlanData = Record<string, Record<string, { entry: MealEntry; product: FoodProduct }[]>>;
-type SummaryData = Record<string, DaySummary>;
 
 type Props = {
   initialDates: string[];
   initialPlan: PlanData;
   initialSummaries: SummaryData;
   goals: MacroGoals | null;
+  enabledMealTypes: MealType[];
 };
 
 export function MealPlanner({
@@ -30,40 +30,31 @@ export function MealPlanner({
   initialPlan,
   initialSummaries,
   goals,
+  enabledMealTypes,
 }: Props) {
   const [startDate, setStartDate] = useState(initialDates[0]!);
   const [plan, setPlan] = useState<PlanData>(initialPlan);
   const [summaries, setSummaries] = useState<SummaryData>(initialSummaries);
   const [isPending, startTransition] = useTransition();
 
-  // Search dialog state
+  // Dialog states
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchContext, setSearchContext] = useState<{
-    date: string;
-    mealType: MealType;
-  } | null>(null);
-
-  // Template browser dialog state
+  const [searchContext, setSearchContext] = useState<{ date: string; mealType: MealType } | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
-  const [templateContext, setTemplateContext] = useState<{
-    date: string;
-    mealType: MealType;
-  } | null>(null);
-
-  // Create meal dialog state
+  const [templateContext, setTemplateContext] = useState<{ date: string; mealType: MealType } | null>(null);
   const [createMealOpen, setCreateMealOpen] = useState(false);
-
-  // Save template dialog state
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [saveTemplateContext, setSaveTemplateContext] = useState<{
     mealType: MealType;
     entries: { entry: MealEntry; product: FoodProduct }[];
   } | null>(null);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copyContext, setCopyContext] = useState<{ date: string; mealType: MealType } | null>(null);
 
   const today = format(new Date(), "yyyy-MM-dd");
 
   const dates = Array.from({ length: DAYS_SHOWN }, (_, i) =>
-    format(addDays(new Date(startDate + "T00:00:00"), i), "yyyy-MM-dd"),
+    format(addDays(parseLocalDate(startDate), i), "yyyy-MM-dd"),
   );
 
   const fetchPlanData = useCallback((newStartDate: string) => {
@@ -76,141 +67,140 @@ export function MealPlanner({
   }, []);
 
   const handlePrev = () => {
-    const newStart = format(subDays(new Date(startDate + "T00:00:00"), DAYS_SHOWN), "yyyy-MM-dd");
-    fetchPlanData(newStart);
+    fetchPlanData(format(subDays(parseLocalDate(startDate), DAYS_SHOWN), "yyyy-MM-dd"));
   };
 
   const handleNext = () => {
-    const newStart = format(addDays(new Date(startDate + "T00:00:00"), DAYS_SHOWN), "yyyy-MM-dd");
-    fetchPlanData(newStart);
+    fetchPlanData(format(addDays(parseLocalDate(startDate), DAYS_SHOWN), "yyyy-MM-dd"));
   };
 
-  const handleToday = () => {
-    fetchPlanData(today);
-  };
+  const handleToday = () => fetchPlanData(today);
 
-  const handleAddProductClick = useCallback(
-    (date: string, mealType: MealType) => {
-      setSearchContext({ date, mealType });
-      setSearchOpen(true);
-    },
-    [],
-  );
+  const handleAddProductClick = useCallback((date: string, mealType: MealType) => {
+    setSearchContext({ date, mealType });
+    setSearchOpen(true);
+  }, []);
 
-  const handleAddTemplateClick = useCallback(
-    (date: string, mealType: MealType) => {
-      setTemplateContext({ date, mealType });
-      setTemplateOpen(true);
-    },
-    [],
-  );
+  const handleAddTemplateClick = useCallback((date: string, mealType: MealType) => {
+    setTemplateContext({ date, mealType });
+    setTemplateOpen(true);
+  }, []);
 
-  const handleSaveAsTemplate = useCallback(
-    (date: string, mealType: MealType) => {
-      const dayPlan = plan[date];
-      const entries = dayPlan?.[mealType] ?? [];
-      if (entries.length === 0) return;
+  const handleSaveAsTemplate = useCallback((date: string, mealType: MealType) => {
+    const entries = plan[date]?.[mealType] ?? [];
+    if (entries.length === 0) return;
+    setSaveTemplateContext({ mealType, entries });
+    setSaveTemplateOpen(true);
+  }, [plan]);
 
-      setSaveTemplateContext({ mealType, entries });
-      setSaveTemplateOpen(true);
-    },
-    [plan],
-  );
+  const handleCopyMeal = useCallback((date: string, mealType: MealType) => {
+    setCopyContext({ date, mealType });
+    setCopyOpen(true);
+  }, []);
 
-  const emptyDay = { breakfast: [], lunch: [], dinner: [], snack: [] };
-  const emptySummary: DaySummary = { totalKcal: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, totalFiber: 0 };
+  const handleCreateMeal = () => setCreateMealOpen(true);
+
+  const emptyDay: Record<string, never[]> = {};
 
   return (
-    <div className="space-y-4">
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={handlePrev} disabled={isPending}>
-          <ChevronLeftIcon className="mr-1 h-4 w-4" />
-          Prev
-        </Button>
+    <div>
+      {/* Compact grid view — mobile + tablet (below xl breakpoint) */}
+      <div className="xl:hidden">
+        <MobileMealGrid
+          dates={dates}
+          plan={plan}
+          summaries={summaries}
+          goals={goals}
+          enabledMealTypes={enabledMealTypes}
+          today={today}
+          isPending={isPending}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onToday={handleToday}
+          onAddProductClick={handleAddProductClick}
+          onAddTemplateClick={handleAddTemplateClick}
+          onSaveAsTemplate={handleSaveAsTemplate}
+          onCopyMeal={handleCopyMeal}
+          onCreateMeal={handleCreateMeal}
+        />
+      </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setCreateMealOpen(true)}
-          >
-            <CookingPotIcon className="mr-1 h-4 w-4" />
-            Create meal
+      {/* Full desktop layout — xl+ only (1280px+, enough room for 3 detailed columns) */}
+      <div className="hidden xl:block">
+        <div className="mb-4 flex items-center justify-between">
+          <Button variant="outline" size="sm" onClick={handlePrev} disabled={isPending}>
+            <ChevronLeftIcon className="mr-1 h-4 w-4" />
+            Prev
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleToday} disabled={isPending}>
-            Today
+          <div className="flex items-center gap-2">
+            <Button variant="default" size="sm" onClick={() => setCreateMealOpen(true)}>
+              <CookingPotIcon className="mr-1 h-4 w-4" />
+              Create meal
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleToday} disabled={isPending}>
+              Today
+            </Button>
+            {isPending && <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />}
+          </div>
+          <Button variant="outline" size="sm" onClick={handleNext} disabled={isPending}>
+            Next
+            <ChevronRightIcon className="ml-1 h-4 w-4" />
           </Button>
-          {isPending && <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
-
-        <Button variant="outline" size="sm" onClick={handleNext} disabled={isPending}>
-          Next
-          <ChevronRightIcon className="ml-1 h-4 w-4" />
-        </Button>
+        <div className="grid grid-cols-3 gap-4">
+          {dates.map((date) => (
+            <DayColumn
+              key={date}
+              date={date}
+              meals={plan[date] ?? emptyDay}
+              summary={summaries[date] ?? EMPTY_SUMMARY}
+              goals={goals}
+              enabledMealTypes={enabledMealTypes}
+              onAddProductClick={(mt) => handleAddProductClick(date, mt)}
+              onAddTemplateClick={(mt) => handleAddTemplateClick(date, mt)}
+              onSaveAsTemplate={(mt) => handleSaveAsTemplate(date, mt)}
+              onCopyMeal={(mt) => handleCopyMeal(date, mt)}
+              isToday={date === today}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* 3-day grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {dates.map((date) => (
-          <DayColumn
-            key={date}
-            date={date}
-            meals={plan[date] ?? emptyDay}
-            summary={summaries[date] ?? emptySummary}
-            goals={goals}
-            onAddProductClick={(mt) => handleAddProductClick(date, mt)}
-            onAddTemplateClick={(mt) => handleAddTemplateClick(date, mt)}
-            onSaveAsTemplate={(mt) => handleSaveAsTemplate(date, mt)}
-            isToday={date === today}
-          />
-        ))}
-      </div>
-
-      {/* Food search dialog */}
+      {/* Dialogs */}
       {searchContext && (
         <FoodSearchDialog
           open={searchOpen}
-          onOpenChange={() => {
-            setSearchOpen(false);
-            setSearchContext(null);
-          }}
+          onOpenChange={() => { setSearchOpen(false); setSearchContext(null); }}
           date={searchContext.date}
           mealType={searchContext.mealType}
         />
       )}
-
-      {/* Template browser dialog */}
       {templateContext && (
         <MealTemplateDialog
           open={templateOpen}
-          onOpenChange={() => {
-            setTemplateOpen(false);
-            setTemplateContext(null);
-          }}
+          onOpenChange={() => { setTemplateOpen(false); setTemplateContext(null); }}
           date={templateContext.date}
           mealType={templateContext.mealType}
         />
       )}
-
-      {/* Save template dialog */}
       {saveTemplateContext && (
         <SaveTemplateDialog
           open={saveTemplateOpen}
-          onOpenChange={() => {
-            setSaveTemplateOpen(false);
-            setSaveTemplateContext(null);
-          }}
+          onOpenChange={() => { setSaveTemplateOpen(false); setSaveTemplateContext(null); }}
           mealType={saveTemplateContext.mealType}
           entries={saveTemplateContext.entries}
         />
       )}
-
-      {/* Create meal dialog */}
-      <CreateMealDialog
-        open={createMealOpen}
-        onOpenChange={setCreateMealOpen}
-      />
+      {copyContext && (
+        <CopyMealDialog
+          open={copyOpen}
+          onOpenChange={(open) => { setCopyOpen(open); if (!open) setCopyContext(null); }}
+          fromDate={copyContext.date}
+          fromMealType={copyContext.mealType}
+          enabledMealTypes={enabledMealTypes}
+        />
+      )}
+      <CreateMealDialog open={createMealOpen} onOpenChange={setCreateMealOpen} />
     </div>
   );
 }
