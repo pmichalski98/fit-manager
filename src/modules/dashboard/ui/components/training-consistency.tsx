@@ -12,11 +12,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getConsistencyGraphData } from "@/modules/dashboard/actions";
+import { AutoScrollContainer } from "./auto-scroll-container";
 import {
   startOfWeek,
   addDays,
   format,
   isAfter,
+  isSameDay,
   getDate,
   subDays,
 } from "date-fns";
@@ -143,7 +145,7 @@ export async function TrainingConsistency() {
           </div>
 
           {/* Scrollable grid area */}
-          <div className="no-scrollbar min-w-0 flex-1 overflow-x-auto">
+          <AutoScrollContainer className="no-scrollbar min-w-0 flex-1 overflow-x-auto">
             <div className="flex min-w-[460px] flex-col gap-1">
               {/* Month Labels Row */}
               <div className="text-card-foreground relative h-4 text-xs">
@@ -195,6 +197,7 @@ export async function TrainingConsistency() {
                         }
                       }
 
+                      const isToday = isSameDay(day, today);
                       const formattedDate = format(day, "MMM d, yyyy");
                       const formattedTypes = types
                         ? types
@@ -207,7 +210,7 @@ export async function TrainingConsistency() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div
-                                className={`h-full w-full rounded-[2px] ${colorClass}`}
+                                className={`h-full w-full rounded-[2px] ${colorClass} ${isToday ? "ring-1 ring-white ring-offset-1 ring-offset-background" : ""}`}
                               />
                             </TooltipTrigger>
                             <TooltipContent>
@@ -226,7 +229,7 @@ export async function TrainingConsistency() {
                 ))}
               </div>
             </div>
-          </div>
+          </AutoScrollContainer>
         </CardContent>
 
         <CardFooter className="text-card-foreground flex flex-wrap items-center justify-end gap-3 text-sm md:gap-4">
