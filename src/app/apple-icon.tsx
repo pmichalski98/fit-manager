@@ -16,12 +16,13 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          background: "linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)",
+          borderRadius: "36px",
         }}
       >
         <svg
-          width="100"
-          height="100"
+          width="80"
+          height="80"
           viewBox="0 0 512 512"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -29,7 +30,7 @@ export default function Icon() {
           {/* Outer circle */}
           <path
             d="M256 48C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48zm0 384c-97.2 0-176-78.8-176-176S158.8 80 256 80s176 78.8 176 176-78.8 176-176 176z"
-            fill="#10b981"
+            fill="white"
           />
           {/* Dumbbell left */}
           <rect
@@ -38,7 +39,7 @@ export default function Icon() {
             width="24"
             height="72"
             rx="6"
-            fill="#10b981"
+            fill="white"
           />
           <rect
             x="124"
@@ -46,7 +47,7 @@ export default function Icon() {
             width="60"
             height="32"
             rx="4"
-            fill="#10b981"
+            fill="white"
           />
           {/* Dumbbell right */}
           <rect
@@ -55,7 +56,7 @@ export default function Icon() {
             width="24"
             height="72"
             rx="6"
-            fill="#10b981"
+            fill="white"
           />
           <rect
             x="328"
@@ -63,12 +64,12 @@ export default function Icon() {
             width="60"
             height="32"
             rx="4"
-            fill="#10b981"
+            fill="white"
           />
           {/* Heartbeat line */}
           <path
             d="M184 256 L220 256 L240 200 L270 310 L300 220 L320 256 L388 256"
-            stroke="#10b981"
+            stroke="white"
             strokeWidth="16"
             strokeLinecap="round"
             strokeLinejoin="round"
