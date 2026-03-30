@@ -8,31 +8,24 @@
 [] - polish skeletons loaders
 [X] - body weight and measurements charts
 [X] - charts of progress per exercise
-[] - polish strength session page
+[X] - polish strength session page
 [] - finish training session ending summaries
 [X] - already filled for this day is bugged, we need to probably reset state after we click 'save'
 [X] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week
 [X] - 1rep max estimations
 [] - on mobile i cant remove weight, it defaults to 0
 [] - on mobile when i remove all sets from exercise i cant add
-[] - add option to just clear exercise in session because i didnt do it in that session
+[X] - add option to just clear exercise in session because i didnt do it in that session
 [X] - on mobile fix 'done' checkbox styling
 [X] - complete session should be full width on mobile and some padding on bottom
 [X] - after i click complete session, button is not disabled and i dont see loading state
 [] - add summary on cardio session and redirect
-[] - see if i can submit training session with one exercise being empty
-[] - add form logs, because sometimes i cant submit training session
-[] - add date unique constraint so i cant put 2 trainings on same day
-[] - fix dashboard table layout shits + filter by date not createdAt
-[] - add some session refreshing so i dont have to log often
+[X] - see if i can submit training session with one exercise being empty
+[X] - add form logs, because sometimes i cant submit training session
+[X] - add date unique constraint so i cant put 2 trainings on same day
+[X] - fix dashboard table layout shits + filter by date not createdAt
+[X] - add some session refreshing so i dont have to log often
 [] - body fat estimations with and without AI
 [] - supersets, combining 2 exercises on UI only
-[] - compact UI for better UX in training session
-I read through strength-session-view.tsx — it's 716 lines in a single component, and the set rows are pretty tall. A few concrete ideas:
-
-- Inline number steppers — instead of raw number inputs (which require opening the keyboard on mobile), use - and + buttons for reps and weight. Tap to adjust by 1 rep or 0.5/1.0/2.5kg. Way faster than typing.
-- Swipeable exercise navigation — instead of scrolling through all exercises vertically, show one exercise at a time with swipe left/right to switch. A small progress indicator at the top shows where you are.
-  This dramatically reduces visual clutter.
-- Collapsible exercises — alternatively, keep the vertical list but auto-collapse completed exercises so only the active one is expanded.
-
-[] - potential move this project to vps instead of vercel
+[X] - compact UI for better UX in training session
+[X] - potential move this project to vps instead of vercel

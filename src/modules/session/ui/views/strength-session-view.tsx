@@ -1038,7 +1038,7 @@ function ExerciseSets({
                     value={typeof field.value === "number" ? field.value : null}
                     onChange={(v) => field.onChange(v)}
                     min={0}
-                    step={2.5}
+                    step={1}
                     inputMode="decimal"
                     placeholder="BW"
                     disabled={isDone || disabled}
