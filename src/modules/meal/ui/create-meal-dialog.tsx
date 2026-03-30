@@ -18,14 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import {
-  importFromOpenFoodFacts,
-  estimateWithAI,
-} from "@/modules/food/actions";
+import { estimateWithAI } from "@/modules/food/actions";
 import { useFoodSearch } from "@/modules/food/hooks/use-food-search";
 import { saveMealAsTemplate } from "../actions";
 import type { FoodProduct } from "@/server/db/schema";
-import type { OnlineResult } from "@/modules/food/schemas";
 
 type IngredientRow = {
   product: FoodProduct;
@@ -47,7 +43,7 @@ export function CreateMealDialog({ open, onOpenChange }: Props) {
   const [showSearch, setShowSearch] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
 
-  const { isSearching, localResults, onlineResults, reset: resetSearchResults } =
+  const { isSearching, localResults, reset: resetSearchResults } =
     useFoodSearch(searchQuery, showSearch);
 
   const handleAddLocal = (product: FoodProduct) => {
@@ -56,30 +52,6 @@ export function CreateMealDialog({ open, onOpenChange }: Props) {
       { product, amountG: product.defaultServingG },
     ]);
     resetSearch();
-  };
-
-  const handleAddOnline = async (item: OnlineResult) => {
-    const result = await importFromOpenFoodFacts({
-      code: item.code,
-      name: item.name,
-      brand: item.brand,
-      imageUrl: item.imageUrl,
-      kcalPer100g: item.kcalPer100g,
-      proteinPer100g: item.proteinPer100g,
-      carbsPer100g: item.carbsPer100g,
-      fatPer100g: item.fatPer100g,
-      fiberPer100g: item.fiberPer100g,
-    });
-
-    if (result.ok) {
-      setIngredients([
-        ...ingredients,
-        { product: result.data, amountG: result.data.defaultServingG },
-      ]);
-      resetSearch();
-    } else {
-      toast.error(result.error);
-    }
   };
 
   const handleAIEstimate = async () => {
@@ -315,25 +287,6 @@ export function CreateMealDialog({ open, onOpenChange }: Props) {
                     </span>
                   </button>
                 ))}
-                {onlineResults.map((p) => (
-                  <button
-                    key={p.code}
-                    onClick={() => handleAddOnline(p)}
-                    className="hover:bg-accent flex w-full items-center gap-2 rounded p-1.5 text-left text-sm"
-                  >
-                    <span className="min-w-0 flex-1 truncate">
-                      {p.name}
-                      {p.brand && (
-                        <span className="text-muted-foreground ml-1 text-xs">
-                          ({p.brand})
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-muted-foreground shrink-0 text-xs">
-                      {p.kcalPer100g} kcal/100g
-                    </span>
-                  </button>
-                ))}
               </div>
 
               {searchQuery.length >= 2 && !isSearching && (
@@ -349,7 +302,9 @@ export function CreateMealDialog({ open, onOpenChange }: Props) {
                   ) : (
                     <SparklesIcon className="mr-1 h-3.5 w-3.5" />
                   )}
-                  AI estimate &quot;{searchQuery}&quot;
+                  {isEstimating
+                    ? "Searching the web..."
+                    : `AI estimate "${searchQuery}"`}
                 </Button>
               )}
             </div>

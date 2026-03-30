@@ -11,15 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import {
-  importFromOpenFoodFacts,
-  estimateWithAI,
-} from "../actions";
+import { estimateWithAI } from "../actions";
 import { useFoodSearch } from "../hooks/use-food-search";
 import { addMealEntry } from "@/modules/meal/actions";
 import { MEAL_TYPE_LABELS, type MealType } from "@/modules/meal/schemas";
 import type { FoodProduct } from "@/server/db/schema";
-import type { OnlineResult } from "../schemas";
 
 type Props = {
   open: boolean;
@@ -36,32 +32,11 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
   const [isAdding, setIsAdding] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
 
-  const { isSearching, localResults, onlineResults, reset: resetSearch } = useFoodSearch(query);
+  const { isSearching, localResults, reset: resetSearch } = useFoodSearch(query);
 
   const handleSelectLocal = (product: FoodProduct) => {
     setSelectedProduct(product);
     setAmount(String(product.defaultServingG));
-  };
-
-  const handleSelectOnline = async (product: OnlineResult) => {
-    const result = await importFromOpenFoodFacts({
-      code: product.code,
-      name: product.name,
-      brand: product.brand,
-      imageUrl: product.imageUrl,
-      kcalPer100g: product.kcalPer100g,
-      proteinPer100g: product.proteinPer100g,
-      carbsPer100g: product.carbsPer100g,
-      fatPer100g: product.fatPer100g,
-      fiberPer100g: product.fiberPer100g,
-    });
-
-    if (result.ok) {
-      setSelectedProduct(result.data);
-      setAmount(String(result.data.defaultServingG));
-    } else {
-      toast.error(result.error);
-    }
   };
 
   const handleAIEstimate = async () => {
@@ -173,27 +148,6 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
               </div>
             )}
 
-            {/* Online results */}
-            {onlineResults.length > 0 && (
-              <div>
-                <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-                  Online results
-                </p>
-                <div className="space-y-1">
-                  {onlineResults.map((p) => (
-                    <ProductRow
-                      key={p.code}
-                      name={p.name}
-                      brand={p.brand}
-                      kcal={p.kcalPer100g}
-                      imageUrl={p.imageUrl}
-                      onClick={() => handleSelectOnline(p)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* AI estimate button */}
             {query.length >= 2 && !isSearching && (
               <Button
@@ -208,7 +162,7 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
                   <SparklesIcon className="mr-2 h-4 w-4" />
                 )}
                 {isEstimating
-                  ? "Estimating..."
+                  ? "Searching the web..."
                   : `Let AI estimate "${query}"`}
               </Button>
             )}
@@ -216,8 +170,7 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
             {/* Empty state */}
             {query.length >= 2 &&
               !isSearching &&
-              localResults.length === 0 &&
-              onlineResults.length === 0 && (
+              localResults.length === 0 && (
                 <p className="text-muted-foreground py-4 text-center text-sm">
                   No results found. Try AI estimation above.
                 </p>
@@ -258,7 +211,14 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
             </div>
 
             <div>
-              <label className="text-sm font-medium">Amount (g)</label>
+              <label className="text-sm font-medium">
+                Amount (g)
+                {selectedProduct.portionLabel && (
+                  <span className="text-muted-foreground ml-2 font-normal">
+                    {selectedProduct.portionLabel} = {selectedProduct.defaultServingG}g
+                  </span>
+                )}
+              </label>
               <Input
                 type="number"
                 value={amount}

@@ -27,18 +27,6 @@ export type FoodSearchInput = z.infer<typeof foodSearchSchema>;
 export const updateFoodProductSchema = foodProductSchema.partial();
 export type UpdateFoodProductInput = z.infer<typeof updateFoodProductSchema>;
 
-export type OnlineResult = {
-  code: string;
-  name: string;
-  brand: string | null;
-  imageUrl: string | null;
-  kcalPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-  fiberPer100g: number | null;
-};
-
 export function macrosToDbStrings(macros: {
   kcalPer100g: number;
   proteinPer100g: number;

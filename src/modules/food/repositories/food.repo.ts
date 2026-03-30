@@ -2,7 +2,7 @@ import { and, eq, sql, ilike, desc } from "drizzle-orm";
 import { db } from "@/server/db";
 import { foodProduct } from "@/server/db/schema";
 
-const SIMILARITY_THRESHOLD = 0.15;
+const SIMILARITY_THRESHOLD = 0.3;
 
 export type CreateFoodProductValues = typeof foodProduct.$inferInsert;
 export type UpdateFoodProductValues = Partial<

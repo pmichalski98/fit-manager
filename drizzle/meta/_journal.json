@@ -50,6 +50,20 @@
       "when": 1774649387943,
       "tag": "0006_fat_ikaris",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774813003583,
+      "tag": "0007_mixed_malice",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774814040476,
+      "tag": "0008_nifty_wallow",
+      "breakpoints": true
     }
   ]
 }
