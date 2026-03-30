@@ -1,0 +1,1 @@
+ALTER TABLE "fit-manager_user" ADD COLUMN "enabled_meal_types" jsonb DEFAULT '["breakfast","lunch","dinner","snack"]'::jsonb NOT NULL;
