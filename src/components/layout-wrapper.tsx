@@ -24,7 +24,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <SidebarInset className="max-h-svh overflow-x-hidden overflow-y-auto">
         <div className={cn(
           "flex flex-1 flex-col px-4 pt-6 md:p-6 md:pb-6",
-          isTrainingSession ? "pb-4" : "pb-20",
+          isTrainingSession ? "pb-4" : "pb-16",
         )}>
           {children}
         </div>

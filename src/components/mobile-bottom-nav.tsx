@@ -54,7 +54,7 @@ export function MobileBottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center gap-1 pb-2 pt-3 transition-colors",
+                  "relative flex flex-1 flex-col items-center gap-0.5 pb-1 pt-2 transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground",
@@ -64,12 +64,12 @@ export function MobileBottomNav() {
                   <span className="absolute top-0 h-[2px] w-8 rounded-full bg-primary" />
                 )}
                 <item.icon
-                  className={cn("size-6", isActive && "drop-shadow-[0_0_6px_var(--color-primary)]")}
+                  className={cn("size-5", isActive && "drop-shadow-[0_0_6px_var(--color-primary)]")}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
                 <span
                   className={cn(
-                    "text-[11px]",
+                    "text-[10px]",
                     isActive ? "font-semibold" : "font-medium",
                   )}
                 >
@@ -81,23 +81,23 @@ export function MobileBottomNav() {
 
           <button
             onClick={() => setUserSheetOpen(true)}
-            className="relative flex flex-1 flex-col items-center gap-1 pb-2 pt-3 text-muted-foreground transition-colors active:text-foreground"
+            className="relative flex flex-1 flex-col items-center gap-0.5 pb-1 pt-2 text-muted-foreground transition-colors active:text-foreground"
           >
             {isPending ? (
-              <Skeleton className="size-6 rounded-full" />
+              <Skeleton className="size-5 rounded-full" />
             ) : user?.image ? (
-              <Avatar className="size-6 ring-1 ring-border">
+              <Avatar className="size-5 ring-1 ring-border">
                 <AvatarImage src={user.image} />
               </Avatar>
             ) : user ? (
               <GeneratedAvatar
                 seed={user.name ?? user.email}
-                className="size-6 ring-1 ring-border"
+                className="size-5 ring-1 ring-border"
               />
             ) : (
-              <UserIcon className="size-6" strokeWidth={1.8} />
+              <UserIcon className="size-5" strokeWidth={1.8} />
             )}
-            <span className="text-[11px] font-medium">Account</span>
+            <span className="text-[10px] font-medium">Account</span>
           </button>
         </div>
       </nav>
