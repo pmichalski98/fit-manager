@@ -44,8 +44,7 @@ export function MobileBottomNav() {
     <>
       <nav className="bg-background/90 fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 backdrop-blur-2xl md:hidden">
         <div
-          className="mx-auto flex max-w-md items-stretch justify-around"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          className="mx-auto flex max-w-md items-stretch justify-around pb-1"
         >
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
