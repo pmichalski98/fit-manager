@@ -16,13 +16,12 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0a0f1a",
-          borderRadius: "36px",
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
         }}
       >
         <svg
-          width="140"
-          height="140"
+          width="100"
+          height="100"
           viewBox="0 0 512 512"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
