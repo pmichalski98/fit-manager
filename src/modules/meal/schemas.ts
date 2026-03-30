@@ -67,3 +67,21 @@ export type MacroGoals = {
   fatGoal: number | null;
   fiberGoal: number | null;
 };
+
+import type { MealEntry, FoodProduct } from "@/server/db/schema";
+
+export type PlanData = Record<string, Record<string, { entry: MealEntry; product: FoodProduct }[]>>;
+export type SummaryData = Record<string, DaySummary>;
+
+export const EMPTY_SUMMARY: DaySummary = {
+  totalKcal: 0,
+  totalProtein: 0,
+  totalCarbs: 0,
+  totalFat: 0,
+  totalFiber: 0,
+};
+
+/** Parse a yyyy-MM-dd string as a local date (avoids timezone-shift bugs) */
+export function parseLocalDate(dateStr: string): Date {
+  return new Date(dateStr + "T00:00:00");
+}

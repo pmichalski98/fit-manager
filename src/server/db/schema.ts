@@ -31,6 +31,11 @@ export const user = createTable("user", (d) => ({
   carbsGoal: d.integer("carbs_goal"),
   fatGoal: d.integer("fat_goal"),
   fiberGoal: d.integer("fiber_goal"),
+  enabledMealTypes: d
+    .jsonb("enabled_meal_types")
+    .$type<string[]>()
+    .notNull()
+    .default(["breakfast", "lunch", "dinner", "snack"]),
   createdAt: d
     .timestamp("created_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())

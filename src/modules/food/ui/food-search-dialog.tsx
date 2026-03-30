@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { SearchIcon, SparklesIcon, Loader2Icon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { SearchIcon, SparklesIcon, Loader2Icon, ClockIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { estimateWithAI } from "../actions";
 import { useFoodSearch } from "../hooks/use-food-search";
-import { addMealEntry } from "@/modules/meal/actions";
+import { addMealEntry, getRecentlyUsedProducts } from "@/modules/meal/actions";
 import { MEAL_TYPE_LABELS, type MealType } from "@/modules/meal/schemas";
 import type { FoodProduct } from "@/server/db/schema";
 
@@ -31,8 +31,16 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
   const [notes, setNotes] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
+  const [recentProducts, setRecentProducts] = useState<FoodProduct[]>([]);
 
   const { isSearching, localResults, reset: resetSearch } = useFoodSearch(query);
+
+  // Load recently used products when dialog opens
+  useEffect(() => {
+    if (open) {
+      getRecentlyUsedProducts().then(setRecentProducts);
+    }
+  }, [open]);
 
   const handleSelectLocal = (product: FoodProduct) => {
     setSelectedProduct(product);
@@ -125,6 +133,29 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
                 <Loader2Icon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin" />
               )}
             </div>
+
+            {/* Recently used products — shown when query is empty */}
+            {query.length < 2 && recentProducts.length > 0 && (
+              <div>
+                <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                  <ClockIcon className="h-3 w-3" />
+                  Recently used
+                </p>
+                <div className="space-y-1">
+                  {recentProducts.map((p) => (
+                    <ProductRow
+                      key={p.id}
+                      name={p.name}
+                      brand={p.brand}
+                      kcal={Number(p.kcalPer100g)}
+                      imageUrl={p.imageUrl}
+                      isEstimate={p.source === "ai_estimate" && !p.isVerified}
+                      onClick={() => handleSelectLocal(p)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Local results */}
             {localResults.length > 0 && (

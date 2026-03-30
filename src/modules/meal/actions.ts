@@ -11,6 +11,8 @@ import {
   addMealEntrySchema,
   updateMealEntrySchema,
   macroGoalsSchema,
+  MEAL_TYPES,
+  type MealType,
   type AddMealEntryInput,
   type MacroGoalsInput,
   type DaySummary,
@@ -343,6 +345,102 @@ export async function getMacroGoals() {
     .limit(1);
 
   return result ?? null;
+}
+
+export async function getEnabledMealTypes(): Promise<MealType[]> {
+  const userId = await requireUserId();
+
+  const [result] = await db
+    .select({ enabledMealTypes: user.enabledMealTypes })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  const types = result?.enabledMealTypes as MealType[] | null;
+  if (!types || types.length === 0) return [...MEAL_TYPES];
+  return types;
+}
+
+export async function updateEnabledMealTypes(types: MealType[]) {
+  const userId = await requireUserId();
+
+  try {
+    const valid = types.filter((t) => MEAL_TYPES.includes(t));
+    if (valid.length === 0) {
+      return { ok: false as const, error: "At least one meal type is required" };
+    }
+
+    await db
+      .update(user)
+      .set({ enabledMealTypes: valid, updatedAt: new Date() })
+      .where(eq(user.id, userId));
+
+    revalidatePath("/food");
+    return { ok: true as const };
+  } catch (error) {
+    console.error("Update enabled meal types error:", error);
+    return { ok: false as const, error: "Failed to update meal types" };
+  }
+}
+
+export async function copyMealEntries(
+  fromDate: string,
+  fromMealType: MealType,
+  toDate: string,
+  toMealType?: MealType,
+) {
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(fromDate) || !dateRegex.test(toDate)) {
+    return { ok: false as const, error: "Invalid date" };
+  }
+
+  const userId = await requireUserId();
+  const targetMealType = toMealType ?? fromMealType;
+
+  if (fromDate === toDate && fromMealType === targetMealType) {
+    return { ok: false as const, error: "Cannot copy a meal to itself" };
+  }
+
+  try {
+    const entries = await mealRepository.getEntriesByDate(userId, fromDate);
+    const filtered = entries.filter((e) => e.entry.mealType === fromMealType);
+
+    if (filtered.length === 0) {
+      return { ok: false as const, error: "No entries to copy" };
+    }
+
+    const startPosition = await mealRepository.getNextPosition(userId, toDate, targetMealType);
+
+    await db.insert(mealEntry).values(
+      filtered.map((item, i) => ({
+        userId,
+        date: toDate,
+        mealType: targetMealType,
+        foodProductId: item.entry.foodProductId,
+        amountG: String(item.entry.amountG),
+        kcal: item.entry.kcal,
+        protein: item.entry.protein,
+        carbs: item.entry.carbs,
+        fat: item.entry.fat,
+        fiber: item.entry.fiber,
+        notes: item.entry.notes,
+        position: startPosition + i,
+      })),
+    );
+
+    await syncDailyLogFromMeals(userId, toDate);
+
+    revalidatePath("/food");
+    return { ok: true as const };
+  } catch (error) {
+    console.error("Copy meal entries error:", error);
+    return { ok: false as const, error: "Failed to copy meal entries" };
+  }
+}
+
+export async function getRecentlyUsedProducts(limit = 8) {
+  const userId = await requireUserId();
+  return mealRepository.getRecentProducts(userId, limit);
 }
 
 async function syncDailyLogFromMeals(userId: string, date: string) {
