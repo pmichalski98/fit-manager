@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Check,
   CloudOff,
+  RefreshCw,
   Timer,
   CheckCircle2,
   GripVertical,
@@ -664,6 +665,16 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
           <CloudOff className="h-3 w-3 text-rose-500" />
           <span className="text-rose-500">Save failed</span>
         </>
+      )}
+      {status === "stale" && (
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-1 text-amber-500"
+        >
+          <RefreshCw className="h-3 w-3" />
+          <span>App updated — tap to refresh</span>
+        </button>
       )}
     </span>
   );

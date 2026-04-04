@@ -6,7 +6,20 @@ import type { StrengthSessionFormValues } from "@/modules/session/schemas";
 import { saveSessionProgress } from "@/modules/session/actions";
 import type { InProgressSession } from "@/modules/session/types";
 
-export type SaveStatus = "idle" | "saving" | "saved" | "error";
+export type SaveStatus = "idle" | "saving" | "saved" | "error" | "stale";
+
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+
+function isStaleClientError(error: unknown): boolean {
+  const msg =
+    error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes("not found") ||
+    msg.includes("Failed to find server action") ||
+    msg.includes("404")
+  );
+}
 
 export function useAutoSave(
   sessionId: string,
@@ -17,6 +30,7 @@ export function useAutoSave(
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
+  const retriesRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -51,9 +65,31 @@ export function useAutoSave(
       );
 
       await saveSessionProgress({ sessionId, exercises: payload });
-      if (isMountedRef.current) setSaveStatus("saved");
-    } catch {
-      if (isMountedRef.current) setSaveStatus("error");
+      if (isMountedRef.current) {
+        setSaveStatus("saved");
+        retriesRef.current = 0;
+      }
+    } catch (error) {
+      console.error("[auto-save] Failed to save session progress:", error);
+
+      if (!isMountedRef.current) return;
+
+      if (isStaleClientError(error)) {
+        setSaveStatus("stale");
+        return;
+      }
+
+      if (retriesRef.current < MAX_RETRIES) {
+        retriesRef.current += 1;
+        console.warn(
+          `[auto-save] Retrying (${retriesRef.current}/${MAX_RETRIES})...`,
+        );
+        setSaveStatus("saving");
+        timerRef.current = setTimeout(() => doSaveRef.current(), RETRY_DELAY_MS);
+      } else {
+        setSaveStatus("error");
+        retriesRef.current = 0;
+      }
     }
   }, [sessionId, exercises, doneMapRef]);
 
