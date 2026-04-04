@@ -20,7 +20,16 @@ import {
   CloudOff,
   Timer,
   CheckCircle2,
+  GripVertical,
 } from "lucide-react";
+import { DndContext } from "@dnd-kit/core";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -44,6 +53,9 @@ import { SwipeableExerciseNav } from "@/modules/session/ui/components/swipeable-
 import { ExerciseProgressDots } from "@/modules/session/ui/components/exercise-progress-dots";
 import { ExerciseSidebar } from "@/modules/session/ui/components/exercise-sidebar";
 import { useSessionKeyboardShortcuts } from "@/modules/session/ui/hooks/use-session-keyboard-shortcuts";
+import { useExerciseRename } from "@/modules/session/ui/hooks/use-exercise-rename";
+import { useExerciseReorder } from "@/modules/session/ui/hooks/use-exercise-reorder";
+import { RenameExerciseDialog } from "@/modules/training/ui/components/rename-exercise-dialog";
 import { cn } from "@/lib/utils";
 
 type TemplateExercise = { id: string; name: string; position: number };
@@ -73,6 +85,7 @@ export function StrengthSessionView({
 }: Props) {
   const router = useRouter();
   const isResuming = inProgress !== null && inProgress.exercises.length > 0;
+  const [currentTemplate, setCurrentTemplate] = useState(template);
 
   const sessionStartAtMs = useMemo(
     () => (inProgress ? new Date(inProgress.startAt).getTime() : Date.now()),
@@ -147,21 +160,25 @@ export function StrengthSessionView({
     });
   }, [template.exercises, last, isResuming, inProgress]);
 
-  const prevSetsByPosition = useMemo<
-    Record<number, Array<{ reps: number; weight?: number }>>
+  // Key by template exercise ID so lookups stay correct after reorder
+  const prevSetsByExerciseId = useMemo<
+    Record<string, Array<{ reps: number; weight?: number }>>
   >(() => {
-    const result: Record<number, Array<{ reps: number; weight?: number }>> = {};
+    const result: Record<string, Array<{ reps: number; weight?: number }>> = {};
     if (!last?.exercises?.length) return result;
     for (const ex of last.exercises) {
-      const sets = (ex.sets ?? []).map((s) => ({
+      const templateEx = template.exercises.find(
+        (te) => te.position === ex.position,
+      );
+      if (!templateEx) continue;
+      result[templateEx.id] = (ex.sets ?? []).map((s) => ({
         reps: s.reps,
         weight:
           s.weight != null && s.weight !== "" ? Number(s.weight) : undefined,
       }));
-      result[ex.position] = sets;
     }
     return result;
-  }, [last]);
+  }, [last, template.exercises]);
 
   const form = useForm<StrengthSessionFormValues>({
     resolver: zodResolver(
@@ -264,6 +281,33 @@ export function StrengthSessionView({
   const handleToggleNextDone = useCallback(() => {
     document.dispatchEvent(new CustomEvent("session:toggle-next-done"));
   }, []);
+
+  // --- Inline exercise editing: rename + reorder ---
+
+  const {
+    renameConfirm,
+    nameInputRefs,
+    isRenaming,
+    handleExerciseNameBlur,
+    handleRenameDecision,
+    handleRenameDismiss,
+  } = useExerciseRename({ currentTemplate, setCurrentTemplate, form, trainingId });
+
+  const { dndSensors, handleDragEnd } = useExerciseReorder({
+    exercisesArr,
+    form,
+    doneMapRef,
+    currentTemplate,
+    setCurrentTemplate,
+    trainingId,
+    nameInputRefs,
+    isRenaming,
+    resetProgress: useCallback(() => {
+      setProgressByExercise({});
+      setMostRecentDoneByExercise({});
+      setDoneTrigger((c) => c + 1);
+    }, []),
+  });
 
   const [showBanner, setShowBanner] = useState(true);
   useEffect(() => {
@@ -404,7 +448,7 @@ export function StrengthSessionView({
       <div className="bg-background/80 border-border/50 sticky top-0 z-40 -mx-4 -mt-6 border-b px-4 pt-6 pb-3 backdrop-blur-xl md:-mx-6 md:px-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-bold">{template.name}</h1>
+            <h1 className="truncate text-lg font-bold">{currentTemplate.name}</h1>
             <SaveStatusIndicator status={saveStatus} />
           </div>
           <div className="flex items-center gap-2">
@@ -470,6 +514,7 @@ export function StrengthSessionView({
                 onDotClick={setCurrentExerciseIndex}
               />
 
+              {/* Mobile: no drag-and-drop — swipe gestures conflict with drag handles */}
               <SwipeableExerciseNav
                 currentIndex={currentExerciseIndex}
                 onIndexChange={setCurrentExerciseIndex}
@@ -480,7 +525,7 @@ export function StrengthSessionView({
                     field={field}
                     exIndex={exIndex}
                     control={form.control}
-                    prevSets={prevSetsByPosition[field.position] ?? []}
+                    prevSets={prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []}
                     mostRecentDoneByExercise={mostRecentDoneByExercise}
                     sessionStartAtMs={sessionStartAtMs}
                     onMostRecentChange={onExerciseMostRecentChange}
@@ -492,6 +537,8 @@ export function StrengthSessionView({
                     onRemove={handleRemoveExercise}
                     addSetCallbacksRef={addSetCallbacksRef}
                     onAddSet={handleAddSetMobile}
+                    onNameBlur={handleExerciseNameBlur}
+                    nameInputRefs={nameInputRefs}
                   />
                 ))}
               </SwipeableExerciseNav>
@@ -518,34 +565,45 @@ export function StrengthSessionView({
                   Complete session
                 </Button>
               </ExerciseSidebar>
-              <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-4 xl:grid-cols-2">
-                {exercisesArr.fields.map((field, exIndex) => (
-                  <div
-                    key={field.id}
-                    ref={(el) => {
-                      exerciseRefs.current[exIndex] = el;
-                    }}
-                    className="max-w-lg scroll-mt-36"
-                  >
-                    <ExerciseCard
-                      field={field}
-                      exIndex={exIndex}
-                      control={form.control}
-                      prevSets={prevSetsByPosition[field.position] ?? []}
-                      mostRecentDoneByExercise={mostRecentDoneByExercise}
-                      sessionStartAtMs={sessionStartAtMs}
-                      onMostRecentChange={onExerciseMostRecentChange}
-                      onProgressChange={onExerciseProgressChange}
-                      activeExerciseIndex={activeExerciseIndex}
-                      isSubmitting={isSubmitting}
-                      initialDoneMap={initialDoneMap}
-                      updateDoneMapRef={updateDoneMapRef}
-                      onRemove={handleRemoveExercise}
-                      addSetCallbacksRef={addSetCallbacksRef}
-                    />
+              <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
+                <SortableContext
+                  items={exercisesArr.fields.map((f) => f.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-4 xl:grid-cols-2">
+                    {exercisesArr.fields.map((field, exIndex) => (
+                      <SortableExerciseWrapper
+                        key={field.id}
+                        id={field.id}
+                        exIndex={exIndex}
+                        exerciseRefs={exerciseRefs}
+                      >
+                        {(dragListeners) => (
+                          <ExerciseCard
+                            field={field}
+                            exIndex={exIndex}
+                            control={form.control}
+                            prevSets={prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []}
+                            mostRecentDoneByExercise={mostRecentDoneByExercise}
+                            sessionStartAtMs={sessionStartAtMs}
+                            onMostRecentChange={onExerciseMostRecentChange}
+                            onProgressChange={onExerciseProgressChange}
+                            activeExerciseIndex={activeExerciseIndex}
+                            isSubmitting={isSubmitting}
+                            initialDoneMap={initialDoneMap}
+                            updateDoneMapRef={updateDoneMapRef}
+                            onRemove={handleRemoveExercise}
+                            addSetCallbacksRef={addSetCallbacksRef}
+                            onNameBlur={handleExerciseNameBlur}
+                            nameInputRefs={nameInputRefs}
+                            dragListeners={dragListeners}
+                          />
+                        )}
+                      </SortableExerciseWrapper>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             </div>
           )}
 
@@ -572,6 +630,14 @@ export function StrengthSessionView({
         summary={summary}
         elapsedTime={elapsed}
         onClose={() => handleClose(false)}
+      />
+
+      <RenameExerciseDialog
+        open={!!renameConfirm}
+        oldName={renameConfirm?.oldName}
+        newName={renameConfirm?.newName}
+        onDecision={handleRenameDecision}
+        onDismiss={handleRenameDismiss}
       />
     </div>
   );
@@ -603,6 +669,48 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   );
 }
 
+function SortableExerciseWrapper({
+  id,
+  exIndex,
+  exerciseRefs,
+  children,
+}: {
+  id: string;
+  exIndex: number;
+  exerciseRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
+  children: (dragListeners: SyntheticListenerMap) => React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } as React.CSSProperties;
+
+  return (
+    <div
+      ref={(el) => {
+        setNodeRef(el);
+        exerciseRefs.current[exIndex] = el;
+      }}
+      style={style}
+      className={cn(
+        "max-w-lg scroll-mt-36",
+        isDragging && "z-50 opacity-75",
+      )}
+      {...attributes}
+    >
+      {children(listeners ?? ({} as SyntheticListenerMap))}
+    </div>
+  );
+}
+
 function ExerciseCard({
   field,
   exIndex,
@@ -620,6 +728,9 @@ function ExerciseCard({
   addSetCallbacksRef,
   onAddSet,
   hideAddSet,
+  onNameBlur,
+  nameInputRefs,
+  dragListeners,
 }: {
   field: { id: string; name: string; position: number };
   exIndex: number;
@@ -642,8 +753,13 @@ function ExerciseCard({
   addSetCallbacksRef: React.MutableRefObject<Record<number, () => void>>;
   onAddSet?: () => void;
   hideAddSet?: boolean;
+  // Inline editing props
+  onNameBlur?: (exIndex: number, newName: string) => void;
+  nameInputRefs?: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
+  dragListeners?: SyntheticListenerMap;
 }) {
   const isActive = activeExerciseIndex === exIndex;
+  const localNameRef = useRef<HTMLInputElement>(null);
 
   return (
     <div
@@ -654,18 +770,30 @@ function ExerciseCard({
     >
       {/* Exercise header */}
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <span
             className={cn(
-              "inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold",
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground",
             )}
           >
-            {field.position + 1}
+            {exIndex + 1}
           </span>
-          <span className="text-base font-semibold">{field.name}</span>
+          <input
+            ref={(el) => {
+              localNameRef.current = el;
+              if (nameInputRefs) nameInputRefs.current[exIndex] = el;
+            }}
+            type="text"
+            defaultValue={field.name}
+            className="min-w-0 flex-1 truncate border-b border-transparent bg-transparent text-base font-semibold outline-none transition-colors hover:border-border focus:border-primary"
+            onBlur={(e) => onNameBlur?.(exIndex, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") localNameRef.current?.blur();
+            }}
+          />
         </div>
         <div className="flex items-center gap-1">
           {onAddSet && (
@@ -691,6 +819,15 @@ function ExerciseCard({
           >
             <Trash2 className="h-4 w-4" />
           </Button>
+          {dragListeners && (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground cursor-grab rounded-md p-1"
+              {...dragListeners}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
       <ExerciseSets

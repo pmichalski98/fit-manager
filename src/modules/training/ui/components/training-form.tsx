@@ -17,14 +17,7 @@ import { useCallback, useState } from "react";
 import { useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { RenameExerciseDialog } from "./rename-exercise-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -53,7 +46,7 @@ import { ExerciseRow } from "./exercise-row";
 type TrainingFormProps = {
   trainingId?: string;
   defaultValues?: CreateTrainingInput;
-  onSuccess?: () => void;
+  onSuccess?: (values: CreateTrainingInput) => void;
 };
 
 export function TrainingForm({
@@ -134,7 +127,7 @@ export function TrainingForm({
         const result = await updateTraining(trainingId, values);
         if (result.ok) {
           toast.success("Training updated");
-          onSuccess?.();
+          onSuccess?.(values);
         } else {
           toast.error("Failed to update training");
         }
@@ -143,7 +136,7 @@ export function TrainingForm({
         if (result.ok) {
           toast.success("Training created");
           form.reset();
-          onSuccess?.();
+          onSuccess?.(values);
         } else {
           toast.error("Failed to create training");
         }
@@ -296,38 +289,17 @@ export function TrainingForm({
         </form>
       </Form>
 
-      <AlertDialog
+      <RenameExerciseDialog
         open={!!renameConfirmState}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRenameConfirmState(null);
-            setPendingSubmitValues(null);
-            setIsSubmitting(false);
-          }
+        oldName={renameConfirmState?.oldName}
+        newName={renameConfirmState?.newName}
+        onDecision={handleRenameDecision}
+        onDismiss={() => {
+          setRenameConfirmState(null);
+          setPendingSubmitValues(null);
+          setIsSubmitting(false);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Exercise Renamed</AlertDialogTitle>
-            <AlertDialogDescription>
-              You renamed <strong>{renameConfirmState?.oldName}</strong> to{" "}
-              <strong>{renameConfirmState?.newName}</strong>. Did you correct a
-              typo, or is this a completely new exercise?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => handleRenameDecision(false)}
-            >
-              Just renamed (Keep history)
-            </Button>
-            <Button onClick={() => handleRenameDecision(true)}>
-              New exercise (Reset history)
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
     </>
   );
 }
