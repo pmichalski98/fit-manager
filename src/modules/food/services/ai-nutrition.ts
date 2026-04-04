@@ -1,22 +1,8 @@
-import OpenAI from "openai";
 import type {
   FunctionTool,
-  ResponseFunctionToolCall,
   ResponseInputItem,
-  ResponseOutputItem,
-  ResponseOutputMessage,
-  ResponseReasoningItem,
 } from "openai/resources/responses/responses";
-import { env } from "@/env";
-import { uploadBufferToS3 } from "@/server/s3";
-
-let _openai: OpenAI | null = null;
-function getOpenAI() {
-  if (!_openai) {
-    _openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  }
-  return _openai;
-}
+import { getOpenAI, toInputItems, extractToolCalls } from "@/lib/openai";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -29,33 +15,6 @@ export type MacroEstimate = {
   portionG: number | null;
   portionLabel: string | null;
 };
-
-// ─── Agent Loop (4th-devs pattern) ──────────────────────────────────────────
-
-const INPUT_PASSTHROUGH_TYPES = new Set([
-  "message",
-  "function_call",
-  "reasoning",
-]);
-
-function toInputItems(output: ResponseOutputItem[]): ResponseInputItem[] {
-  return output.filter(
-    (
-      item,
-    ): item is
-      | ResponseOutputMessage
-      | ResponseFunctionToolCall
-      | ResponseReasoningItem => INPUT_PASSTHROUGH_TYPES.has(item.type),
-  );
-}
-
-function extractToolCalls(
-  output: ResponseOutputItem[],
-): ResponseFunctionToolCall[] {
-  return output.filter(
-    (item): item is ResponseFunctionToolCall => item.type === "function_call",
-  );
-}
 
 // ─── Tool Definitions ───────────────────────────────────────────────────────
 
@@ -203,15 +162,6 @@ async function runNutritionAgent(
     const toolResults: ResponseInputItem.FunctionCallOutput[] =
       await Promise.all(
         toolCalls.map(async (call) => {
-          // web_search_preview is handled internally by OpenAI, skip
-          if (call.name === "web_search_preview") {
-            return {
-              type: "function_call_output" as const,
-              call_id: call.call_id,
-              output: "handled by system",
-            };
-          }
-
           const handler = handlers[call.name];
           if (!handler) {
             return {
@@ -328,34 +278,3 @@ export async function categorizeProduct(
   }
 }
 
-export async function generateFoodPhoto(
-  productName: string,
-): Promise<string | null> {
-  try {
-    const response = await getOpenAI().images.generate({
-      model: "dall-e-3",
-      prompt: `Appetizing overhead food photo of ${productName}, food photography, clean white background, natural lighting, minimal styling. Square format.`,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-    });
-
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) return null;
-
-    const imageRes = await fetch(imageUrl);
-    if (!imageRes.ok) return null;
-
-    const buffer = Buffer.from(await imageRes.arrayBuffer());
-    const s3Url = await uploadBufferToS3(
-      buffer,
-      `food-photos/${crypto.randomUUID()}.png`,
-      "image/png",
-    );
-
-    return s3Url;
-  } catch (error) {
-    console.error("Food photo generation error:", error);
-    return null;
-  }
-}

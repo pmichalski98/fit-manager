@@ -9,12 +9,8 @@ import {
   macrosToDbStrings,
   type FoodProductInput,
 } from "./schemas";
-import {
-  estimateMacros,
-  categorizeProduct,
-  generateFoodPhoto,
-} from "./services/ai-nutrition";
-import { shoppingRepository } from "../shopping/repositories/shopping.repo";
+import { estimateMacros } from "./services/ai-nutrition";
+import { assignCategoryInBackground } from "./services/assign-category";
 
 export async function searchFood(query: string) {
   const userId = await requireUserId();
@@ -50,9 +46,8 @@ export async function estimateWithAI(productName: string) {
       ...(macros.portionLabel ? { portionLabel: macros.portionLabel } : {}),
     });
 
-    // AI categorization + photo in background
+    // AI categorization in background
     void assignCategoryInBackground(created.id, userId, productName, null).catch(console.error);
-    void generatePhotoInBackground(created.id, userId, productName).catch(console.error);
 
     revalidatePath("/food");
     return { ok: true as const, data: created };
@@ -139,45 +134,4 @@ export async function getAllProducts() {
   return foodRepository.getAll(userId);
 }
 
-// Background helpers (fire-and-forget, errors are logged but don't block)
 
-async function assignCategoryInBackground(
-  productId: string,
-  userId: string,
-  productName: string,
-  brand: string | null,
-) {
-  try {
-    const categories = await shoppingRepository.getCategories(userId);
-    if (categories.length === 0) return;
-
-    const categoryName = await categorizeProduct(
-      productName,
-      brand,
-      categories.map((c) => c.name),
-    );
-    if (!categoryName) return;
-
-    const category = categories.find((c) => c.name === categoryName);
-    if (!category) return;
-
-    await foodRepository.update(productId, userId, { categoryId: category.id });
-  } catch (error) {
-    console.error("Background categorization error:", error);
-  }
-}
-
-async function generatePhotoInBackground(
-  productId: string,
-  userId: string,
-  productName: string,
-) {
-  try {
-    const photoUrl = await generateFoodPhoto(productName);
-    if (!photoUrl) return;
-
-    await foodRepository.update(productId, userId, { imageUrl: photoUrl });
-  } catch (error) {
-    console.error("Background photo generation error:", error);
-  }
-}

@@ -16,22 +16,35 @@ import type { MealEntry, FoodProduct } from "@/server/db/schema";
 type Props = {
   entry: MealEntry;
   product: FoodProduct;
+  onMutate?: () => void;
 };
 
-export function MealEntryCard({ entry, product }: Props) {
+export function MealEntryCard({ entry, product, onMutate }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [amount, setAmount] = useState(String(entry.amountG));
+  const [portionInput, setPortionInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Sync amount state when entry prop changes (e.g., after server revalidation)
+  const hasPortions = !!product.portionLabel && product.defaultServingG > 0;
+  const portionCount = hasPortions
+    ? Number(entry.amountG) / product.defaultServingG
+    : null;
+
+  // Sync amount/portion state when entry prop changes
   useEffect(() => {
     setAmount(String(entry.amountG));
-  }, [entry.amountG]);
+    if (hasPortions) {
+      const portions = Number(entry.amountG) / product.defaultServingG;
+      setPortionInput(String(Math.round(portions * 10) / 10));
+    }
+  }, [entry.amountG, hasPortions, product.defaultServingG]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
     const result = await deleteMealEntry(entry.id);
-    if (!result.ok) {
+    if (result.ok) {
+      onMutate?.();
+    } else {
       toast.error(result.error);
       setIsDeleting(false);
     }
@@ -46,6 +59,23 @@ export function MealEntryCard({ entry, product }: Props) {
     const result = await updateMealEntry(entry.id, { amountG: numAmount });
     if (result.ok) {
       setIsEditing(false);
+      onMutate?.();
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const handleUpdatePortions = async () => {
+    const numPortions = Number(portionInput);
+    if (isNaN(numPortions) || numPortions <= 0) {
+      toast.error("Invalid portion count");
+      return;
+    }
+    const computedAmountG = Math.round(numPortions * product.defaultServingG * 10) / 10;
+    const result = await updateMealEntry(entry.id, { amountG: computedAmountG });
+    if (result.ok) {
+      setIsEditing(false);
+      onMutate?.();
     } else {
       toast.error(result.error);
     }
@@ -71,33 +101,59 @@ export function MealEntryCard({ entry, product }: Props) {
         <p className="truncate text-sm font-medium">{product.name}</p>
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
           {isEditing ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleUpdateAmount();
-              }}
-              className="flex items-center gap-1"
-            >
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="h-5 w-16 text-xs"
-                step="0.1"
-                min="0.1"
-                autoFocus
-              />
-              <span>g</span>
-              <Button type="submit" variant="ghost" size="sm" className="h-5 px-1 text-xs">
-                ✓
-              </Button>
-            </form>
+            hasPortions ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdatePortions();
+                }}
+                className="flex items-center gap-1"
+              >
+                <Input
+                  type="number"
+                  value={portionInput}
+                  onChange={(e) => setPortionInput(e.target.value)}
+                  className="h-5 w-14 text-xs"
+                  step="0.5"
+                  min="0.1"
+                  autoFocus
+                />
+                <span className="whitespace-nowrap">{product.portionLabel}</span>
+                <Button type="submit" variant="ghost" size="sm" className="h-5 px-1 text-xs">
+                  ✓
+                </Button>
+              </form>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateAmount();
+                }}
+                className="flex items-center gap-1"
+              >
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="h-5 w-16 text-xs"
+                  step="0.1"
+                  min="0.1"
+                  autoFocus
+                />
+                <span>g</span>
+                <Button type="submit" variant="ghost" size="sm" className="h-5 px-1 text-xs">
+                  ✓
+                </Button>
+              </form>
+            )
           ) : (
             <button
               onClick={() => setIsEditing(true)}
               className="hover:text-foreground flex items-center gap-0.5"
             >
-              {Number(entry.amountG)}g
+              {hasPortions && portionCount != null
+                ? `${Math.round(portionCount * 10) / 10} ${product.portionLabel}`
+                : `${Number(entry.amountG)}g`}
               <PencilIcon className="h-2.5 w-2.5" />
             </button>
           )}

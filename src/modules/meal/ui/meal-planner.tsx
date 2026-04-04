@@ -66,6 +66,15 @@ export function MealPlanner({
     });
   }, []);
 
+  /** Re-fetch the current view after a mutation (update/delete/add). */
+  const refreshCurrentView = useCallback(() => {
+    startTransition(async () => {
+      const data = await getMealPlanForDays(startDate, DAYS_SHOWN);
+      setPlan(data.plan);
+      setSummaries(data.summaries);
+    });
+  }, [startDate]);
+
   const handlePrev = () => {
     fetchPlanData(format(subDays(parseLocalDate(startDate), DAYS_SHOWN), "yyyy-MM-dd"));
   };
@@ -160,6 +169,7 @@ export function MealPlanner({
               onAddTemplateClick={(mt) => handleAddTemplateClick(date, mt)}
               onSaveAsTemplate={(mt) => handleSaveAsTemplate(date, mt)}
               onCopyMeal={(mt) => handleCopyMeal(date, mt)}
+              onMutate={refreshCurrentView}
               isToday={date === today}
             />
           ))}
@@ -173,6 +183,7 @@ export function MealPlanner({
           onOpenChange={() => { setSearchOpen(false); setSearchContext(null); }}
           date={searchContext.date}
           mealType={searchContext.mealType}
+          onMutate={refreshCurrentView}
         />
       )}
       {templateContext && (
@@ -181,6 +192,7 @@ export function MealPlanner({
           onOpenChange={() => { setTemplateOpen(false); setTemplateContext(null); }}
           date={templateContext.date}
           mealType={templateContext.mealType}
+          onMutate={refreshCurrentView}
         />
       )}
       {saveTemplateContext && (
@@ -198,6 +210,7 @@ export function MealPlanner({
           fromDate={copyContext.date}
           fromMealType={copyContext.mealType}
           enabledMealTypes={enabledMealTypes}
+          onMutate={refreshCurrentView}
         />
       )}
       <CreateMealDialog open={createMealOpen} onOpenChange={setCreateMealOpen} />
