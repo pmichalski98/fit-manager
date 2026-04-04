@@ -19,6 +19,7 @@ type Props = {
   onAddTemplateClick: (mealType: MealType) => void;
   onSaveAsTemplate: (mealType: MealType) => void;
   onCopyMeal?: (mealType: MealType) => void;
+  onMutate?: () => void;
 };
 
 export function MealSection({
@@ -28,6 +29,7 @@ export function MealSection({
   onAddTemplateClick,
   onSaveAsTemplate,
   onCopyMeal,
+  onMutate,
 }: Props) {
   const totalKcal = entries.reduce(
     (sum, e) => sum + Number(e.entry.kcal ?? 0),
@@ -89,7 +91,7 @@ export function MealSection({
       {entries.length > 0 ? (
         <div className="space-y-1.5">
           {entries.map((e) => (
-            <MealEntryCard key={e.entry.id} entry={e.entry} product={e.product} />
+            <MealEntryCard key={e.entry.id} entry={e.entry} product={e.product} onMutate={onMutate} />
           ))}
         </div>
       ) : (

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { SearchIcon, SparklesIcon, Loader2Icon, ClockIcon } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { SearchIcon, SparklesIcon, Loader2Icon, ClockIcon, BrainIcon, SendIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,27 +11,61 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { estimateWithAI } from "../actions";
 import { useFoodSearch } from "../hooks/use-food-search";
 import { addMealEntry, getRecentlyUsedProducts } from "@/modules/meal/actions";
 import { MEAL_TYPE_LABELS, type MealType } from "@/modules/meal/schemas";
 import type { FoodProduct } from "@/server/db/schema";
+import { MUTATING_TOOLS, type AgentStreamEvent } from "@/modules/food-agent/types";
+import { ToolStatus } from "@/modules/food-agent/ui/tool-status";
+import type { ResponseInputItem } from "openai/resources/responses/responses";
 
 type Props = {
   open: boolean;
   onOpenChange: () => void;
   date: string;
   mealType: MealType;
+  onMutate?: () => void;
 };
 
-export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) {
+type AgentToolCall = {
+  callId: string;
+  name: string;
+  status: "running" | "success" | "error";
+};
+
+type DisplayMessage =
+  | { role: "user"; content: string }
+  | { role: "assistant"; content: string; tools: AgentToolCall[] };
+
+type AgentState = {
+  isRunning: boolean;
+  isThinking: boolean;
+  tools: AgentToolCall[];
+  response: string | null;
+  history: ResponseInputItem[];
+  messages: DisplayMessage[];
+};
+
+const INITIAL_AGENT_STATE: AgentState = {
+  isRunning: false,
+  isThinking: false,
+  tools: [],
+  response: null,
+  history: [],
+  messages: [],
+};
+
+export function FoodSearchDialog({ open, onOpenChange, date, mealType, onMutate }: Props) {
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<FoodProduct | null>(null);
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [isAdding, setIsAdding] = useState(false);
-  const [isEstimating, setIsEstimating] = useState(false);
   const [recentProducts, setRecentProducts] = useState<FoodProduct[]>([]);
+  const [agent, setAgent] = useState<AgentState>(INITIAL_AGENT_STATE);
+  const [replyInput, setReplyInput] = useState("");
+  const replyInputRef = useRef<HTMLInputElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const { isSearching, localResults, reset: resetSearch } = useFoodSearch(query);
 
@@ -42,24 +76,135 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
     }
   }, [open]);
 
+  // Auto-scroll chat and focus reply input when agent finishes
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [agent.messages.length, agent.response, agent.tools.length]);
+
+  useEffect(() => {
+    if (!agent.isRunning && agent.messages.length > 0) {
+      setTimeout(() => replyInputRef.current?.focus(), 100);
+    }
+  }, [agent.isRunning, agent.messages.length]);
+
   const handleSelectLocal = (product: FoodProduct) => {
     setSelectedProduct(product);
     setAmount(String(product.defaultServingG));
   };
 
-  const handleAIEstimate = async () => {
-    if (!query.trim()) return;
-    setIsEstimating(true);
-    const result = await estimateWithAI(query);
-    if (result.ok) {
-      setSelectedProduct(result.data);
-      setAmount(String(result.data.defaultServingG));
-      toast.success("AI estimated macros — you can verify and edit later");
-    } else {
-      toast.error(result.error);
+  const sendAgentMessage = useCallback(async (message: string, history: ResponseInputItem[]) => {
+    setAgent((prev) => ({
+      ...prev,
+      isRunning: true,
+      isThinking: true,
+      tools: [],
+      response: null,
+      messages: [...prev.messages, { role: "user", content: message }],
+    }));
+
+    let currentTools: AgentToolCall[] = [];
+
+    try {
+      const res = await fetch("/api/food-agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() ?? "";
+
+        for (const chunk of lines) {
+          const dataLine = chunk.split("\n").find((l) => l.startsWith("data: "));
+          if (!dataLine) continue;
+
+          let event: AgentStreamEvent;
+          try {
+            event = JSON.parse(dataLine.slice(6)) as AgentStreamEvent;
+          } catch {
+            continue;
+          }
+
+          if (event.type === "thinking") {
+            setAgent((prev) => ({ ...prev, isThinking: true }));
+          }
+
+          if (event.type === "tool_call") {
+            const tool: AgentToolCall = {
+              callId: event.callId,
+              name: event.name,
+              status: "running",
+            };
+            currentTools = [...currentTools, tool];
+            setAgent((prev) => ({ ...prev, isThinking: false, tools: [...currentTools] }));
+          }
+
+          if (event.type === "tool_result") {
+            currentTools = currentTools.map((t) =>
+              t.callId === event.callId
+                ? { ...t, status: event.success ? "success" : "error" }
+                : t,
+            );
+            setAgent((prev) => ({ ...prev, tools: [...currentTools] }));
+          }
+
+          if (event.type === "text") {
+            setAgent((prev) => ({ ...prev, response: event.content }));
+          }
+
+          if (event.type === "done") {
+            setAgent((prev) => ({
+              ...prev,
+              history: event.history,
+              messages: [
+                ...prev.messages,
+                { role: "assistant", content: prev.response ?? "", tools: [...currentTools] },
+              ],
+              tools: [],
+              response: null,
+            }));
+            const hadMutation = currentTools.some(
+              (t) => MUTATING_TOOLS.has(t.name) && t.status === "success",
+            );
+            if (hadMutation) {
+              onMutate?.();
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[food-search] Agent error:", error);
+      toast.error("Agent error — try again");
+    } finally {
+      setAgent((prev) => ({ ...prev, isRunning: false, isThinking: false }));
     }
-    setIsEstimating(false);
-  };
+  }, [onMutate]);
+
+  const handleAgentEstimate = useCallback(async () => {
+    if (!query.trim()) return;
+    const message = `Znajdź dane odżywcze i utwórz produkt: "${query}". Potem dodaj wpis posiłku: data=${date}, mealType=${mealType}. Szacuj standardowe porcje automatycznie.`;
+    await sendAgentMessage(message, []);
+  }, [query, date, mealType, sendAgentMessage]);
+
+  const handleAgentReply = useCallback(async () => {
+    const msg = replyInput.trim();
+    if (!msg || agent.isRunning) return;
+    setReplyInput("");
+    await sendAgentMessage(msg, agent.history);
+  }, [replyInput, agent.isRunning, agent.history, sendAgentMessage]);
 
   const handleAdd = async () => {
     if (!selectedProduct || !amount) return;
@@ -83,6 +228,7 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
       toast.success(`Added to ${MEAL_TYPE_LABELS[mealType].toLowerCase()}`);
       handleReset();
       onOpenChange();
+      onMutate?.();
     } else {
       toast.error(result.error);
     }
@@ -95,6 +241,13 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
     setSelectedProduct(null);
     setAmount("");
     setNotes("");
+    setReplyInput("");
+    setAgent(INITIAL_AGENT_STATE);
+  };
+
+  const handleClose = () => {
+    handleReset();
+    onOpenChange();
   };
 
   // Computed macros preview
@@ -109,7 +262,7 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
       : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
@@ -117,7 +270,87 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
           </DialogTitle>
         </DialogHeader>
 
-        {!selectedProduct ? (
+        {/* Agent chat view */}
+        {agent.isRunning || agent.messages.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {/* Chat history */}
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+              {agent.messages.map((msg, i) =>
+                msg.role === "user" ? (
+                  <div key={i} className="flex justify-end">
+                    <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground">
+                      {msg.content}
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className="space-y-1.5">
+                    {msg.tools.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        {msg.tools.map((tool) => (
+                          <ToolStatus key={tool.callId} name={tool.name} status={tool.status} />
+                        ))}
+                      </div>
+                    )}
+                    {msg.content && (
+                      <div className="rounded-lg bg-muted p-3 text-sm whitespace-pre-wrap">
+                        {msg.content}
+                      </div>
+                    )}
+                  </div>
+                ),
+              )}
+
+              {/* Current in-progress turn */}
+              {agent.isRunning && (
+                <div className="space-y-1.5">
+                  {agent.isThinking && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <BrainIcon className="h-4 w-4 animate-pulse" />
+                      <span>Thinking…</span>
+                    </div>
+                  )}
+                  {agent.tools.length > 0 && (
+                    <div className="flex flex-col gap-1">
+                      {agent.tools.map((tool) => (
+                        <ToolStatus key={tool.callId} name={tool.name} status={tool.status} />
+                      ))}
+                    </div>
+                  )}
+                  {agent.response && (
+                    <div className="rounded-lg bg-muted p-3 text-sm whitespace-pre-wrap">
+                      {agent.response}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Reply input */}
+            {!agent.isRunning && (
+              <div className="space-y-2">
+                <form
+                  onSubmit={(e) => { e.preventDefault(); void handleAgentReply(); }}
+                  className="flex gap-2"
+                >
+                  <Input
+                    ref={replyInputRef}
+                    placeholder="Reply to agent..."
+                    value={replyInput}
+                    onChange={(e) => setReplyInput(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="submit" size="icon" disabled={!replyInput.trim()}>
+                    <SendIcon className="h-4 w-4" />
+                  </Button>
+                </form>
+                <Button variant="outline" className="w-full" onClick={handleReset}>
+                  Done — close
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : !selectedProduct ? (
           <div className="space-y-4">
             {/* Search input */}
             <div className="relative">
@@ -179,22 +412,16 @@ export function FoodSearchDialog({ open, onOpenChange, date, mealType }: Props) 
               </div>
             )}
 
-            {/* AI estimate button */}
+            {/* AI agent button */}
             {query.length >= 2 && !isSearching && (
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={handleAIEstimate}
-                disabled={isEstimating}
+                onClick={handleAgentEstimate}
+                disabled={agent.isRunning}
               >
-                {isEstimating ? (
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <SparklesIcon className="mr-2 h-4 w-4" />
-                )}
-                {isEstimating
-                  ? "Searching the web..."
-                  : `Let AI estimate "${query}"`}
+                <SparklesIcon className="mr-2 h-4 w-4" />
+                Let AI estimate &quot;{query}&quot;
               </Button>
             )}
 

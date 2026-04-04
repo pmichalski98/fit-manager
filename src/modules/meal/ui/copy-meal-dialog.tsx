@@ -28,6 +28,7 @@ type Props = {
   fromDate: string;
   fromMealType: MealType;
   enabledMealTypes: MealType[];
+  onMutate?: () => void;
 };
 
 export function CopyMealDialog({
@@ -36,6 +37,7 @@ export function CopyMealDialog({
   fromDate,
   fromMealType,
   enabledMealTypes,
+  onMutate,
 }: Props) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [targetMealType, setTargetMealType] = useState<MealType>(fromMealType);
@@ -67,6 +69,7 @@ export function CopyMealDialog({
         );
         onOpenChange(false);
         setSelectedDate(null);
+        onMutate?.();
       } else {
         toast.error(result.error);
       }

@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/user";
 import { db } from "@/server/db";
-import { dailyLog, user, mealEntry, mealTemplate, mealTemplateItem } from "@/server/db/schema";
+import { user, mealEntry, mealTemplate, mealTemplateItem } from "@/server/db/schema";
 import { mealRepository } from "./repositories/meal.repo";
 import { foodRepository } from "../food/repositories/food.repo";
+import { computeMacros, syncDailyLogFromMeals } from "./meal-macros";
 import {
   addMealEntrySchema,
   updateMealEntrySchema,
@@ -17,22 +18,6 @@ import {
   type MacroGoalsInput,
   type DaySummary,
 } from "./schemas";
-
-function computeMacros(
-  product: { kcalPer100g: string; proteinPer100g: string; carbsPer100g: string; fatPer100g: string; fiberPer100g: string | null },
-  amountG: number,
-) {
-  const factor = amountG / 100;
-  return {
-    kcal: String(Math.round(Number(product.kcalPer100g) * factor * 10) / 10),
-    protein: String(Math.round(Number(product.proteinPer100g) * factor * 100) / 100),
-    carbs: String(Math.round(Number(product.carbsPer100g) * factor * 100) / 100),
-    fat: String(Math.round(Number(product.fatPer100g) * factor * 100) / 100),
-    fiber: product.fiberPer100g
-      ? String(Math.round(Number(product.fiberPer100g) * factor * 100) / 100)
-      : null,
-  };
-}
 
 export async function addMealEntry(input: AddMealEntryInput) {
   const userId = await requireUserId();
@@ -443,30 +428,3 @@ export async function getRecentlyUsedProducts(limit = 8) {
   return mealRepository.getRecentProducts(userId, limit);
 }
 
-async function syncDailyLogFromMeals(userId: string, date: string) {
-  try {
-    const summary = await mealRepository.getDailyMacroSummary(userId, date);
-    const kcal = Math.round(Number(summary.totalKcal));
-
-    // Upsert daily log
-    const existing = await db.query.dailyLog.findFirst({
-      where: (dl, { and, eq }) =>
-        and(eq(dl.userId, userId), eq(dl.date, date)),
-    });
-
-    if (existing) {
-      await db
-        .update(dailyLog)
-        .set({ kcal, updatedAt: new Date() })
-        .where(eq(dailyLog.id, existing.id));
-    } else {
-      await db.insert(dailyLog).values({
-        userId,
-        date,
-        kcal,
-      });
-    }
-  } catch (error) {
-    console.error("Sync daily log error:", error);
-  }
-}

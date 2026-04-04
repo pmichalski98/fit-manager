@@ -16,6 +16,7 @@ type Props = {
   onAddTemplateClick: (mealType: MealType) => void;
   onSaveAsTemplate: (mealType: MealType) => void;
   onCopyMeal?: (mealType: MealType) => void;
+  onMutate?: () => void;
   isToday?: boolean;
   hideHeader?: boolean;
 };
@@ -30,6 +31,7 @@ export function DayColumn({
   onAddTemplateClick,
   onSaveAsTemplate,
   onCopyMeal,
+  onMutate,
   isToday = false,
   hideHeader = false,
 }: Props) {
@@ -84,6 +86,7 @@ export function DayColumn({
             onAddTemplateClick={onAddTemplateClick}
             onSaveAsTemplate={onSaveAsTemplate}
             onCopyMeal={onCopyMeal}
+            onMutate={onMutate}
           />
         ))}
       </div>

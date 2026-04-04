@@ -20,9 +20,10 @@ type Props = {
   onOpenChange: () => void;
   date: string;
   mealType: MealType;
+  onMutate?: () => void;
 };
 
-export function MealTemplateDialog({ open, onOpenChange, date, mealType }: Props) {
+export function MealTemplateDialog({ open, onOpenChange, date, mealType, onMutate }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [applyingId, setApplyingId] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export function MealTemplateDialog({ open, onOpenChange, date, mealType }: Props
     if (result.ok) {
       toast.success("Meal added");
       onOpenChange();
+      onMutate?.();
     } else {
       toast.error(result.error);
     }
