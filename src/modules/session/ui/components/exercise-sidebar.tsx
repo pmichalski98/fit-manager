@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseSidebarProps {
-  exercises: Array<{ name: string; position: number }>;
+  exercises: Array<{ id: string; name: string; position: number }>;
   progressByExercise: Record<number, { done: number; total: number }>;
   activeExerciseIndex: number | null;
   onExerciseClick: (index: number) => void;
@@ -37,7 +37,7 @@ export function ExerciseSidebar({
 
           return (
             <button
-              key={i}
+              key={ex.id}
               type="button"
               onClick={() => onExerciseClick(i)}
               className={cn(

@@ -67,6 +67,7 @@ type Props = {
     session: { id: string; startAt: string | Date };
     exercises: Array<{
       id: string;
+      templateExerciseId: string | null;
       name: string;
       position: number;
       sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
@@ -141,7 +142,7 @@ export function StrengthSessionView({
     }
 
     return template.exercises.map((e) => {
-      const lastEx = last?.exercises.find((le) => le.position === e.position);
+      const lastEx = last?.exercises.find((le) => le.templateExerciseId === e.id);
       const sets = lastEx?.sets?.length
         ? lastEx.sets.map((s, idx) => ({
             setIndex: idx,
@@ -168,18 +169,15 @@ export function StrengthSessionView({
     const result: Record<string, Array<{ reps: number; weight?: number }>> = {};
     if (!last?.exercises?.length) return result;
     for (const ex of last.exercises) {
-      const templateEx = template.exercises.find(
-        (te) => te.position === ex.position,
-      );
-      if (!templateEx) continue;
-      result[templateEx.id] = (ex.sets ?? []).map((s) => ({
+      if (!ex.templateExerciseId) continue;
+      result[ex.templateExerciseId] = (ex.sets ?? []).map((s) => ({
         reps: s.reps,
         weight:
           s.weight != null && s.weight !== "" ? Number(s.weight) : undefined,
       }));
     }
     return result;
-  }, [last, template.exercises]);
+  }, [last]);
 
   const form = useForm<StrengthSessionFormValues>({
     resolver: zodResolver(
@@ -301,13 +299,34 @@ export function StrengthSessionView({
     currentTemplate,
     setCurrentTemplate,
     trainingId,
-    nameInputRefs,
     isRenaming,
-    resetProgress: useCallback(() => {
-      setProgressByExercise({});
-      setMostRecentDoneByExercise({});
-      setDoneTrigger((c) => c + 1);
-    }, []),
+    remapProgress: useCallback(
+      (oldIndex: number, newIndex: number, length: number) => {
+        const remap = (prev: Record<number, unknown>) => {
+          const next: Record<number, unknown> = {};
+          for (let i = 0; i < length; i++) {
+            let src: number;
+            if (i === newIndex) {
+              src = oldIndex;
+            } else if (oldIndex < newIndex) {
+              src = i >= oldIndex && i < newIndex ? i + 1 : i;
+            } else {
+              src = i > newIndex && i <= oldIndex ? i - 1 : i;
+            }
+            if (prev[src] !== undefined) next[i] = prev[src];
+          }
+          return next;
+        };
+        setProgressByExercise(
+          (prev) => remap(prev) as typeof prev,
+        );
+        setMostRecentDoneByExercise(
+          (prev) => remap(prev) as typeof prev,
+        );
+        setDoneTrigger((c) => c + 1);
+      },
+      [],
+    ),
   });
 
   const [showBanner, setShowBanner] = useState(true);
@@ -368,17 +387,6 @@ export function StrengthSessionView({
           return acc + vol;
         }, 0) ?? 0;
 
-      const prevByPosition: Record<
-        number,
-        Array<{ reps: number; weight?: number }>
-      > = {};
-      for (const ex of last?.exercises ?? []) {
-        prevByPosition[ex.position] = (ex.sets ?? []).map((s) => ({
-          reps: s.reps,
-          weight:
-            s.weight != null && s.weight !== "" ? Number(s.weight) : undefined,
-        }));
-      }
       const progressFull =
         values.exercises?.map((ex) => {
           const currentVolume =
@@ -387,7 +395,7 @@ export function StrengthSessionView({
               const r = s.reps ?? 0;
               return sum + w * r;
             }, 0) ?? 0;
-          const prevSets = prevByPosition[ex.position] ?? [];
+          const prevSets = (ex.templateExerciseId ? prevSetsByExerciseId[ex.templateExerciseId] : undefined) ?? [];
           const prevVolume =
             prevSets?.reduce((sum, s) => {
               const w = s.weight ?? 0;
@@ -566,7 +574,7 @@ export function StrengthSessionView({
                   Complete session
                 </Button>
               </ExerciseSidebar>
-              <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
+              <DndContext id="session-exercises" sensors={dndSensors} onDragEnd={handleDragEnd}>
                 <SortableContext
                   items={exercisesArr.fields.map((f) => f.id)}
                   strategy={rectSortingStrategy}

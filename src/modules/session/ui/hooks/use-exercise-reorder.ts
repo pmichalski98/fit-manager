@@ -25,9 +25,8 @@ export function useExerciseReorder({
   currentTemplate,
   setCurrentTemplate,
   trainingId,
-  nameInputRefs,
   isRenaming,
-  resetProgress,
+  remapProgress,
 }: {
   exercisesArr: UseFieldArrayReturn<StrengthSessionFormValues, "exercises">;
   form: UseFormReturn<StrengthSessionFormValues>;
@@ -35,11 +34,8 @@ export function useExerciseReorder({
   currentTemplate: Template;
   setCurrentTemplate: React.Dispatch<React.SetStateAction<Template & { id: string }>>;
   trainingId: string;
-  nameInputRefs: React.MutableRefObject<
-    Record<number, HTMLInputElement | null>
-  >;
   isRenaming: boolean;
-  resetProgress: () => void;
+  remapProgress: (oldIndex: number, newIndex: number, length: number) => void;
 }) {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
@@ -83,13 +79,6 @@ export function useExerciseReorder({
         form.setValue(`exercises.${i}.position`, i);
       }
 
-      // Sync uncontrolled name inputs to match reordered fields
-      const reorderedFields = arrayMove(fieldsBefore, oldIndex, newIndex);
-      for (let i = 0; i < reorderedFields.length; i++) {
-        const input = nameInputRefs.current[i];
-        if (input) input.value = reorderedFields[i]?.name ?? "";
-      }
-
       // Reorder template and save (side effect kept outside setState)
       const reorderedExercises = arrayMove(
         currentTemplate.exercises,
@@ -108,7 +97,7 @@ export function useExerciseReorder({
         exercises: reorderedExercises.map((e) => ({ id: e.id, name: e.name })),
       }).catch(() => toast.error("Failed to save exercise changes"));
 
-      resetProgress();
+      remapProgress(oldIndex, newIndex, length);
     },
     [
       exercisesArr,
@@ -117,8 +106,7 @@ export function useExerciseReorder({
       currentTemplate,
       setCurrentTemplate,
       trainingId,
-      nameInputRefs,
-      resetProgress,
+      remapProgress,
     ],
   );
 
