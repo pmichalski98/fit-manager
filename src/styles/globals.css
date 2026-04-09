@@ -10,6 +10,9 @@
 }
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   --background: oklch(0.965 0.005 264);
   --foreground: oklch(0.22 0.03 260);
   --card: oklch(0.995 0.002 264);

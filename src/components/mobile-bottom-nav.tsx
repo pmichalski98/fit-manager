@@ -42,7 +42,7 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="bg-background/90 fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 backdrop-blur-2xl md:hidden">
+      <nav className="bg-background/90 fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 pb-[var(--safe-bottom)] backdrop-blur-2xl md:hidden">
         <div
           className="mx-auto flex max-w-md items-stretch justify-around pb-1"
         >
@@ -104,7 +104,7 @@ export function MobileBottomNav() {
       <Sheet open={userSheetOpen} onOpenChange={setUserSheetOpen}>
         <SheetContent
           side="bottom"
-          className="rounded-t-3xl border-t border-border/50 px-6 pb-10"
+          className="rounded-t-3xl border-t border-border/50 px-6 pb-[calc(var(--safe-bottom)+2.5rem)]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Account</SheetTitle>
