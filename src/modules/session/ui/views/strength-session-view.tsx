@@ -22,6 +22,8 @@ import {
   Timer,
   CheckCircle2,
   GripVertical,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { DndContext } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
@@ -56,8 +58,12 @@ import { ExerciseSidebar } from "@/modules/session/ui/components/exercise-sideba
 import { useSessionKeyboardShortcuts } from "@/modules/session/ui/hooks/use-session-keyboard-shortcuts";
 import { useExerciseRename } from "@/modules/session/ui/hooks/use-exercise-rename";
 import { useExerciseReorder } from "@/modules/session/ui/hooks/use-exercise-reorder";
+import { useHorizontalScroll } from "@/modules/session/ui/hooks/use-horizontal-scroll";
 import { RenameExerciseDialog } from "@/modules/training/ui/components/rename-exercise-dialog";
 import { cn } from "@/lib/utils";
+
+/** Minimum exercise count before scroll navigation (arrows + dots) is shown */
+const MIN_EXERCISES_FOR_SCROLL_NAV = 3;
 
 type TemplateExercise = { id: string; name: string; position: number };
 
@@ -270,10 +276,15 @@ export function StrengthSessionView({
   );
 
   const exerciseRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const showScrollNav = exercisesArr.fields.length >= MIN_EXERCISES_FOR_SCROLL_NAV;
+  const { scrollContainerRef, canScrollLeft, canScrollRight, visibleRange, scrollCards } =
+    useHorizontalScroll(!isMobile && showScrollNav);
+
   const handleSidebarClick = useCallback((index: number) => {
     exerciseRefs.current[index]?.scrollIntoView({
       behavior: "smooth",
-      block: "start",
+      block: "nearest",
+      inline: "start",
     });
   }, []);
 
@@ -553,8 +564,9 @@ export function StrengthSessionView({
               </SwipeableExerciseNav>
             </>
           ) : (
-            /* Desktop/tablet: sidebar + vertical scroll */
-            <div className="flex gap-6">
+            /* Desktop/tablet: sidebar + horizontal scroll */
+            /* 8rem = sticky header (~5rem) + top padding (~3rem) */
+            <div className="flex h-[calc(100svh-8rem)] gap-6">
               <ExerciseSidebar
                 exercises={exercisesArr.fields}
                 progressByExercise={progressByExercise}
@@ -574,45 +586,79 @@ export function StrengthSessionView({
                   Complete session
                 </Button>
               </ExerciseSidebar>
-              <DndContext id="session-exercises" sensors={dndSensors} onDragEnd={handleDragEnd}>
-                <SortableContext
-                  items={exercisesArr.fields.map((f) => f.id)}
-                  strategy={rectSortingStrategy}
-                >
-                  <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-4 xl:grid-cols-2">
-                    {exercisesArr.fields.map((field, exIndex) => (
-                      <SortableExerciseWrapper
-                        key={field.id}
-                        id={field.id}
-                        exIndex={exIndex}
-                        exerciseRefs={exerciseRefs}
-                      >
-                        {(dragListeners) => (
-                          <ExerciseCard
-                            field={field}
-                            exIndex={exIndex}
-                            control={form.control}
-                            prevSets={prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []}
-                            mostRecentDoneByExercise={mostRecentDoneByExercise}
-                            sessionStartAtMs={sessionStartAtMs}
-                            onMostRecentChange={onExerciseMostRecentChange}
-                            onProgressChange={onExerciseProgressChange}
-                            activeExerciseIndex={activeExerciseIndex}
-                            isSubmitting={isSubmitting}
-                            initialDoneMap={initialDoneMap}
-                            updateDoneMapRef={updateDoneMapRef}
-                            onRemove={handleRemoveExercise}
-                            addSetCallbacksRef={addSetCallbacksRef}
-                            onNameBlur={handleExerciseNameBlur}
-                            nameInputRefs={nameInputRefs}
-                            dragListeners={dragListeners}
-                          />
-                        )}
-                      </SortableExerciseWrapper>
-                    ))}
+              <div className="flex min-w-0 flex-1 flex-col">
+                <DndContext id="session-exercises" sensors={dndSensors} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={exercisesArr.fields.map((f) => f.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div
+                      ref={scrollContainerRef}
+                      className="no-scrollbar flex min-h-0 flex-1 snap-x snap-mandatory items-stretch gap-4 overflow-x-auto"
+                    >
+                      {exercisesArr.fields.map((field, exIndex) => (
+                        <SortableExerciseWrapper
+                          key={field.id}
+                          id={field.id}
+                          exIndex={exIndex}
+                          exerciseRefs={exerciseRefs}
+                        >
+                          {(dragListeners) => (
+                            <ExerciseCard
+                              field={field}
+                              exIndex={exIndex}
+                              control={form.control}
+                              prevSets={prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []}
+                              mostRecentDoneByExercise={mostRecentDoneByExercise}
+                              sessionStartAtMs={sessionStartAtMs}
+                              onMostRecentChange={onExerciseMostRecentChange}
+                              onProgressChange={onExerciseProgressChange}
+                              activeExerciseIndex={activeExerciseIndex}
+                              isSubmitting={isSubmitting}
+                              initialDoneMap={initialDoneMap}
+                              updateDoneMapRef={updateDoneMapRef}
+                              onRemove={handleRemoveExercise}
+                              addSetCallbacksRef={addSetCallbacksRef}
+                              onNameBlur={handleExerciseNameBlur}
+                              nameInputRefs={nameInputRefs}
+                              dragListeners={dragListeners}
+                            />
+                          )}
+                        </SortableExerciseWrapper>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+
+                {/* Scroll navigation */}
+                {showScrollNav && (
+                  <div className="flex items-center justify-center gap-3 pt-3">
+                    <ScrollArrow
+                      direction="left"
+                      disabled={!canScrollLeft}
+                      onClick={() => scrollCards("left")}
+                    />
+                    <div className="flex items-center gap-1.5">
+                      {exercisesArr.fields.map((_, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full transition-all duration-300",
+                            i >= visibleRange[0] && i <= visibleRange[1]
+                              ? "bg-primary"
+                              : "bg-muted-foreground/25",
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <ScrollArrow
+                      direction="right"
+                      disabled={!canScrollRight}
+                      onClick={() => scrollCards("right")}
+                    />
                   </div>
-                </SortableContext>
-              </DndContext>
+                )}
+              </div>
             </div>
           )}
 
@@ -688,6 +734,28 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   );
 }
 
+function ScrollArrow({
+  direction,
+  disabled,
+  onClick,
+}: {
+  direction: "left" | "right";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const Icon = direction === "left" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:opacity-0"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
 function SortableExerciseWrapper({
   id,
   exIndex,
@@ -720,7 +788,8 @@ function SortableExerciseWrapper({
       }}
       style={style}
       className={cn(
-        "max-w-lg scroll-mt-36",
+        // 0.5rem = half of gap-4 (1rem) on the scroll container
+        "h-full w-[calc(50%-0.5rem)] shrink-0 snap-start",
         isDragging && "z-50 opacity-75",
       )}
       {...attributes}
@@ -783,12 +852,12 @@ function ExerciseCard({
   return (
     <div
       className={cn(
-        "bg-card rounded-xl border p-4 shadow-sm transition-all sm:p-5",
+        "bg-card flex h-full flex-col rounded-xl border shadow-sm transition-all",
         isActive && "ring-primary/20 ring-1",
       )}
     >
-      {/* Exercise header */}
-      <div className="mb-3 flex items-center justify-between">
+      {/* Exercise header — fixed at top */}
+      <div className="flex items-center justify-between px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <span
             className={cn(
@@ -849,23 +918,26 @@ function ExerciseCard({
           )}
         </div>
       </div>
-      <ExerciseSets
-        control={control}
-        exIndex={exIndex}
-        prevSets={prevSets}
-        prevExerciseLastDoneAt={
-          exIndex > 0 ? (mostRecentDoneByExercise[exIndex - 1] ?? null) : null
-        }
-        sessionStartAtMs={sessionStartAtMs}
-        onMostRecentChange={onMostRecentChange}
-        onProgressChange={onProgressChange}
-        isActive={isActive}
-        disabled={isSubmitting}
-        initialDoneState={initialDoneMap?.[String(field.position)] ?? null}
-        onDoneChange={updateDoneMapRef}
-        addSetCallbacksRef={addSetCallbacksRef}
-        hideAddSet={onAddSet ? true : hideAddSet}
-      />
+      {/* Scrollable sets area */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 sm:px-5 sm:pb-5">
+        <ExerciseSets
+          control={control}
+          exIndex={exIndex}
+          prevSets={prevSets}
+          prevExerciseLastDoneAt={
+            exIndex > 0 ? (mostRecentDoneByExercise[exIndex - 1] ?? null) : null
+          }
+          sessionStartAtMs={sessionStartAtMs}
+          onMostRecentChange={onMostRecentChange}
+          onProgressChange={onProgressChange}
+          isActive={isActive}
+          disabled={isSubmitting}
+          initialDoneState={initialDoneMap?.[String(field.position)] ?? null}
+          onDoneChange={updateDoneMapRef}
+          addSetCallbacksRef={addSetCallbacksRef}
+          hideAddSet={onAddSet ? true : hideAddSet}
+        />
+      </div>
     </div>
   );
 }
