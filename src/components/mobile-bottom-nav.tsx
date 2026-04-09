@@ -44,7 +44,7 @@ export function MobileBottomNav() {
     <>
       <nav className="bg-background/90 fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 pb-[var(--safe-bottom)] backdrop-blur-2xl md:hidden">
         <div
-          className="mx-auto flex max-w-md items-stretch justify-around pb-1"
+          className="mx-auto flex max-w-md items-stretch justify-around"
         >
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
@@ -53,7 +53,7 @@ export function MobileBottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center gap-0.5 pb-1 pt-2 transition-colors",
+                  "relative flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1.5 transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground",
@@ -80,7 +80,7 @@ export function MobileBottomNav() {
 
           <button
             onClick={() => setUserSheetOpen(true)}
-            className="relative flex flex-1 flex-col items-center gap-0.5 pb-1 pt-2 text-muted-foreground transition-colors active:text-foreground"
+            className="relative flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1.5 text-muted-foreground transition-colors active:text-foreground"
           >
             {isPending ? (
               <Skeleton className="size-5 rounded-full" />
