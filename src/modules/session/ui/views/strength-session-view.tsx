@@ -465,7 +465,7 @@ export function StrengthSessionView({
   return (
     <div className="space-y-4">
       {/* Header — negative top margin absorbs layout padding so sticky position is seamless */}
-      <div className="bg-background/80 border-border/50 sticky top-0 z-40 -mx-4 -mt-6 border-b px-4 pt-6 pb-3 backdrop-blur-xl md:-mx-6 md:px-6">
+      <div className="bg-background/80 border-border/50 sticky top-0 z-40 -mx-4 -mt-[calc(var(--safe-top)+1.5rem)] border-b px-4 pt-[calc(var(--safe-top)+1.5rem)] pb-3 backdrop-blur-xl md:-mx-6 md:-mt-6 md:px-6 md:pt-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold">{currentTemplate.name}</h1>

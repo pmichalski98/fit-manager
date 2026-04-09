@@ -11,7 +11,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Fit Manager",
   description: "Your fitness tracking companion",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [
+    { rel: "icon", url: "/favicon.ico" },
+    { rel: "apple-touch-icon", url: "/apple-touch-icon.png" },
+  ],
   manifest: "/site.webmanifest",
   appleWebApp: {
     capable: true,

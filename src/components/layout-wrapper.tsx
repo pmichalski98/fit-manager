@@ -23,8 +23,11 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       </div>
       <SidebarInset className="max-h-svh overflow-x-hidden overflow-y-auto">
         <div className={cn(
-          "flex flex-1 flex-col px-4 pt-6 md:p-6 md:pb-6",
-          isTrainingSession ? "pb-4" : "pb-16",
+          "flex flex-1 flex-col px-4 md:px-6 md:pb-6",
+          "pt-[calc(var(--safe-top)+1.5rem)] md:pt-6",
+          isTrainingSession
+            ? "pb-[calc(var(--safe-bottom)+1rem)]"
+            : "pb-[calc(var(--safe-bottom)+4rem)]",
         )}>
           {children}
         </div>
