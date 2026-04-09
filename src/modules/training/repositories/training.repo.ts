@@ -2,10 +2,11 @@ import { db } from "@/server/db";
 import {
   training,
   trainingExercise,
+  trainingSession,
   trainingSessionExercise,
   type trainingTypeEnum,
 } from "@/server/db/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, max } from "drizzle-orm";
 
 export type CreateTrainingValues = {
   userId: string;
@@ -158,6 +159,22 @@ class TrainingRepository {
       .select()
       .from(training)
       .where(eq(training.userId, userId));
+
+    // Self-healing backfill: compute lastSessionAt for trainings missing it
+    const staleTrainings = trainings.filter((t) => t.lastSessionAt === null);
+    for (const t of staleTrainings) {
+      const [latest] = await db
+        .select({ maxStart: max(trainingSession.startAt) })
+        .from(trainingSession)
+        .where(eq(trainingSession.trainingId, t.id));
+      if (latest?.maxStart) {
+        await db
+          .update(training)
+          .set({ lastSessionAt: latest.maxStart })
+          .where(eq(training.id, t.id));
+        t.lastSessionAt = latest.maxStart;
+      }
+    }
 
     const ids = trainings.map((t) => t.id);
     type TrainingRow = typeof training.$inferSelect;
