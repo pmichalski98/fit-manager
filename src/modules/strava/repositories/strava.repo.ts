@@ -5,7 +5,7 @@ import {
   trainingSession,
   trainingSessionCardio,
 } from "@/server/db/schema";
-import { and, count, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
 import type { mapStravaActivityToSession } from "../lib/strava-mapper";
 import { STRAVA_TRAINING_NAME } from "../types";
 
@@ -132,6 +132,20 @@ class StravaRepository {
         sessionId: session.id,
         ...mapped.cardio,
       });
+
+      // Update training lastSessionAt if this session is more recent
+      await tx
+        .update(training)
+        .set({ lastSessionAt: session.startAt })
+        .where(
+          and(
+            eq(training.id, mapped.session.trainingId),
+            or(
+              isNull(training.lastSessionAt),
+              lt(training.lastSessionAt, session.startAt),
+            ),
+          ),
+        );
 
       return session;
     });
