@@ -53,7 +53,7 @@ export function MobileBottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1.5 transition-colors",
+                  "relative flex flex-1 flex-col items-center gap-0.5 pt-1.5 transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground",
@@ -80,7 +80,7 @@ export function MobileBottomNav() {
 
           <button
             onClick={() => setUserSheetOpen(true)}
-            className="relative flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1.5 text-muted-foreground transition-colors active:text-foreground"
+            className="relative flex flex-1 flex-col items-center gap-0.5 pt-1.5 text-muted-foreground transition-colors active:text-foreground"
           >
             {isPending ? (
               <Skeleton className="size-5 rounded-full" />
