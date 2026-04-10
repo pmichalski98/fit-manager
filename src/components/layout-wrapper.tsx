@@ -17,11 +17,11 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <div className="hidden md:block">
         <AppSidebar />
       </div>
-      <SidebarInset className="max-h-svh overflow-x-hidden overflow-y-auto">
+      <SidebarInset className="max-h-svh overflow-x-hidden overflow-y-auto overscroll-y-contain">
         <div className={cn(
           "flex flex-1 flex-col px-4 md:px-6 md:pb-6",
           "pt-[calc(var(--safe-top)+1.5rem)] md:pt-6",
