@@ -27,7 +27,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
           "pt-[calc(var(--safe-top)+1.5rem)] md:pt-6",
           isTrainingSession
             ? "pb-[calc(var(--safe-bottom)+1rem)]"
-            : "pb-[calc(var(--safe-bottom-nav)+3rem)]",
+            : "pb-14",
         )}>
           {children}
         </div>

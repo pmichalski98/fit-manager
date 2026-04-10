@@ -12,7 +12,6 @@
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-bottom-nav: max(calc(env(safe-area-inset-bottom, 0px) - 16px), 0px);
 
   --background: oklch(0.965 0.005 264);
   --foreground: oklch(0.22 0.03 260);
