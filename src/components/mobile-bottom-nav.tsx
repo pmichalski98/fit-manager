@@ -42,7 +42,7 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="bg-background/90 fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 pb-[var(--safe-bottom-nav)] backdrop-blur-2xl md:hidden">
+      <nav className="bg-background/90 fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 pb-2 backdrop-blur-2xl md:hidden">
         <div
           className="mx-auto flex max-w-md items-stretch justify-around"
         >
