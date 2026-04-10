@@ -192,8 +192,13 @@ button,
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   button:not(:disabled),
