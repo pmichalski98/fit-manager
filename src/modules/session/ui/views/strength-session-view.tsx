@@ -303,7 +303,7 @@ export function StrengthSessionView({
     handleRenameDismiss,
   } = useExerciseRename({ currentTemplate, setCurrentTemplate, form, trainingId });
 
-  const { dndSensors, handleDragEnd } = useExerciseReorder({
+  const { dndSensors, handleDragEnd, handlePositionSwap } = useExerciseReorder({
     exercisesArr,
     form,
     doneMapRef,
@@ -312,19 +312,26 @@ export function StrengthSessionView({
     trainingId,
     isRenaming,
     remapProgress: useCallback(
-      (oldIndex: number, newIndex: number, length: number) => {
+      (oldIndex: number, newIndex: number, length: number, mode: "move" | "swap") => {
         const remap = (prev: Record<number, unknown>) => {
           const next: Record<number, unknown> = {};
-          for (let i = 0; i < length; i++) {
-            let src: number;
-            if (i === newIndex) {
-              src = oldIndex;
-            } else if (oldIndex < newIndex) {
-              src = i >= oldIndex && i < newIndex ? i + 1 : i;
-            } else {
-              src = i > newIndex && i <= oldIndex ? i - 1 : i;
+          if (mode === "swap") {
+            for (let i = 0; i < length; i++) {
+              const src = i === oldIndex ? newIndex : i === newIndex ? oldIndex : i;
+              if (prev[src] !== undefined) next[i] = prev[src];
             }
-            if (prev[src] !== undefined) next[i] = prev[src];
+          } else {
+            for (let i = 0; i < length; i++) {
+              let src: number;
+              if (i === newIndex) {
+                src = oldIndex;
+              } else if (oldIndex < newIndex) {
+                src = i >= oldIndex && i < newIndex ? i + 1 : i;
+              } else {
+                src = i > newIndex && i <= oldIndex ? i - 1 : i;
+              }
+              if (prev[src] !== undefined) next[i] = prev[src];
+            }
           }
           return next;
         };
@@ -336,7 +343,7 @@ export function StrengthSessionView({
         );
         setDoneTrigger((c) => c + 1);
       },
-      [],
+      [setProgressByExercise, setMostRecentDoneByExercise, setDoneTrigger],
     ),
   });
 
@@ -559,6 +566,8 @@ export function StrengthSessionView({
                     onAddSet={handleAddSetMobile}
                     onNameBlur={handleExerciseNameBlur}
                     nameInputRefs={nameInputRefs}
+                    onPositionSwap={handlePositionSwap}
+                    totalExercises={exercisesArr.fields.length}
                   />
                 ))}
               </SwipeableExerciseNav>
@@ -622,6 +631,8 @@ export function StrengthSessionView({
                               onNameBlur={handleExerciseNameBlur}
                               nameInputRefs={nameInputRefs}
                               dragListeners={dragListeners}
+                              onPositionSwap={handlePositionSwap}
+                              totalExercises={exercisesArr.fields.length}
                             />
                           )}
                         </SortableExerciseWrapper>
@@ -819,6 +830,8 @@ function ExerciseCard({
   onNameBlur,
   nameInputRefs,
   dragListeners,
+  onPositionSwap,
+  totalExercises,
 }: {
   field: { id: string; name: string; position: number };
   exIndex: number;
@@ -845,9 +858,19 @@ function ExerciseCard({
   onNameBlur?: (exIndex: number, newName: string) => void;
   nameInputRefs?: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
   dragListeners?: SyntheticListenerMap;
+  onPositionSwap?: (fromIndex: number, toIndex: number) => void;
+  totalExercises?: number;
 }) {
   const isActive = activeExerciseIndex === exIndex;
   const localNameRef = useRef<HTMLInputElement>(null);
+  const posInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync displayed position when exIndex changes (e.g. after another card's swap)
+  useEffect(() => {
+    if (posInputRef.current && document.activeElement !== posInputRef.current) {
+      posInputRef.current.value = String(exIndex + 1);
+    }
+  }, [exIndex]);
 
   return (
     <div
@@ -859,16 +882,33 @@ function ExerciseCard({
       {/* Exercise header — fixed at top */}
       <div className="flex items-center justify-between px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span
+          <input
+            ref={posInputRef}
+            type="text"
+            inputMode="numeric"
+            defaultValue={exIndex + 1}
             className={cn(
-              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-center text-xs font-bold outline-none",
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground",
             )}
-          >
-            {exIndex + 1}
-          </span>
+            onFocus={(e) => e.target.select()}
+            onBlur={(e) => {
+              const newPos = parseInt(e.target.value, 10);
+              if (!isNaN(newPos) && newPos >= 1 && newPos <= (totalExercises ?? 1)) {
+                onPositionSwap?.(exIndex, newPos - 1);
+              }
+              e.target.value = String(exIndex + 1);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Escape") {
+                (e.target as HTMLInputElement).value = String(exIndex + 1);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
           <input
             ref={(el) => {
               localNameRef.current = el;
