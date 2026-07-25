@@ -804,6 +804,7 @@ function SortableExerciseWrapper({
         isDragging && "z-50 opacity-75",
       )}
       {...attributes}
+      tabIndex={-1}
     >
       {children(listeners ?? ({} as SyntheticListenerMap))}
     </div>
@@ -886,6 +887,7 @@ function ExerciseCard({
             ref={posInputRef}
             type="text"
             inputMode="numeric"
+            tabIndex={-1}
             defaultValue={exIndex + 1}
             className={cn(
               "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-center text-xs font-bold outline-none",
@@ -916,6 +918,7 @@ function ExerciseCard({
             }}
             type="text"
             defaultValue={field.name}
+            tabIndex={-1}
             className="min-w-0 flex-1 truncate border-b border-transparent bg-transparent text-base font-semibold outline-none transition-colors hover:border-border focus:border-primary"
             onBlur={(e) => onNameBlur?.(exIndex, e.target.value)}
             onKeyDown={(e) => {
@@ -941,6 +944,7 @@ function ExerciseCard({
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+            tabIndex={-1}
             disabled={isSubmitting}
             onClick={() => onRemove(exIndex)}
             title="Remove exercise"
@@ -950,6 +954,7 @@ function ExerciseCard({
           {dragListeners && (
             <button
               type="button"
+              tabIndex={-1}
               className="text-muted-foreground hover:text-foreground cursor-grab rounded-md p-1"
               {...dragListeners}
             >
@@ -1240,6 +1245,7 @@ function ExerciseSets({
                 {/* Done toggle button */}
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => handleToggleDone(f.id, setIdx, !isDone)}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all",

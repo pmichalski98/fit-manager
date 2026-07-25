@@ -100,7 +100,10 @@ export function NumberStepper({
     if (disabled) return;
     setEditValue(numericValue != null ? String(numericValue) : "");
     setIsEditing(true);
-    requestAnimationFrame(() => inputRef.current?.select());
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
   };
 
   const commitEdit = () => {
@@ -193,12 +196,12 @@ export function NumberStepper({
           <button
             type="button"
             onClick={handleValueClick}
+            onFocus={handleValueClick}
             disabled={disabled}
             className={cn(
               "h-11 min-w-0 flex-1 text-center text-base font-semibold tabular-nums transition-colors",
               numericValue == null && "text-muted-foreground",
             )}
-            tabIndex={-1}
           >
             {displayValue}
           </button>
