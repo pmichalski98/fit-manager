@@ -68,18 +68,18 @@ export default async function DashboardPage(props: PageProps) {
           </Suspense>
         </HideableChart>
 
-        <Suspense
-          fallback={
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
-              <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
-            </div>
-          }
-        >
-          <BodyCharts />
-        </Suspense>
-
         <div className="grid items-start gap-10 md:grid-cols-2">
+          <Suspense
+            fallback={
+              <>
+                <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
+                <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
+              </>
+            }
+          >
+            <BodyCharts />
+          </Suspense>
+
           <HideableChart chartId="exercise-progress">
             <ExerciseProgressChart availableExercises={availableExercises} />
           </HideableChart>

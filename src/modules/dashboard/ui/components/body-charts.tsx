@@ -29,8 +29,10 @@ export async function BodyCharts() {
       weight: Number(log.weight),
     }));
 
+  // Rendered inside the dashboard's shared chart grid — no wrapper here,
+  // so hiding a chart lets the remaining cards flow next to each other
   return (
-    <div className="grid items-start gap-10 md:grid-cols-2">
+    <>
       {weightData.length > 0 && (
         <HideableChart chartId="weight-history">
           <Card className="overflow-hidden">
@@ -56,6 +58,6 @@ export async function BodyCharts() {
           </Card>
         </HideableChart>
       )}
-    </div>
+    </>
   );
 }
