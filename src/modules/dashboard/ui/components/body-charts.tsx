@@ -1,4 +1,5 @@
 import { getDailyLogHistory } from "../../actions";
+import { HideableChart } from "./hideable-chart";
 import { KcalChartGraph } from "./kcal-chart-graph";
 import { WeightChartGraph } from "./weight-chart-graph";
 import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
@@ -29,27 +30,31 @@ export async function BodyCharts() {
     }));
 
   return (
-    <div className="grid gap-10 md:grid-cols-2">
+    <div className="grid items-start gap-10 md:grid-cols-2">
       {weightData.length > 0 && (
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Weight History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WeightChartGraph data={weightData} />
-          </CardContent>
-        </Card>
+        <HideableChart chartId="weight-history">
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle>Weight History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WeightChartGraph data={weightData} />
+            </CardContent>
+          </Card>
+        </HideableChart>
       )}
 
       {kcalData.length > 0 && (
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Caloric Intake History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <KcalChartGraph data={kcalData} />
-          </CardContent>
-        </Card>
+        <HideableChart chartId="kcal-history">
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle>Caloric Intake History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <KcalChartGraph data={kcalData} />
+            </CardContent>
+          </Card>
+        </HideableChart>
       )}
     </div>
   );

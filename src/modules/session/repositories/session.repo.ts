@@ -240,6 +240,24 @@ class SessionRepository {
       .orderBy(asc(trainingSession.date));
   }
 
+  async getTrainingVolumeHistory(userId: string, trainingId: string) {
+    return await db
+      .select({
+        date: trainingSession.date,
+        totalLoadKg: trainingSession.totalLoadKg,
+      })
+      .from(trainingSession)
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          eq(trainingSession.trainingId, trainingId),
+          isNotNull(trainingSession.endAt),
+          isNotNull(trainingSession.totalLoadKg),
+        ),
+      )
+      .orderBy(asc(trainingSession.date));
+  }
+
   async getSessionsInRange(
     userId: string,
     rangeStart: Date,

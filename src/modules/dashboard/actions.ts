@@ -55,6 +55,36 @@ export async function getAvailableExerciseNames() {
   return Array.from(exercises).sort();
 }
 
+export async function getStrengthTrainings() {
+  const userId = await requireUserId();
+  const trainings =
+    await trainingRepository.findAllTrainingsWithExercises(userId);
+  return trainings
+    .filter((t) => t.type === "strength")
+    .map((t) => ({ id: t.id, name: t.name }));
+}
+
+export async function getTrainingVolumeProgress(trainingId: string) {
+  const userId = await requireUserId();
+  const history = await sessionRepository.getTrainingVolumeHistory(
+    userId,
+    trainingId,
+  );
+
+  // Multiple sessions on the same day are rare — keep the highest volume
+  const maxByDate = new Map<string, number>();
+  for (const record of history) {
+    if (record.totalLoadKg == null) continue;
+    const current = maxByDate.get(record.date) ?? 0;
+    if (record.totalLoadKg > current) maxByDate.set(record.date, record.totalLoadKg);
+  }
+
+  return Array.from(maxByDate.entries()).map(([date, volume]) => ({
+    date,
+    volume,
+  }));
+}
+
 export async function getExerciseProgress(exerciseName: string) {
   const userId = await requireUserId();
   const history = await sessionRepository.getExerciseHistory(

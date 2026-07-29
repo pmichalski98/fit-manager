@@ -8,7 +8,16 @@ import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashbo
 import { TrainingConsistency, TrainingConsistencySkeleton } from "@/modules/dashboard/ui/components/training-consistency";
 import { BodyCharts } from "@/modules/dashboard/ui/components/body-charts";
 import { ExerciseProgressChart } from "@/modules/dashboard/ui/components/exercise-progress-chart";
-import { getAvailableExerciseNames } from "@/modules/dashboard/actions";
+import {
+  ChartsMenu,
+  ChartVisibilityProvider,
+  HideableChart,
+} from "@/modules/dashboard/ui/components/hideable-chart";
+import { VolumeProgressChart } from "@/modules/dashboard/ui/components/volume-progress-chart";
+import {
+  getAvailableExerciseNames,
+  getStrengthTrainings,
+} from "@/modules/dashboard/actions";
 
 type PageProps = {
   searchParams: Promise<{ week?: string }>;
@@ -28,48 +37,61 @@ export default async function DashboardPage(props: PageProps) {
   } = resolveWeekContext(weekParam);
 
   let availableExercises: string[] = [];
+  let strengthTrainings: { id: string; name: string }[] = [];
   try {
-    const exercises = await getAvailableExerciseNames();
+    const [exercises, trainings] = await Promise.all([
+      getAvailableExerciseNames(),
+      getStrengthTrainings(),
+    ]);
     if (Array.isArray(exercises)) {
       availableExercises = exercises;
     }
+    strengthTrainings = trainings;
   } catch (error) {
-    console.error("Failed to fetch exercises", error as Error);
+    console.error("Failed to fetch dashboard data", error as Error);
   }
 
   return (
-    <div className="space-y-8">
-      <div className="text-center md:text-left">
-        <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Dashboard</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Your weekly overview and progress at a glance.</p>
-      </div>
-
-      <Suspense fallback={<TrainingConsistencySkeleton />}>
-        <TrainingConsistency />
-      </Suspense>
-
-      <Suspense
-        fallback={
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
-            <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
+    <ChartVisibilityProvider>
+      <div className="space-y-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Dashboard</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Your weekly overview and progress at a glance.</p>
           </div>
-        }
-      >
-        <BodyCharts />
-      </Suspense>
+          <ChartsMenu />
+        </div>
 
-      <Suspense
-        fallback={
-          <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
-        }
-      >
-        <ExerciseProgressChart availableExercises={availableExercises} />
-      </Suspense>
+        <HideableChart chartId="training-activity">
+          <Suspense fallback={<TrainingConsistencySkeleton />}>
+            <TrainingConsistency />
+          </Suspense>
+        </HideableChart>
 
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold tracking-tight">Weekly overview</h2>
-        <div className="flex items-center gap-2">
+        <Suspense
+          fallback={
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
+              <div className="bg-muted/20 h-[300px] w-full animate-pulse rounded-xl border" />
+            </div>
+          }
+        >
+          <BodyCharts />
+        </Suspense>
+
+        <div className="grid items-start gap-10 md:grid-cols-2">
+          <HideableChart chartId="exercise-progress">
+            <ExerciseProgressChart availableExercises={availableExercises} />
+          </HideableChart>
+
+          <HideableChart chartId="training-volume">
+            <VolumeProgressChart strengthTrainings={strengthTrainings} />
+          </HideableChart>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold tracking-tight">Weekly overview</h2>
+          <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href={`?week=${formatDateYYYYMMDD(previousMonday)}`}>
               Previous
@@ -81,23 +103,24 @@ export default async function DashboardPage(props: PageProps) {
           <Button asChild variant="ghost" size="sm">
             <Link href="?">This week</Link>
           </Button>
+          </div>
         </div>
-      </div>
 
-      <Suspense
-        fallback={
-          <DashboardTableSkeleton dayDates={dayDates} dayKeys={dayKeys} />
-        }
-      >
-        <DashboardTable
-          monday={monday}
-          sunday={sunday}
-          prevMonday={prevMonday}
-          prevSunday={prevSunday}
-          dayDates={dayDates}
-          dayKeys={dayKeys}
-        />
-      </Suspense>
-    </div>
+        <Suspense
+          fallback={
+            <DashboardTableSkeleton dayDates={dayDates} dayKeys={dayKeys} />
+          }
+        >
+          <DashboardTable
+            monday={monday}
+            sunday={sunday}
+            prevMonday={prevMonday}
+            prevSunday={prevSunday}
+            dayDates={dayDates}
+            dayKeys={dayKeys}
+          />
+        </Suspense>
+      </div>
+    </ChartVisibilityProvider>
   );
 }
