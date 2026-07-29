@@ -20,8 +20,10 @@ import {
   isAfter,
   isSameDay,
   getDate,
+  getMonth,
   subDays,
 } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export async function TrainingConsistency() {
   const data = await getConsistencyGraphData();
@@ -86,7 +88,10 @@ export async function TrainingConsistency() {
   let currentWeekStart = graphStartDate;
 
   // We'll track month changes for labels
-  const monthLabels: { index: number; label: string }[] = [];
+  const monthLabels: { index: number; label: string; isYearStart?: boolean }[] =
+    [];
+  // Weeks containing Jan 1 get a visual year separator
+  const yearStartWeeks = new Set<number>();
 
   let weekIndex = 0;
   // Stop if currentWeekStart is strictly AFTER graphEndDate.
@@ -100,18 +105,26 @@ export async function TrainingConsistency() {
 
   while (!isAfter(currentWeekStart, lastWeekStart)) {
     const weekDays: Date[] = [];
-    let monthLabelForWeek = null;
+    let monthLabelForWeek: string | null = null;
+    let isYearStartWeek = false;
 
     for (let i = 0; i < 7; i++) {
       const d = addDays(currentWeekStart, i);
       weekDays.push(d);
       if (getDate(d) === 1) {
-        monthLabelForWeek = format(d, "MMM");
+        const isJanuary = getMonth(d) === 0;
+        monthLabelForWeek = format(d, isJanuary ? "MMM yyyy" : "MMM");
+        if (isJanuary) isYearStartWeek = true;
       }
     }
 
     if (monthLabelForWeek) {
-      monthLabels.push({ index: weekIndex, label: monthLabelForWeek });
+      monthLabels.push({
+        index: weekIndex,
+        label: monthLabelForWeek,
+        isYearStart: isYearStartWeek,
+      });
+      if (isYearStartWeek && weekIndex > 0) yearStartWeeks.add(weekIndex);
     } else if (weekIndex === 0) {
       monthLabels.push({
         index: weekIndex,
@@ -158,7 +171,10 @@ export async function TrainingConsistency() {
                   return (
                     <span
                       key={i}
-                      className="absolute whitespace-nowrap"
+                      className={cn(
+                        "absolute whitespace-nowrap",
+                        m.isYearStart && "text-foreground font-semibold",
+                      )}
                       style={{
                         left: `${leftPosition}px`,
                         transform: "translateX(-50%)",
@@ -173,7 +189,15 @@ export async function TrainingConsistency() {
               {/* Grid */}
               <div className="flex gap-1">
                 {weeks.map((week, weekIdx) => (
-                  <div key={weekIdx} className="flex flex-col gap-1">
+                  <div
+                    key={weekIdx}
+                    className={cn(
+                      "flex flex-col gap-1",
+                      // Vertical rule in the gap before the week containing Jan 1
+                      yearStartWeeks.has(weekIdx) &&
+                        "before:bg-border relative before:absolute before:top-0 before:bottom-0 before:-left-[2.5px] before:w-px",
+                    )}
+                  >
                     {week.map((day, dayIdx) => {
                       const key = format(day, "yyyy-MM-dd");
                       const isFuture = isAfter(day, today);

@@ -7,12 +7,37 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { parseISO, format } from "date-fns";
+import {
+  ChartRangeSelect,
+  filterByDateRange,
+  useChartRange,
+} from "./chart-range";
 
 export function WeightChartGraph({
   data,
 }: {
   data: { date: string; weight: number }[];
 }) {
+  const [range, setRange] = useChartRange("fit-manager-chart-range-weight");
+  const filtered = filterByDateRange(data, range);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <ChartRangeSelect value={range} onChange={setRange} />
+      </div>
+      {filtered.length === 0 ? (
+        <div className="text-muted-foreground flex aspect-video items-center justify-center text-sm">
+          No weight entries in this range
+        </div>
+      ) : (
+        <WeightChart data={filtered} />
+      )}
+    </div>
+  );
+}
+
+function WeightChart({ data }: { data: { date: string; weight: number }[] }) {
   return (
     <ChartContainer
       config={{

@@ -18,6 +18,11 @@ import {
 import { getTrainingVolumeProgress } from "../../actions";
 import { toast } from "sonner";
 import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
+import {
+  ChartRangeSelect,
+  filterByDateRange,
+  useChartRange,
+} from "./chart-range";
 
 type VolumeProgressChartProps = {
   strengthTrainings: { id: string; name: string }[];
@@ -31,6 +36,8 @@ export function VolumeProgressChart({
   const [selectedTrainingId, setSelectedTrainingId] = useState<string>("");
   const [data, setData] = useState<{ date: string; volume: number }[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [range, setRange] = useChartRange("fit-manager-chart-range-volume");
+  const filteredData = filterByDateRange(data, range);
 
   const fetchProgress = (trainingId: string) => {
     startTransition(async () => {
@@ -71,18 +78,24 @@ export function VolumeProgressChart({
         <CardTitle>Training Volume</CardTitle>
       </CardHeader>
       <CardContent>
-        <Select value={selectedTrainingId} onValueChange={handleTrainingChange}>
-          <SelectTrigger className="w-full sm:w-[280px]">
-            <SelectValue placeholder="Select training" />
-          </SelectTrigger>
-          <SelectContent>
-            {strengthTrainings.map((training) => (
-              <SelectItem key={training.id} value={training.id}>
-                {training.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <Select
+            value={selectedTrainingId}
+            onValueChange={handleTrainingChange}
+          >
+            <SelectTrigger className="w-full sm:w-[280px]">
+              <SelectValue placeholder="Select training" />
+            </SelectTrigger>
+            <SelectContent>
+              {strengthTrainings.map((training) => (
+                <SelectItem key={training.id} value={training.id}>
+                  {training.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ChartRangeSelect value={range} onChange={setRange} />
+        </div>
       </CardContent>
 
       <CardContent>
@@ -95,9 +108,11 @@ export function VolumeProgressChart({
             <div className="text-muted-foreground flex h-full items-center justify-center">
               Loading...
             </div>
-          ) : data.length === 0 ? (
+          ) : filteredData.length === 0 ? (
             <div className="text-muted-foreground flex h-full items-center justify-center">
-              No completed sessions for this training yet
+              {data.length === 0
+                ? "No completed sessions for this training yet"
+                : "No sessions in this range"}
             </div>
           ) : (
             <ChartContainer
@@ -110,7 +125,7 @@ export function VolumeProgressChart({
               className="h-full w-full"
             >
               <LineChart
-                data={data}
+                data={filteredData}
                 margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />

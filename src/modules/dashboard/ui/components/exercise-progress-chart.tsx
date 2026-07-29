@@ -24,6 +24,11 @@ import {
   CardContent,
   CardAction,
 } from "@/components/ui/card";
+import {
+  ChartRangeSelect,
+  filterByDateRange,
+  useChartRange,
+} from "./chart-range";
 
 type ExerciseProgressChartProps = {
   availableExercises: string[];
@@ -39,6 +44,8 @@ export function ExerciseProgressChart({
     { date: string; weight: number; reps: number; oneRepMax: number }[]
   >([]);
   const [isPending, startTransition] = useTransition();
+  const [range, setRange] = useChartRange("fit-manager-chart-range-exercise");
+  const filteredData = filterByDateRange(data, range);
 
   // Calculate current estimated 1RM (based on latest data point)
   const lastDataPoint = data[data.length - 1];
@@ -99,6 +106,7 @@ export function ExerciseProgressChart({
               ))}
             </SelectContent>
           </Select>
+          <ChartRangeSelect value={range} onChange={setRange} />
         </div>
       </CardContent>
 
@@ -112,9 +120,11 @@ export function ExerciseProgressChart({
             <div className="text-muted-foreground flex h-full items-center justify-center">
               Loading...
             </div>
-          ) : data.length === 0 ? (
+          ) : filteredData.length === 0 ? (
             <div className="text-muted-foreground flex h-full items-center justify-center">
-              No data available for this exercise
+              {data.length === 0
+                ? "No data available for this exercise"
+                : "No data in this range"}
             </div>
           ) : (
             <ChartContainer
@@ -127,7 +137,7 @@ export function ExerciseProgressChart({
               className="h-full w-full"
             >
               <LineChart
-                data={data}
+                data={filteredData}
                 margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />

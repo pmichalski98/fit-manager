@@ -15,12 +15,37 @@ import {
 } from "@/components/ui/chart";
 import { parseISO, format } from "date-fns";
 import { useMemo } from "react";
+import {
+  ChartRangeSelect,
+  filterByDateRange,
+  useChartRange,
+} from "./chart-range";
 
 export function KcalChartGraph({
   data,
 }: {
   data: { date: string; kcal: number }[];
 }) {
+  const [range, setRange] = useChartRange("fit-manager-chart-range-kcal");
+  const filtered = filterByDateRange(data, range);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <ChartRangeSelect value={range} onChange={setRange} />
+      </div>
+      {filtered.length === 0 ? (
+        <div className="text-muted-foreground flex aspect-video items-center justify-center text-sm">
+          No calorie entries in this range
+        </div>
+      ) : (
+        <KcalChart data={filtered} />
+      )}
+    </div>
+  );
+}
+
+function KcalChart({ data }: { data: { date: string; kcal: number }[] }) {
   const medianKcal = useMemo(() => {
     if (!data.length) return 0;
     const sorted = [...data].map((d) => d.kcal).sort((a, b) => a - b);
