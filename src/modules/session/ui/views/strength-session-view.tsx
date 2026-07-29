@@ -60,12 +60,20 @@ import { useExerciseRename } from "@/modules/session/ui/hooks/use-exercise-renam
 import { useExerciseReorder } from "@/modules/session/ui/hooks/use-exercise-reorder";
 import { useHorizontalScroll } from "@/modules/session/ui/hooks/use-horizontal-scroll";
 import { RenameExerciseDialog } from "@/modules/training/ui/components/rename-exercise-dialog";
+import { formatExerciseTarget } from "@/modules/training/lib/format-target";
 import { cn } from "@/lib/utils";
 
 /** Minimum exercise count before scroll navigation (arrows + dots) is shown */
 const MIN_EXERCISES_FOR_SCROLL_NAV = 3;
 
-type TemplateExercise = { id: string; name: string; position: number };
+type TemplateExercise = {
+  id: string;
+  name: string;
+  position: number;
+  targetSets: number | null;
+  targetRepsMin: number | null;
+  targetRepsMax: number | null;
+};
 
 type Props = {
   template: { id: string; name: string; exercises: TemplateExercise[] };
@@ -184,6 +192,15 @@ export function StrengthSessionView({
     }
     return result;
   }, [last]);
+
+  // Pre-formatted target hint (e.g. "3×8–12") per template exercise ID
+  const targetHintByExerciseId = useMemo<Record<string, string | null>>(() => {
+    const result: Record<string, string | null> = {};
+    for (const ex of currentTemplate.exercises) {
+      result[ex.id] = formatExerciseTarget(ex);
+    }
+    return result;
+  }, [currentTemplate.exercises]);
 
   const form = useForm<StrengthSessionFormValues>({
     resolver: zodResolver(
@@ -564,6 +581,12 @@ export function StrengthSessionView({
                     onRemove={handleRemoveExercise}
                     addSetCallbacksRef={addSetCallbacksRef}
                     onAddSet={handleAddSetMobile}
+                    targetHint={
+                      field.templateExerciseId
+                        ? (targetHintByExerciseId[field.templateExerciseId] ??
+                          null)
+                        : null
+                    }
                     onNameBlur={handleExerciseNameBlur}
                     nameInputRefs={nameInputRefs}
                     onPositionSwap={handlePositionSwap}
@@ -628,6 +651,13 @@ export function StrengthSessionView({
                               updateDoneMapRef={updateDoneMapRef}
                               onRemove={handleRemoveExercise}
                               addSetCallbacksRef={addSetCallbacksRef}
+                              targetHint={
+                                field.templateExerciseId
+                                  ? (targetHintByExerciseId[
+                                      field.templateExerciseId
+                                    ] ?? null)
+                                  : null
+                              }
                               onNameBlur={handleExerciseNameBlur}
                               nameInputRefs={nameInputRefs}
                               dragListeners={dragListeners}
@@ -828,6 +858,7 @@ function ExerciseCard({
   addSetCallbacksRef,
   onAddSet,
   hideAddSet,
+  targetHint,
   onNameBlur,
   nameInputRefs,
   dragListeners,
@@ -855,6 +886,7 @@ function ExerciseCard({
   addSetCallbacksRef: React.MutableRefObject<Record<number, () => void>>;
   onAddSet?: () => void;
   hideAddSet?: boolean;
+  targetHint?: string | null;
   // Inline editing props
   onNameBlur?: (exIndex: number, newName: string) => void;
   nameInputRefs?: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
@@ -963,6 +995,11 @@ function ExerciseCard({
           )}
         </div>
       </div>
+      {targetHint && (
+        <p className="text-muted-foreground px-4 pt-1 text-xs sm:px-5">
+          Target: <span className="font-medium">{targetHint}</span>
+        </p>
+      )}
       {/* Scrollable sets area */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 sm:px-5 sm:pb-5">
         <ExerciseSets

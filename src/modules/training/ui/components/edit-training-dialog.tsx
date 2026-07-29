@@ -20,6 +20,9 @@ type Training = {
     id: string;
     name: string;
     position: number;
+    targetSets: number | null;
+    targetRepsMin: number | null;
+    targetRepsMax: number | null;
   }[];
 };
 
@@ -32,6 +35,9 @@ export function EditTrainingDialog({ training }: { training: Training }) {
     exercises: training.exercises.map((e) => ({
       id: e.id,
       name: e.name,
+      targetSets: e.targetSets,
+      targetRepsMin: e.targetRepsMin,
+      targetRepsMax: e.targetRepsMax,
     })),
   };
 

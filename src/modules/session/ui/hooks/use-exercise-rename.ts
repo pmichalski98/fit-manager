@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { updateTraining } from "@/modules/training/actions";
 import type { StrengthSessionFormValues } from "@/modules/session/schemas";
 
-type TemplateExercise = { id: string; name: string; position: number };
+type TemplateExercise = {
+  id: string;
+  name: string;
+  position: number;
+  targetSets: number | null;
+  targetRepsMin: number | null;
+  targetRepsMax: number | null;
+};
 type Template = { name: string; exercises: TemplateExercise[] };
 
 type RenameConfirm = {
@@ -61,6 +68,9 @@ export function useExerciseRename({
         exercises: updated.map((e, i) => ({
           id: e.id,
           name: e.name,
+          targetSets: e.targetSets,
+          targetRepsMin: e.targetRepsMin,
+          targetRepsMax: e.targetRepsMax,
           ...(i === exIndex ? { replace } : {}),
         })),
       }).catch(() => toast.error("Failed to save exercise changes"));

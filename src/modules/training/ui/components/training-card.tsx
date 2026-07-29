@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { formatExerciseTarget } from "@/modules/training/lib/format-target";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { DeleteTrainingButton } from "../components/delete-training-button";
@@ -9,6 +10,9 @@ type StrengthExercise = {
   id: string;
   position: number;
   name: string;
+  targetSets: number | null;
+  targetRepsMin: number | null;
+  targetRepsMax: number | null;
 };
 
 const formatTrainingType = (type: string) =>
@@ -79,14 +83,22 @@ export function TrainingCard({ training }: TrainingCardProps) {
                 Preview
               </p>
               <div className="flex flex-wrap gap-2">
-                {exercises.map((exercise) => (
-                  <span
-                    key={exercise.id}
-                    className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-xs font-medium"
-                  >
-                    {exercise.position + 1}. {exercise.name}
-                  </span>
-                ))}
+                {exercises.map((exercise) => {
+                  const target = formatExerciseTarget(exercise);
+                  return (
+                    <span
+                      key={exercise.id}
+                      className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-xs font-medium"
+                    >
+                      {exercise.position + 1}. {exercise.name}
+                      {target && (
+                        <span className="text-muted-foreground ml-1.5 font-normal">
+                          {target}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ) : (

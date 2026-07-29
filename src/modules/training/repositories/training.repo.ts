@@ -8,11 +8,17 @@ import {
 } from "@/server/db/schema";
 import { and, eq, inArray, max } from "drizzle-orm";
 
+type ExerciseTargets = {
+  targetSets?: number | null;
+  targetRepsMin?: number | null;
+  targetRepsMax?: number | null;
+};
+
 export type CreateTrainingValues = {
   userId: string;
   name: string;
   type: (typeof trainingTypeEnum.enumValues)[number];
-  exercises: Array<{ name: string }>;
+  exercises: Array<{ name: string } & ExerciseTargets>;
 };
 
 export type UpdateTrainingValues = {
@@ -20,7 +26,9 @@ export type UpdateTrainingValues = {
   userId: string;
   name: string;
   type: (typeof trainingTypeEnum.enumValues)[number];
-  exercises: Array<{ id?: string; name: string; replace?: boolean }>;
+  exercises: Array<
+    { id?: string; name: string; replace?: boolean } & ExerciseTargets
+  >;
 };
 
 class TrainingRepository {
@@ -42,6 +50,9 @@ class TrainingRepository {
             trainingId: createdTraining.id,
             name: ex.name,
             position: idx,
+            targetSets: ex.targetSets ?? null,
+            targetRepsMin: ex.targetRepsMin ?? null,
+            targetRepsMax: ex.targetRepsMax ?? null,
           })),
         );
       }
@@ -125,6 +136,9 @@ class TrainingRepository {
                 .set({
                   name: ex.name,
                   position: i,
+                  targetSets: ex.targetSets ?? null,
+                  targetRepsMin: ex.targetRepsMin ?? null,
+                  targetRepsMax: ex.targetRepsMax ?? null,
                   updatedAt: new Date(),
                 })
                 .where(eq(trainingExercise.id, ex.id));
@@ -135,6 +149,9 @@ class TrainingRepository {
                 .set({
                   name: ex.name,
                   position: i,
+                  targetSets: ex.targetSets ?? null,
+                  targetRepsMin: ex.targetRepsMin ?? null,
+                  targetRepsMax: ex.targetRepsMax ?? null,
                   updatedAt: new Date(),
                 })
                 .where(eq(trainingExercise.id, ex.id));
@@ -145,6 +162,9 @@ class TrainingRepository {
               trainingId: values.id,
               name: ex.name,
               position: i,
+              targetSets: ex.targetSets ?? null,
+              targetRepsMin: ex.targetRepsMin ?? null,
+              targetRepsMax: ex.targetRepsMax ?? null,
             });
           }
         }

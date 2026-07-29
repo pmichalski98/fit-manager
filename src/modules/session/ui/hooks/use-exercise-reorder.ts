@@ -12,7 +12,14 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { updateTraining } from "@/modules/training/actions";
 import type { StrengthSessionFormValues } from "@/modules/session/schemas";
 
-type TemplateExercise = { id: string; name: string; position: number };
+type TemplateExercise = {
+  id: string;
+  name: string;
+  position: number;
+  targetSets: number | null;
+  targetRepsMin: number | null;
+  targetRepsMax: number | null;
+};
 type Template = { name: string; exercises: TemplateExercise[] };
 
 /** Higher than default to avoid conflicts with editable name inputs */
@@ -64,7 +71,13 @@ export function useExerciseReorder({
       void updateTraining(trainingId, {
         name: currentTemplate.name,
         type: "strength",
-        exercises: newExercises.map((e) => ({ id: e.id, name: e.name })),
+        exercises: newExercises.map((e) => ({
+          id: e.id,
+          name: e.name,
+          targetSets: e.targetSets,
+          targetRepsMin: e.targetRepsMin,
+          targetRepsMax: e.targetRepsMax,
+        })),
       }).catch(() => toast.error("Failed to save exercise changes"));
 
       remapProgress(fromIndex, toIndex, length, mode);

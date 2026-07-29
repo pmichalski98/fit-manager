@@ -68,7 +68,9 @@ export function TrainingForm({
     defaultValues: defaultValues ?? {
       type: "cardio",
       name: "",
-      exercises: [{ name: "" }],
+      exercises: [
+        { name: "", targetSets: null, targetRepsMin: null, targetRepsMax: null },
+      ],
     },
   });
 
@@ -247,7 +249,14 @@ export function TrainingForm({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ name: "" })}
+                  onClick={() =>
+                    append({
+                      name: "",
+                      targetSets: null,
+                      targetRepsMin: null,
+                      targetRepsMax: null,
+                    })
+                  }
                 >
                   <Plus className="size-4" /> Add exercise
                 </Button>

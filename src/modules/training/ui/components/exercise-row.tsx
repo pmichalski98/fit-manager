@@ -49,7 +49,7 @@ export function ExerciseRow({
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
+    <div ref={setNodeRef} style={style} className="flex items-start gap-2">
       <button
         type="button"
         className="text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-grab rounded-md border p-2"
@@ -58,19 +58,83 @@ export function ExerciseRow({
       >
         <GripVertical className="size-4" />
       </button>
-      <FormField
-        control={control}
-        name={`exercises.${index}.name` as const}
-        render={({ field }) => (
-          <FormItem className="flex-1">
-            <FormLabel className="sr-only">Exercise name</FormLabel>
-            <FormControl>
-              <Input placeholder={`Exercise #${index + 1}`} {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="flex-1 space-y-2">
+        <FormField
+          control={control}
+          name={`exercises.${index}.name` as const}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="sr-only">Exercise name</FormLabel>
+              <FormControl>
+                <Input placeholder={`Exercise #${index + 1}`} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="grid grid-cols-3 gap-2">
+          <FormField
+            control={control}
+            name={`exercises.${index}.targetSets` as const}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="sr-only">Target sets</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    placeholder="Sets"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`exercises.${index}.targetRepsMin` as const}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="sr-only">Min reps</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    placeholder="Min reps"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`exercises.${index}.targetRepsMax` as const}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="sr-only">Max reps</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    placeholder="Max reps"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogTrigger asChild>
