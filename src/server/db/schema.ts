@@ -1,7 +1,6 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { relations } from "drizzle-orm";
 import {
   index,
   pgEnum,
@@ -27,15 +26,6 @@ export const user = createTable("user", (d) => ({
     .notNull(),
   image: d.text("image"),
   caloricGoal: d.integer("caloric_goal"),
-  proteinGoal: d.integer("protein_goal"),
-  carbsGoal: d.integer("carbs_goal"),
-  fatGoal: d.integer("fat_goal"),
-  fiberGoal: d.integer("fiber_goal"),
-  enabledMealTypes: d
-    .jsonb("enabled_meal_types")
-    .$type<string[]>()
-    .notNull()
-    .default(["breakfast", "lunch", "dinner", "snack"]),
   createdAt: d
     .timestamp("created_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
@@ -94,7 +84,7 @@ export const verification = createTable("verification", (d) => ({
     .notNull(),
 }));
 
-// Daily log: one per user per day for weight and calories
+// Daily log: one per user per day for weight, calories and macros
 export const dailyLog = createTable(
   "daily_log",
   (d) => ({
@@ -106,6 +96,11 @@ export const dailyLog = createTable(
     date: d.date("date").notNull(),
     weight: d.numeric("weight", { precision: 5, scale: 1 }),
     kcal: d.integer("kcal"),
+    // Macros in grams, synced from Fitatu
+    proteinG: d.integer("protein_g"),
+    carbsG: d.integer("carbs_g"),
+    fatG: d.integer("fat_g"),
+    fiberG: d.integer("fiber_g"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),
@@ -339,178 +334,3 @@ export const trainingSessionCardio = createTable(
 );
 
 export type TrainingSessionCardio = typeof trainingSessionCardio.$inferSelect;
-
-// ─── Food Tracking ───────────────────────────────────────────────────────────
-
-export const shoppingCategory = createTable(
-  "shopping_category",
-  (d) => ({
-    id: d.uuid("id").primaryKey().defaultRandom(),
-    userId: d
-      .text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: d.text("name").notNull(),
-    position: d.integer("position").notNull(),
-    createdAt: d.timestamp("created_at").notNull().defaultNow(),
-    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  }),
-  (t) => [index("shopping_category_user_position_idx").on(t.userId, t.position)],
-);
-
-export type ShoppingCategory = typeof shoppingCategory.$inferSelect;
-
-export const foodSourceEnum = pgEnum("food_source", [
-  "openfoodfacts",
-  "ai_estimate",
-  "manual",
-]);
-
-export const foodProduct = createTable(
-  "food_product",
-  (d) => ({
-    id: d.uuid("id").primaryKey().defaultRandom(),
-    userId: d
-      .text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: d.text("name").notNull(),
-    brand: d.text("brand"),
-    categoryId: d
-      .uuid("category_id")
-      .references(() => shoppingCategory.id, { onDelete: "set null" }),
-    source: foodSourceEnum("source").notNull(),
-    sourceId: d.text("source_id"),
-    imageUrl: d.text("image_url"),
-    isVerified: d.boolean("is_verified").notNull().default(false),
-    kcalPer100g: d.numeric("kcal_per_100g", { precision: 7, scale: 2 }).notNull(),
-    proteinPer100g: d.numeric("protein_per_100g", { precision: 7, scale: 2 }).notNull(),
-    carbsPer100g: d.numeric("carbs_per_100g", { precision: 7, scale: 2 }).notNull(),
-    fatPer100g: d.numeric("fat_per_100g", { precision: 7, scale: 2 }).notNull(),
-    fiberPer100g: d.numeric("fiber_per_100g", { precision: 7, scale: 2 }),
-    defaultServingG: d.integer("default_serving_g").notNull().default(100),
-    portionLabel: d.text("portion_label"),
-    createdAt: d.timestamp("created_at").notNull().defaultNow(),
-    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  }),
-  (t) => [
-    index("food_product_user_name_idx").on(t.userId, t.name),
-    uniqueIndex("food_product_user_source_id_unique").on(
-      t.userId,
-      t.source,
-      t.sourceId,
-    ),
-  ],
-);
-
-export type FoodProduct = typeof foodProduct.$inferSelect;
-
-export const mealTypeEnum = pgEnum("meal_type", [
-  "breakfast",
-  "lunch",
-  "dinner",
-  "snack",
-]);
-
-export const mealEntry = createTable(
-  "meal_entry",
-  (d) => ({
-    id: d.uuid("id").primaryKey().defaultRandom(),
-    userId: d
-      .text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    date: d.date("date").notNull(),
-    mealType: mealTypeEnum("meal_type").notNull(),
-    foodProductId: d
-      .uuid("food_product_id")
-      .notNull()
-      .references(() => foodProduct.id, { onDelete: "cascade" }),
-    amountG: d.numeric("amount_g", { precision: 7, scale: 1 }).notNull(),
-    notes: d.text("notes"),
-    kcal: d.numeric("kcal", { precision: 7, scale: 1 }),
-    protein: d.numeric("protein", { precision: 7, scale: 2 }),
-    carbs: d.numeric("carbs", { precision: 7, scale: 2 }),
-    fat: d.numeric("fat", { precision: 7, scale: 2 }),
-    fiber: d.numeric("fiber", { precision: 7, scale: 2 }),
-    position: d.integer("position").notNull().default(0),
-    createdAt: d.timestamp("created_at").notNull().defaultNow(),
-    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  }),
-  (t) => [
-    index("meal_entry_user_date_idx").on(t.userId, t.date),
-    index("meal_entry_user_date_meal_idx").on(t.userId, t.date, t.mealType),
-  ],
-);
-
-export type MealEntry = typeof mealEntry.$inferSelect;
-
-export const mealTemplate = createTable(
-  "meal_template",
-  (d) => ({
-    id: d.uuid("id").primaryKey().defaultRandom(),
-    userId: d
-      .text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: d.text("name").notNull(),
-    mealType: mealTypeEnum("meal_type"),
-    createdAt: d.timestamp("created_at").notNull().defaultNow(),
-    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  }),
-  (t) => [index("meal_template_user_idx").on(t.userId)],
-);
-
-export type MealTemplate = typeof mealTemplate.$inferSelect;
-
-export const mealTemplateItem = createTable(
-  "meal_template_item",
-  (d) => ({
-    id: d.uuid("id").primaryKey().defaultRandom(),
-    templateId: d
-      .uuid("template_id")
-      .notNull()
-      .references(() => mealTemplate.id, { onDelete: "cascade" }),
-    foodProductId: d
-      .uuid("food_product_id")
-      .notNull()
-      .references(() => foodProduct.id, { onDelete: "cascade" }),
-    amountG: d.numeric("amount_g", { precision: 7, scale: 1 }).notNull(),
-    position: d.integer("position").notNull().default(0),
-    createdAt: d.timestamp("created_at").notNull().defaultNow(),
-    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
-  }),
-);
-
-export type MealTemplateItem = typeof mealTemplateItem.$inferSelect;
-
-// ─── Relations ───────────────────────────────────────────────────────────────
-
-export const mealEntryRelations = relations(mealEntry, ({ one }) => ({
-  product: one(foodProduct, {
-    fields: [mealEntry.foodProductId],
-    references: [foodProduct.id],
-  }),
-}));
-
-export const foodProductRelations = relations(foodProduct, ({ one }) => ({
-  category: one(shoppingCategory, {
-    fields: [foodProduct.categoryId],
-    references: [shoppingCategory.id],
-  }),
-}));
-
-export const mealTemplateRelations = relations(mealTemplate, ({ many }) => ({
-  items: many(mealTemplateItem),
-}));
-
-export const mealTemplateItemRelations = relations(mealTemplateItem, ({ one }) => ({
-  template: one(mealTemplate, {
-    fields: [mealTemplateItem.templateId],
-    references: [mealTemplate.id],
-  }),
-  product: one(foodProduct, {
-    fields: [mealTemplateItem.foodProductId],
-    references: [foodProduct.id],
-  }),
-}));
