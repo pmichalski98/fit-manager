@@ -2,6 +2,7 @@ import {
   findInProgressSession,
   findLatestCardioSessionWithMetrics,
   findLatestStrengthSessionWithDetails,
+  getExerciseRecords,
   startStrengthSession,
 } from "@/modules/session/actions";
 import { CardioSessionView } from "@/modules/session/ui/views/cardio-session-view";
@@ -18,10 +19,12 @@ export default async function TrainingSessionPage(props: Props) {
   if (!trainingTemplate) notFound();
 
   if (trainingTemplate.type === "strength") {
-    const [lastTrainingSession, inProgress] = await Promise.all([
-      findLatestStrengthSessionWithDetails(trainingTemplate.id),
-      findInProgressSession(trainingTemplate.id),
-    ]);
+    const [lastTrainingSession, inProgress, exerciseRecords] =
+      await Promise.all([
+        findLatestStrengthSessionWithDetails(trainingTemplate.id),
+        findInProgressSession(trainingTemplate.id),
+        getExerciseRecords(trainingTemplate.id),
+      ]);
 
     // If no in-progress session, create one
     const sessionInfo = inProgress
@@ -35,6 +38,7 @@ export default async function TrainingSessionPage(props: Props) {
         trainingId={params.id}
         sessionId={sessionInfo.sessionId}
         inProgress={inProgress}
+        records={exerciseRecords}
       />
     );
   }

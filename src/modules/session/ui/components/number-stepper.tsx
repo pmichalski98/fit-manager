@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Delta = "up" | "down" | "equal" | "neutral";
-
 interface NumberStepperProps {
   value: number | null | undefined;
   onChange: (value: number | null) => void;
@@ -17,16 +15,6 @@ interface NumberStepperProps {
   previousValue?: number;
   placeholder?: string;
   inputMode?: "numeric" | "decimal";
-}
-
-function compare(
-  current: number | null | undefined,
-  previous: number | undefined,
-): Delta {
-  if (previous == null || current == null) return "neutral";
-  if (current > previous) return "up";
-  if (current < previous) return "down";
-  return "equal";
 }
 
 export function NumberStepper({
@@ -48,7 +36,6 @@ export function NumberStepper({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const numericValue = typeof value === "number" ? value : null;
-  const delta = compare(numericValue, previousValue);
 
   const clamp = useCallback(
     (v: number) => Math.min(max, Math.max(min, v)),
@@ -58,9 +45,7 @@ export function NumberStepper({
   const adjust = useCallback(
     (direction: 1 | -1) => {
       const base = numericValue ?? 0;
-      const next = clamp(
-        Math.round((base + direction * step) * 100) / 100,
-      );
+      const next = clamp(Math.round((base + direction * step) * 100) / 100);
       onChange(next);
     },
     [numericValue, step, clamp, onChange],
@@ -69,17 +54,14 @@ export function NumberStepper({
   const adjustRef = useRef(adjust);
   adjustRef.current = adjust;
 
-  const startHold = useCallback(
-    (direction: 1 | -1) => {
-      timeoutRef.current = setTimeout(() => {
-        intervalRef.current = setInterval(
-          () => adjustRef.current(direction),
-          100,
-        );
-      }, 300);
-    },
-    [],
-  );
+  const startHold = useCallback((direction: 1 | -1) => {
+    timeoutRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(
+        () => adjustRef.current(direction),
+        100,
+      );
+    }, 300);
+  }, []);
 
   const stopHold = useCallback(() => {
     if (timeoutRef.current) {
@@ -122,7 +104,7 @@ export function NumberStepper({
       ? Number.isInteger(numericValue)
         ? String(numericValue)
         : numericValue.toFixed(1)
-      : placeholder ?? "—";
+      : (placeholder ?? "—");
 
   const atMin = numericValue != null && numericValue <= min;
   const atMax = numericValue != null && numericValue >= max;
@@ -130,32 +112,19 @@ export function NumberStepper({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
+        <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
           {label}
         </span>
         {previousValue != null && (
-          <span
-            className={cn(
-              "text-[10px] tabular-nums",
-              delta === "up"
-                ? "text-emerald-500"
-                : delta === "down"
-                  ? "text-rose-400"
-                  : "text-muted-foreground/60",
-            )}
-          >
-            prev {previousValue === 0 && label === "Weight" ? "BW" : previousValue}
+          <span className="text-muted-foreground/60 text-[10px] tabular-nums">
+            prev{" "}
+            {previousValue === 0 && label === "Weight" ? "BW" : previousValue}
           </span>
         )}
       </div>
       <div
         className={cn(
-          "flex items-center overflow-hidden rounded-xl transition-all",
-          delta === "up"
-            ? "bg-emerald-500/10 ring-1 ring-emerald-500/30"
-            : delta === "down"
-              ? "bg-rose-500/10 ring-1 ring-rose-500/30"
-              : "bg-muted/60 dark:bg-muted/40 ring-1 ring-border",
+          "bg-muted/60 dark:bg-muted/40 ring-border flex items-center overflow-hidden rounded-xl ring-1 transition-all",
           disabled && "opacity-40",
         )}
       >
@@ -163,7 +132,7 @@ export function NumberStepper({
           type="button"
           aria-label={`Decrease ${label}`}
           disabled={disabled || atMin}
-          className="flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground transition-colors active:bg-primary/20 active:text-primary disabled:pointer-events-none disabled:opacity-30"
+          className="text-muted-foreground active:bg-primary/20 active:text-primary flex h-11 w-11 shrink-0 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
           onClick={() => adjust(-1)}
           onPointerDown={() => startHold(-1)}
           onPointerUp={stopHold}
@@ -211,7 +180,7 @@ export function NumberStepper({
           type="button"
           aria-label={`Increase ${label}`}
           disabled={disabled || atMax}
-          className="flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground transition-colors active:bg-primary/20 active:text-primary disabled:pointer-events-none disabled:opacity-30"
+          className="text-muted-foreground active:bg-primary/20 active:text-primary flex h-11 w-11 shrink-0 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
           onClick={() => adjust(1)}
           onPointerDown={() => startHold(1)}
           onPointerUp={stopHold}

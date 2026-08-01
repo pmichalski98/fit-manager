@@ -24,6 +24,9 @@ import {
   GripVertical,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Trophy,
 } from "lucide-react";
 import { DndContext } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
@@ -61,6 +64,11 @@ import { useExerciseReorder } from "@/modules/session/ui/hooks/use-exercise-reor
 import { useHorizontalScroll } from "@/modules/session/ui/hooks/use-horizontal-scroll";
 import { RenameExerciseDialog } from "@/modules/training/ui/components/rename-exercise-dialog";
 import { formatExerciseTarget } from "@/modules/training/lib/format-target";
+import {
+  getSetProgress,
+  isSetRecord,
+  type ExerciseRecord,
+} from "@/modules/session/lib/set-progress";
 import { cn } from "@/lib/utils";
 
 /** Minimum exercise count before scroll navigation (arrows + dots) is shown */
@@ -90,6 +98,7 @@ type Props = {
   trainingId: string;
   sessionId: string;
   inProgress: InProgressSession | null;
+  records: Record<string, ExerciseRecord>;
 };
 
 export function StrengthSessionView({
@@ -98,6 +107,7 @@ export function StrengthSessionView({
   trainingId,
   sessionId,
   inProgress,
+  records,
 }: Props) {
   const router = useRouter();
   const isResuming = inProgress !== null && inProgress.exercises.length > 0;
@@ -156,7 +166,9 @@ export function StrengthSessionView({
     }
 
     return template.exercises.map((e) => {
-      const lastEx = last?.exercises.find((le) => le.templateExerciseId === e.id);
+      const lastEx = last?.exercises.find(
+        (le) => le.templateExerciseId === e.id,
+      );
       const sets = lastEx?.sets?.length
         ? lastEx.sets.map((s, idx) => ({
             setIndex: idx,
@@ -293,9 +305,15 @@ export function StrengthSessionView({
   );
 
   const exerciseRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const showScrollNav = exercisesArr.fields.length >= MIN_EXERCISES_FOR_SCROLL_NAV;
-  const { scrollContainerRef, canScrollLeft, canScrollRight, visibleRange, scrollCards } =
-    useHorizontalScroll(!isMobile && showScrollNav);
+  const showScrollNav =
+    exercisesArr.fields.length >= MIN_EXERCISES_FOR_SCROLL_NAV;
+  const {
+    scrollContainerRef,
+    canScrollLeft,
+    canScrollRight,
+    visibleRange,
+    scrollCards,
+  } = useHorizontalScroll(!isMobile && showScrollNav);
 
   const handleSidebarClick = useCallback((index: number) => {
     exerciseRefs.current[index]?.scrollIntoView({
@@ -318,7 +336,12 @@ export function StrengthSessionView({
     handleExerciseNameBlur,
     handleRenameDecision,
     handleRenameDismiss,
-  } = useExerciseRename({ currentTemplate, setCurrentTemplate, form, trainingId });
+  } = useExerciseRename({
+    currentTemplate,
+    setCurrentTemplate,
+    form,
+    trainingId,
+  });
 
   const { dndSensors, handleDragEnd, handlePositionSwap } = useExerciseReorder({
     exercisesArr,
@@ -329,12 +352,18 @@ export function StrengthSessionView({
     trainingId,
     isRenaming,
     remapProgress: useCallback(
-      (oldIndex: number, newIndex: number, length: number, mode: "move" | "swap") => {
+      (
+        oldIndex: number,
+        newIndex: number,
+        length: number,
+        mode: "move" | "swap",
+      ) => {
         const remap = (prev: Record<number, unknown>) => {
           const next: Record<number, unknown> = {};
           if (mode === "swap") {
             for (let i = 0; i < length; i++) {
-              const src = i === oldIndex ? newIndex : i === newIndex ? oldIndex : i;
+              const src =
+                i === oldIndex ? newIndex : i === newIndex ? oldIndex : i;
               if (prev[src] !== undefined) next[i] = prev[src];
             }
           } else {
@@ -352,12 +381,8 @@ export function StrengthSessionView({
           }
           return next;
         };
-        setProgressByExercise(
-          (prev) => remap(prev) as typeof prev,
-        );
-        setMostRecentDoneByExercise(
-          (prev) => remap(prev) as typeof prev,
-        );
+        setProgressByExercise((prev) => remap(prev) as typeof prev);
+        setMostRecentDoneByExercise((prev) => remap(prev) as typeof prev);
         setDoneTrigger((c) => c + 1);
       },
       [setProgressByExercise, setMostRecentDoneByExercise, setDoneTrigger],
@@ -430,7 +455,10 @@ export function StrengthSessionView({
               const r = s.reps ?? 0;
               return sum + w * r;
             }, 0) ?? 0;
-          const prevSets = (ex.templateExerciseId ? prevSetsByExerciseId[ex.templateExerciseId] : undefined) ?? [];
+          const prevSets =
+            (ex.templateExerciseId
+              ? prevSetsByExerciseId[ex.templateExerciseId]
+              : undefined) ?? [];
           const prevVolume =
             prevSets?.reduce((sum, s) => {
               const w = s.weight ?? 0;
@@ -492,7 +520,9 @@ export function StrengthSessionView({
       <div className="bg-background/80 border-border/50 sticky top-0 z-40 -mx-4 -mt-[calc(var(--safe-top)+1.5rem)] border-b px-4 pt-[calc(var(--safe-top)+1.5rem)] pb-3 backdrop-blur-xl md:-mx-6 md:-mt-6 md:px-6 md:pt-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-bold">{currentTemplate.name}</h1>
+            <h1 className="truncate text-lg font-bold">
+              {currentTemplate.name}
+            </h1>
             <SaveStatusIndicator status={saveStatus} />
           </div>
           <div className="flex items-center gap-2">
@@ -507,9 +537,9 @@ export function StrengthSessionView({
         </div>
       </div>
 
-      {showBanner && (
-        isResuming ? (
-          <Alert className="border-blue-500/30 bg-blue-500/10 animate-in fade-in duration-200">
+      {showBanner &&
+        (isResuming ? (
+          <Alert className="animate-in fade-in border-blue-500/30 bg-blue-500/10 duration-200">
             <RotateCcw className="h-4 w-4" />
             <AlertDescription>
               <span className="font-medium">Resuming session</span>{" "}
@@ -543,8 +573,7 @@ export function StrengthSessionView({
               </span>
             </AlertDescription>
           </Alert>
-        ) : null
-      )}
+        ) : null)}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -569,7 +598,10 @@ export function StrengthSessionView({
                     field={field}
                     exIndex={exIndex}
                     control={form.control}
-                    prevSets={prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []}
+                    prevSets={
+                      prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []
+                    }
+                    record={records[field.templateExerciseId ?? ""]}
                     mostRecentDoneByExercise={mostRecentDoneByExercise}
                     sessionStartAtMs={sessionStartAtMs}
                     onMostRecentChange={onExerciseMostRecentChange}
@@ -619,7 +651,11 @@ export function StrengthSessionView({
                 </Button>
               </ExerciseSidebar>
               <div className="flex min-w-0 flex-1 flex-col">
-                <DndContext id="session-exercises" sensors={dndSensors} onDragEnd={handleDragEnd}>
+                <DndContext
+                  id="session-exercises"
+                  sensors={dndSensors}
+                  onDragEnd={handleDragEnd}
+                >
                   <SortableContext
                     items={exercisesArr.fields.map((f) => f.id)}
                     strategy={rectSortingStrategy}
@@ -640,8 +676,15 @@ export function StrengthSessionView({
                               field={field}
                               exIndex={exIndex}
                               control={form.control}
-                              prevSets={prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []}
-                              mostRecentDoneByExercise={mostRecentDoneByExercise}
+                              prevSets={
+                                prevSetsByExerciseId[
+                                  field.templateExerciseId ?? ""
+                                ] ?? []
+                              }
+                              record={records[field.templateExerciseId ?? ""]}
+                              mostRecentDoneByExercise={
+                                mostRecentDoneByExercise
+                              }
                               sessionStartAtMs={sessionStartAtMs}
                               onMostRecentChange={onExerciseMostRecentChange}
                               onProgressChange={onExerciseProgressChange}
@@ -846,6 +889,7 @@ function ExerciseCard({
   exIndex,
   control,
   prevSets,
+  record,
   mostRecentDoneByExercise,
   sessionStartAtMs,
   onMostRecentChange,
@@ -869,6 +913,7 @@ function ExerciseCard({
   exIndex: number;
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   prevSets: Array<{ reps: number; weight?: number }>;
+  record?: ExerciseRecord;
   mostRecentDoneByExercise: Record<number, number | null>;
   sessionStartAtMs: number;
   onMostRecentChange: (index: number, mostRecent: number | null) => void;
@@ -889,7 +934,9 @@ function ExerciseCard({
   targetHint?: string | null;
   // Inline editing props
   onNameBlur?: (exIndex: number, newName: string) => void;
-  nameInputRefs?: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
+  nameInputRefs?: React.MutableRefObject<
+    Record<number, HTMLInputElement | null>
+  >;
   dragListeners?: SyntheticListenerMap;
   onPositionSwap?: (fromIndex: number, toIndex: number) => void;
   totalExercises?: number;
@@ -930,7 +977,11 @@ function ExerciseCard({
             onFocus={(e) => e.target.select()}
             onBlur={(e) => {
               const newPos = parseInt(e.target.value, 10);
-              if (!isNaN(newPos) && newPos >= 1 && newPos <= (totalExercises ?? 1)) {
+              if (
+                !isNaN(newPos) &&
+                newPos >= 1 &&
+                newPos <= (totalExercises ?? 1)
+              ) {
                 onPositionSwap?.(exIndex, newPos - 1);
               }
               e.target.value = String(exIndex + 1);
@@ -951,7 +1002,7 @@ function ExerciseCard({
             type="text"
             defaultValue={field.name}
             tabIndex={-1}
-            className="min-w-0 flex-1 truncate border-b border-transparent bg-transparent text-base font-semibold outline-none transition-colors hover:border-border focus:border-primary"
+            className="hover:border-border focus:border-primary min-w-0 flex-1 truncate border-b border-transparent bg-transparent text-base font-semibold transition-colors outline-none"
             onBlur={(e) => onNameBlur?.(exIndex, e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") localNameRef.current?.blur();
@@ -1006,6 +1057,7 @@ function ExerciseCard({
           control={control}
           exIndex={exIndex}
           prevSets={prevSets}
+          record={record}
           prevExerciseLastDoneAt={
             exIndex > 0 ? (mostRecentDoneByExercise[exIndex - 1] ?? null) : null
           }
@@ -1028,6 +1080,7 @@ function ExerciseSets({
   control,
   exIndex,
   prevSets,
+  record,
   prevExerciseLastDoneAt,
   sessionStartAtMs,
   onMostRecentChange,
@@ -1042,6 +1095,7 @@ function ExerciseSets({
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   exIndex: number;
   prevSets: Array<{ reps: number; weight?: number }>;
+  record?: ExerciseRecord;
   prevExerciseLastDoneAt: number | null;
   sessionStartAtMs: number;
   onMostRecentChange: (index: number, mostRecent: number | null) => void;
@@ -1255,6 +1309,19 @@ function ExerciseSets({
         const isDone = !!doneMap[f.id];
         const restValue = restBySetId[f.id];
 
+        const watched = sets?.[setIdx];
+        const currentSet = {
+          reps:
+            typeof watched?.reps === "number"
+              ? watched.reps
+              : watched?.reps
+                ? Number(watched.reps)
+                : null,
+          weight: typeof watched?.weight === "number" ? watched.weight : null,
+        };
+        const progress = getSetProgress(currentSet, prevSets?.[setIdx]);
+        const isPr = isSetRecord(currentSet, record);
+
         return (
           <div
             key={f.id}
@@ -1305,15 +1372,46 @@ function ExerciseSets({
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                className="text-muted-foreground/40 hover:text-destructive p-1 transition-colors"
-                tabIndex={-1}
-                disabled={disabled}
-                onClick={() => remove(setIdx)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                {isPr && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-500"
+                    title="Personal record — best ever for this exercise"
+                  >
+                    <Trophy className="h-3 w-3" /> PR
+                  </span>
+                )}
+                {!isPr && progress.delta !== "none" && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                      progress.delta === "up"
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : progress.delta === "down"
+                          ? "bg-rose-500/10 text-rose-400"
+                          : "text-muted-foreground/60",
+                    )}
+                    title="Estimated 1RM vs same set last session"
+                  >
+                    {progress.delta === "up" && (
+                      <TrendingUp className="h-3 w-3" />
+                    )}
+                    {progress.delta === "down" && (
+                      <TrendingDown className="h-3 w-3" />
+                    )}
+                    {progress.label}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="text-muted-foreground/40 hover:text-destructive p-1 transition-colors"
+                  tabIndex={-1}
+                  disabled={disabled}
+                  onClick={() => remove(setIdx)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Steppers */}

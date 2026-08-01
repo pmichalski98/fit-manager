@@ -145,6 +145,11 @@ export async function findLatestStrengthSessionWithDetails(trainingId: string) {
   return session;
 }
 
+export async function getExerciseRecords(trainingId: string) {
+  const userId = await requireUserId();
+  return sessionRepository.getExerciseRecords(userId, trainingId);
+}
+
 export async function findLatestCardioSessionWithMetrics(trainingId: string) {
   const userId = await requireUserId();
   const session = await sessionRepository.findLatestCardioSessionWithMetrics(

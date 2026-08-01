@@ -13,6 +13,7 @@ import {
 } from "@/server/db/schema";
 import type { CardioSessionFormValues } from "../schemas";
 import type { SessionSummary } from "../types";
+import { buildExerciseRecords, type ExerciseRecord } from "../lib/set-progress";
 
 function cardioFieldsFromInput(input: CardioSessionFormValues) {
   return {
@@ -658,9 +659,7 @@ class SessionRepository {
   }
 
   async deleteSession(sessionId: string) {
-    await db
-      .delete(trainingSession)
-      .where(eq(trainingSession.id, sessionId));
+    await db.delete(trainingSession).where(eq(trainingSession.id, sessionId));
   }
 
   async getExerciseHistory(userId: string, exerciseName: string) {
@@ -695,6 +694,40 @@ class SessionRepository {
       weight: Number(r.weight),
       reps: r.reps,
     }));
+  }
+
+  async getExerciseRecords(
+    userId: string,
+    trainingId: string,
+  ): Promise<Record<string, ExerciseRecord>> {
+    // isNotNull(endAt) excludes the current in-progress session, whose sets
+    // are already in the DB via autosave and would otherwise beat themselves.
+    const rows = await db
+      .select({
+        templateExerciseId: trainingSessionExercise.templateExerciseId,
+        reps: trainingSessionSet.reps,
+        weight: trainingSessionSet.weight,
+      })
+      .from(trainingSession)
+      .innerJoin(
+        trainingSessionExercise,
+        eq(trainingSessionExercise.sessionId, trainingSession.id),
+      )
+      .innerJoin(
+        trainingSessionSet,
+        eq(trainingSessionSet.sessionExerciseId, trainingSessionExercise.id),
+      )
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          eq(trainingSession.trainingId, trainingId),
+          eq(trainingSession.type, "strength"),
+          isNotNull(trainingSession.endAt),
+          isNotNull(trainingSessionExercise.templateExerciseId),
+        ),
+      );
+
+    return buildExerciseRecords(rows);
   }
 }
 
