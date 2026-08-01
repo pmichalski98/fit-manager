@@ -9,6 +9,7 @@ export const strengthSessionSchema = z.object({
         templateExerciseId: z.string().uuid().optional().nullable(),
         name: z.string().min(1),
         position: z.coerce.number().int().nonnegative(),
+        notes: z.string().max(2000).optional().nullable(),
         sets: z
           .array(
             z.object({
@@ -29,6 +30,7 @@ export const strengthSessionSchema = z.object({
       }),
     )
     .min(1),
+  notes: z.string().max(2000).optional().nullable(),
   // Optional client-computed summary fields (persisted server-side)
   durationSec: z.coerce.number().int().positive().optional(),
   totalLoadKg: z.coerce.number().min(0).optional(),

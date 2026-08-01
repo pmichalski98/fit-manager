@@ -8,10 +8,12 @@ export type StrengthExerciseSummary = {
 export type InProgressSession = {
   sessionId: string;
   startAt: string;
+  notes: string | null;
   exercises: Array<{
     name: string;
     position: number;
     templateExerciseId: string | null;
+    notes?: string | null;
     sets: Array<{
       setIndex: number;
       reps: number | null;

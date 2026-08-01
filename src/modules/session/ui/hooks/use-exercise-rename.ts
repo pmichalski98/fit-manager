@@ -28,7 +28,9 @@ export function useExerciseRename({
   trainingId,
 }: {
   currentTemplate: Template;
-  setCurrentTemplate: React.Dispatch<React.SetStateAction<Template & { id: string }>>;
+  setCurrentTemplate: React.Dispatch<
+    React.SetStateAction<Template & { id: string }>
+  >;
   form: UseFormReturn<StrengthSessionFormValues>;
   trainingId: string;
 }) {

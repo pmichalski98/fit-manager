@@ -9,7 +9,13 @@ interface UseSessionKeyboardShortcutsOptions {
   onNavigateExercise: (index: number) => void;
 }
 
-const INTERACTIVE_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"]);
+const INTERACTIVE_TAGS = new Set([
+  "INPUT",
+  "TEXTAREA",
+  "SELECT",
+  "BUTTON",
+  "A",
+]);
 
 export function useSessionKeyboardShortcuts({
   activeExerciseIndex,

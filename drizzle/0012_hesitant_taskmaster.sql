@@ -1,0 +1,1 @@
+ALTER TABLE "fit-manager_training_session_exercise" ADD COLUMN "notes" text;

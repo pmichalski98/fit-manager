@@ -274,6 +274,7 @@ export const trainingSessionExercise = createTable(
       .references(() => trainingExercise.id, { onDelete: "set null" }),
     name: d.text("name").notNull(),
     position: d.integer("position").notNull(),
+    notes: d.text("notes"),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
   }),

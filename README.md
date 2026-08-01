@@ -1,4 +1,4 @@
-[] - maybe add notes to each exercise/training
+[X] - maybe add notes to each exercise/training
 [X] - add last trained at after training strength session complete
 [] - AI weekly summaries
 [X] - update envs on both machines

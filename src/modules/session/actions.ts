@@ -30,6 +30,7 @@ export async function startStrengthSession(trainingId: string) {
 export async function saveSessionProgress(input: {
   sessionId: string;
   exercises: InProgressSession["exercises"];
+  notes?: string | null;
 }) {
   const userId = await requireUserId();
   // Verify ownership
@@ -40,6 +41,7 @@ export async function saveSessionProgress(input: {
   await sessionRepository.upsertSessionProgress(
     input.sessionId,
     input.exercises,
+    input.notes,
   );
 }
 
@@ -89,6 +91,7 @@ export async function completeStrengthSession(
         templateExerciseId: ex.templateExerciseId,
         name: ex.name,
         position: ex.position,
+        notes: ex.notes?.trim() ? ex.notes : null,
         sets: ex.sets.map((s) => ({
           setIndex: s.setIndex,
           reps: s.reps,
@@ -96,6 +99,7 @@ export async function completeStrengthSession(
           isDone: true,
         })),
       })),
+      parsed.notes?.trim() ? parsed.notes : null,
     );
     await sessionRepository.finalizeSession(input.sessionId, {
       durationSec,
@@ -113,6 +117,7 @@ export async function completeStrengthSession(
     {
       durationSec,
       totalLoadKg,
+      notes: parsed.notes?.trim() ? parsed.notes : null,
     },
   );
   return { ok: true } as const;

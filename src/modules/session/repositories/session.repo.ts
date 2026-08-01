@@ -40,6 +40,7 @@ export type StrengthSessionPayload = Array<{
   templateExerciseId?: string | null;
   name: string;
   position: number;
+  notes?: string | null;
   sets: Array<{
     setIndex: number;
     reps: number;
@@ -72,6 +73,7 @@ class SessionRepository {
     summary?: {
       durationSec?: number | null;
       totalLoadKg?: number | null;
+      notes?: string | null;
       progress?: Array<{
         position: number;
         name: string;
@@ -98,6 +100,7 @@ class SessionRepository {
           // If existing calls pass seconds, this is a bug in existing code or schema mismatch.
           // I'll assume durationSec is converted or handled elsewhere for now as this wasn't explicitly in plan to fix existing writes, only read.
           totalLoadKg: summary?.totalLoadKg ?? null,
+          notes: summary?.notes ?? null,
         })
         .returning();
       if (!session) {
@@ -111,6 +114,7 @@ class SessionRepository {
             templateExerciseId: ex.templateExerciseId ?? null,
             name: ex.name,
             position: ex.position,
+            notes: ex.notes ?? null,
           })
           .returning();
         if (!insertedEx) {
@@ -518,6 +522,7 @@ class SessionRepository {
       templateExerciseId?: string | null;
       name: string;
       position: number;
+      notes?: string | null;
       sets: Array<{
         setIndex: number;
         reps: number | null;
@@ -525,8 +530,16 @@ class SessionRepository {
         isDone: boolean;
       }>;
     }>,
+    sessionNotes?: string | null,
   ) {
     await db.transaction(async (tx) => {
+      if (sessionNotes !== undefined) {
+        await tx
+          .update(trainingSession)
+          .set({ notes: sessionNotes })
+          .where(eq(trainingSession.id, sessionId));
+      }
+
       // Delete existing exercises (cascade deletes sets)
       await tx
         .delete(trainingSessionExercise)
@@ -541,6 +554,7 @@ class SessionRepository {
             templateExerciseId: ex.templateExerciseId ?? null,
             name: ex.name,
             position: ex.position,
+            notes: ex.notes ?? null,
           })
           .returning();
         if (!insertedEx) throw new Error("Failed to insert exercise");
@@ -644,10 +658,12 @@ class SessionRepository {
     return {
       sessionId: session.id,
       startAt: session.startAt.toISOString(),
+      notes: session.notes ?? null,
       exercises: exercises.map((ex) => ({
         name: ex.name,
         position: ex.position,
         templateExerciseId: ex.templateExerciseId,
+        notes: ex.notes ?? null,
         sets: (setsByExercise.get(ex.id) ?? []).map((s) => ({
           setIndex: s.setIndex,
           reps: s.reps,

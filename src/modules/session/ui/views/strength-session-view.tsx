@@ -27,6 +27,7 @@ import {
   TrendingUp,
   TrendingDown,
   Trophy,
+  StickyNote,
 } from "lucide-react";
 import { DndContext } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
@@ -40,6 +41,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormField } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 import { NumberStepper } from "@/modules/session/ui/components/number-stepper";
 import {
   strengthSessionSchema,
@@ -86,12 +88,13 @@ type TemplateExercise = {
 type Props = {
   template: { id: string; name: string; exercises: TemplateExercise[] };
   last: null | {
-    session: { id: string; startAt: string | Date };
+    session: { id: string; startAt: string | Date; notes?: string | null };
     exercises: Array<{
       id: string;
       templateExerciseId: string | null;
       name: string;
       position: number;
+      notes?: string | null;
       sets: Array<{ setIndex: number; reps: number; weight: string | null }>;
     }>;
   };
@@ -157,6 +160,7 @@ export function StrengthSessionView({
         templateExerciseId: e.templateExerciseId ?? undefined,
         name: e.name,
         position: e.position,
+        notes: e.notes ?? undefined,
         sets: e.sets.map((s) => ({
           setIndex: s.setIndex,
           reps: s.reps ?? 5,
@@ -205,6 +209,17 @@ export function StrengthSessionView({
     return result;
   }, [last]);
 
+  // Exercise notes from the previous session, keyed by template exercise ID
+  const prevNotesByExerciseId = useMemo<Record<string, string>>(() => {
+    const result: Record<string, string> = {};
+    if (!last?.exercises?.length) return result;
+    for (const ex of last.exercises) {
+      if (!ex.templateExerciseId || !ex.notes) continue;
+      result[ex.templateExerciseId] = ex.notes;
+    }
+    return result;
+  }, [last]);
+
   // Pre-formatted target hint (e.g. "3×8–12") per template exercise ID
   const targetHintByExerciseId = useMemo<Record<string, string | null>>(() => {
     const result: Record<string, string | null> = {};
@@ -218,7 +233,11 @@ export function StrengthSessionView({
     resolver: zodResolver(
       strengthSessionSchema,
     ) as Resolver<StrengthSessionFormValues>,
-    defaultValues: { exercises: defaultExercises, trainingId },
+    defaultValues: {
+      exercises: defaultExercises,
+      trainingId,
+      notes: inProgress?.notes ?? undefined,
+    },
   });
 
   const {
@@ -389,11 +408,16 @@ export function StrengthSessionView({
     ),
   });
 
+  const lastSessionNote = !isResuming ? (last?.session.notes ?? null) : null;
   const [showBanner, setShowBanner] = useState(true);
   useEffect(() => {
-    const t = setTimeout(() => setShowBanner(false), 3000);
+    // Give the user time to actually read a note when one is shown
+    const t = setTimeout(
+      () => setShowBanner(false),
+      lastSessionNote ? 8000 : 3000,
+    );
     return () => clearTimeout(t);
-  }, []);
+  }, [lastSessionNote]);
 
   useSessionKeyboardShortcuts({
     activeExerciseIndex,
@@ -569,6 +593,11 @@ export function StrengthSessionView({
                 })}
                 ) — adjust as needed.
               </span>
+              {lastSessionNote && (
+                <span className="text-muted-foreground mt-1 block italic">
+                  “{lastSessionNote}”
+                </span>
+              )}
             </AlertDescription>
           </Alert>
         ) : null)}
@@ -599,6 +628,10 @@ export function StrengthSessionView({
                     prevSets={
                       prevSetsByExerciseId[field.templateExerciseId ?? ""] ?? []
                     }
+                    prevNote={
+                      prevNotesByExerciseId[field.templateExerciseId ?? ""] ??
+                      null
+                    }
                     record={records[field.templateExerciseId ?? ""]}
                     mostRecentDoneByExercise={mostRecentDoneByExercise}
                     sessionStartAtMs={sessionStartAtMs}
@@ -624,6 +657,8 @@ export function StrengthSessionView({
                   />
                 ))}
               </SwipeableExerciseNav>
+
+              <SessionNotesField control={form.control} />
             </>
           ) : (
             /* Desktop/tablet: sidebar + horizontal scroll */
@@ -635,6 +670,7 @@ export function StrengthSessionView({
                 activeExerciseIndex={activeExerciseIndex}
                 onExerciseClick={handleSidebarClick}
               >
+                <SessionNotesField control={form.control} className="mb-3" />
                 <Button
                   className="w-full"
                   type="submit"
@@ -678,6 +714,11 @@ export function StrengthSessionView({
                                 prevSetsByExerciseId[
                                   field.templateExerciseId ?? ""
                                 ] ?? []
+                              }
+                              prevNote={
+                                prevNotesByExerciseId[
+                                  field.templateExerciseId ?? ""
+                                ] ?? null
                               }
                               record={records[field.templateExerciseId ?? ""]}
                               mostRecentDoneByExercise={
@@ -882,11 +923,36 @@ function SortableExerciseWrapper({
   );
 }
 
+function SessionNotesField({
+  control,
+  className,
+}: {
+  control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
+  className?: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      name="notes"
+      render={({ field }) => (
+        <Textarea
+          value={field.value ?? ""}
+          onChange={field.onChange}
+          placeholder="Session notes (optional)"
+          rows={2}
+          className={cn("bg-card resize-none text-sm", className)}
+        />
+      )}
+    />
+  );
+}
+
 function ExerciseCard({
   field,
   exIndex,
   control,
   prevSets,
+  prevNote,
   record,
   mostRecentDoneByExercise,
   sessionStartAtMs,
@@ -911,6 +977,7 @@ function ExerciseCard({
   exIndex: number;
   control: ReturnType<typeof useForm<StrengthSessionFormValues>>["control"];
   prevSets: Array<{ reps: number; weight?: number }>;
+  prevNote?: string | null;
   record?: ExerciseRecord;
   mostRecentDoneByExercise: Record<number, number | null>;
   sessionStartAtMs: number;
@@ -942,6 +1009,11 @@ function ExerciseCard({
   const isActive = activeExerciseIndex === exIndex;
   const localNameRef = useRef<HTMLInputElement>(null);
   const posInputRef = useRef<HTMLInputElement>(null);
+
+  const noteValue = useWatch({ control, name: `exercises.${exIndex}.notes` });
+  const hasNote = typeof noteValue === "string" && noteValue.length > 0;
+  // Open by default when a note was restored (resume); toggleable afterwards
+  const [notesOpen, setNotesOpen] = useState(hasNote);
 
   // Sync displayed position when exIndex changes (e.g. after another card's swap)
   useEffect(() => {
@@ -1024,6 +1096,21 @@ function ExerciseCard({
             type="button"
             variant="ghost"
             size="icon"
+            className={cn(
+              "h-8 w-8",
+              hasNote ? "text-primary" : "text-muted-foreground",
+            )}
+            tabIndex={-1}
+            disabled={isSubmitting}
+            onClick={() => setNotesOpen((v) => !v)}
+            title="Exercise notes"
+          >
+            <StickyNote className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
             tabIndex={-1}
             disabled={isSubmitting}
@@ -1048,6 +1135,29 @@ function ExerciseCard({
         <p className="text-muted-foreground px-4 pt-1 text-xs sm:px-5">
           Target: <span className="font-medium">{targetHint}</span>
         </p>
+      )}
+      {prevNote && (
+        <p className="text-muted-foreground px-4 pt-1 text-xs italic sm:px-5">
+          Last note: “{prevNote}”
+        </p>
+      )}
+      {notesOpen && (
+        <div className="px-4 pt-2 sm:px-5">
+          <FormField
+            control={control}
+            name={`exercises.${exIndex}.notes`}
+            render={({ field: noteField }) => (
+              <Textarea
+                value={noteField.value ?? ""}
+                onChange={noteField.onChange}
+                placeholder="Notes for this exercise…"
+                rows={2}
+                disabled={isSubmitting}
+                className="resize-none text-sm"
+              />
+            )}
+          />
+        </div>
       )}
       {/* Scrollable sets area */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 sm:px-5 sm:pb-5">

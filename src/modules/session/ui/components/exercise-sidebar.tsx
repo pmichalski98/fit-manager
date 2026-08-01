@@ -23,7 +23,7 @@ export function ExerciseSidebar({
       className="sticky top-32 hidden h-fit w-60 shrink-0 lg:block"
       aria-label="Exercises"
     >
-      <div className="text-muted-foreground mb-2 text-[11px] font-medium uppercase tracking-wide">
+      <div className="text-muted-foreground mb-2 text-[11px] font-medium tracking-wide uppercase">
         Exercises
       </div>
       <div className="flex flex-col gap-0.5">
@@ -60,21 +60,31 @@ export function ExerciseSidebar({
                         ? "bg-primary/5"
                         : "",
                 )}
-                style={{ width: fillPercent > 0 ? `${fillPercent}%` : isActive ? "100%" : "0%" }}
+                style={{
+                  width:
+                    fillPercent > 0
+                      ? `${fillPercent}%`
+                      : isActive
+                        ? "100%"
+                        : "0%",
+                }}
               />
 
               {/* Status indicator */}
               <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
                 {isComplete ? (
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                    <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+                  <div className="bg-primary flex h-5 w-5 items-center justify-center rounded-full">
+                    <Check
+                      className="text-primary-foreground h-3 w-3"
+                      strokeWidth={3}
+                    />
                   </div>
                 ) : (
-                  <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
+                  <div className="bg-muted-foreground/25 h-2.5 w-2.5 rounded-full" />
                 )}
               </div>
 
-              <span className="relative min-w-0 flex-1 break-words text-[13px] leading-tight">
+              <span className="relative min-w-0 flex-1 text-[13px] leading-tight break-words">
                 {ex.name}
               </span>
               {setLabel && (

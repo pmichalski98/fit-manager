@@ -12,8 +12,7 @@ const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 
 function isStaleClientError(error: unknown): boolean {
-  const msg =
-    error instanceof Error ? error.message : String(error);
+  const msg = error instanceof Error ? error.message : String(error);
   return (
     msg.includes("not found") ||
     msg.includes("Failed to find server action") ||
@@ -40,6 +39,7 @@ export function useAutoSave(
   }, []);
 
   const exercises = useWatch({ control, name: "exercises" });
+  const sessionNotes = useWatch({ control, name: "notes" });
 
   const doSave = useCallback(async () => {
     if (!exercises?.length) return;
@@ -51,6 +51,7 @@ export function useAutoSave(
           templateExerciseId: ex.templateExerciseId ?? null,
           name: ex.name,
           position: ex.position,
+          notes: ex.notes?.trim() ? ex.notes : null,
           sets: (ex.sets ?? []).map((s) => ({
             setIndex: s.setIndex,
             reps: typeof s.reps === "number" ? s.reps : null,
@@ -64,7 +65,11 @@ export function useAutoSave(
         }),
       );
 
-      await saveSessionProgress({ sessionId, exercises: payload });
+      await saveSessionProgress({
+        sessionId,
+        exercises: payload,
+        notes: sessionNotes?.trim() ? sessionNotes : null,
+      });
       if (isMountedRef.current) {
         setSaveStatus("saved");
         retriesRef.current = 0;
@@ -85,13 +90,16 @@ export function useAutoSave(
           `[auto-save] Retrying (${retriesRef.current}/${MAX_RETRIES})...`,
         );
         setSaveStatus("saving");
-        timerRef.current = setTimeout(() => doSaveRef.current(), RETRY_DELAY_MS);
+        timerRef.current = setTimeout(
+          () => doSaveRef.current(),
+          RETRY_DELAY_MS,
+        );
       } else {
         setSaveStatus("error");
         retriesRef.current = 0;
       }
     }
-  }, [sessionId, exercises, doneMapRef]);
+  }, [sessionId, exercises, sessionNotes, doneMapRef]);
 
   // Debounce saves — 1 second after last change
   // doneTrigger increments on every done-checkbox toggle to trigger a save
@@ -108,7 +116,7 @@ export function useAutoSave(
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => doSaveRef.current(), 1000);
-  }, [exercises, doneTrigger]);
+  }, [exercises, sessionNotes, doneTrigger]);
 
   return { saveStatus, saveNow: doSave };
 }

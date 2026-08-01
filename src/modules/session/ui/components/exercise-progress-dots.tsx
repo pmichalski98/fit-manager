@@ -36,9 +36,7 @@ export function ExerciseProgressDots({
               aria-label={`Go to ${exerciseNames[i]}`}
               className={cn(
                 "relative h-1.5 flex-1 overflow-hidden rounded-full transition-all",
-                isCurrent
-                  ? "bg-primary/20"
-                  : "bg-muted-foreground/15",
+                isCurrent ? "bg-primary/20" : "bg-muted-foreground/15",
               )}
             >
               <div
@@ -63,7 +61,7 @@ export function ExerciseProgressDots({
           {exerciseNames[currentIndex] ?? ""}
         </span>
         {setLabel && (
-          <span className="text-muted-foreground rounded-md bg-muted/60 px-2 py-0.5 text-xs tabular-nums">
+          <span className="text-muted-foreground bg-muted/60 rounded-md px-2 py-0.5 text-xs tabular-nums">
             Set {setLabel}
           </span>
         )}

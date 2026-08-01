@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
 interface SwipeableExerciseNavProps {
   children: ReactNode[];
@@ -28,7 +23,11 @@ export function SwipeableExerciseNav({
     if (!target || !containerRef.current) return;
 
     isScrollingProgrammatically.current = true;
-    target.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+    target.scrollIntoView({
+      behavior: "smooth",
+      inline: "start",
+      block: "nearest",
+    });
 
     // Reset flag after scroll settles
     const timer = setTimeout(() => {

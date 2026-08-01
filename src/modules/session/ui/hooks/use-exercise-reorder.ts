@@ -39,10 +39,17 @@ export function useExerciseReorder({
   form: UseFormReturn<StrengthSessionFormValues>;
   doneMapRef: React.MutableRefObject<Record<string, Record<string, boolean>>>;
   currentTemplate: Template;
-  setCurrentTemplate: React.Dispatch<React.SetStateAction<Template & { id: string }>>;
+  setCurrentTemplate: React.Dispatch<
+    React.SetStateAction<Template & { id: string }>
+  >;
   trainingId: string;
   isRenaming: boolean;
-  remapProgress: (oldIndex: number, newIndex: number, length: number, mode: "move" | "swap") => void;
+  remapProgress: (
+    oldIndex: number,
+    newIndex: number,
+    length: number,
+    mode: "move" | "swap",
+  ) => void;
 }) {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
@@ -82,7 +89,14 @@ export function useExerciseReorder({
 
       remapProgress(fromIndex, toIndex, length, mode);
     },
-    [form, doneMapRef, currentTemplate, setCurrentTemplate, trainingId, remapProgress],
+    [
+      form,
+      doneMapRef,
+      currentTemplate,
+      setCurrentTemplate,
+      trainingId,
+      remapProgress,
+    ],
   );
 
   const handleDragEnd = useCallback(
@@ -121,7 +135,14 @@ export function useExerciseReorder({
         newIndex,
       ).map((e, i) => ({ ...e, position: i }));
 
-      applyReorder(reorderedExercises, newDone, oldIndex, newIndex, length, "move");
+      applyReorder(
+        reorderedExercises,
+        newDone,
+        oldIndex,
+        newIndex,
+        length,
+        "move",
+      );
     },
     [exercisesArr, doneMapRef, currentTemplate, applyReorder],
   );
@@ -154,7 +175,10 @@ export function useExerciseReorder({
       // Swap template exercises
       const newExercises = [...currentTemplate.exercises];
       const tmp = newExercises[fromIndex]!;
-      newExercises[fromIndex] = { ...newExercises[toIndex]!, position: fromIndex };
+      newExercises[fromIndex] = {
+        ...newExercises[toIndex]!,
+        position: fromIndex,
+      };
       newExercises[toIndex] = { ...tmp, position: toIndex };
 
       applyReorder(newExercises, newDone, fromIndex, toIndex, length, "swap");

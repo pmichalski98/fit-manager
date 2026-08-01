@@ -22,9 +22,7 @@ interface DiscardSessionButtonProps {
   sessionId: string;
 }
 
-export function DiscardSessionButton({
-  sessionId,
-}: DiscardSessionButtonProps) {
+export function DiscardSessionButton({ sessionId }: DiscardSessionButtonProps) {
   const router = useRouter();
   const [isDiscarding, setIsDiscarding] = useState(false);
 
