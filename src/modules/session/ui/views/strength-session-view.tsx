@@ -402,12 +402,10 @@ export function StrengthSessionView({
     onNavigateExercise: handleSidebarClick,
   });
 
-  // Expose addSet for mobile — lives outside swipe container
+  // Per-exercise addSet callbacks registered by ExerciseSets; the mobile
+  // header button calls its own card's callback by exIndex, never the swipe
+  // index (which can drift after auto-advance).
   const addSetCallbacksRef = useRef<Record<number, () => void>>({});
-  const handleAddSetMobile = useCallback(() => {
-    const cb = addSetCallbacksRef.current[currentExerciseIndex];
-    if (cb) cb();
-  }, [currentExerciseIndex]);
 
   const handleRemoveExercise = useCallback(
     (exIndex: number) => {
@@ -612,7 +610,7 @@ export function StrengthSessionView({
                     updateDoneMapRef={updateDoneMapRef}
                     onRemove={handleRemoveExercise}
                     addSetCallbacksRef={addSetCallbacksRef}
-                    onAddSet={handleAddSetMobile}
+                    onAddSet={() => addSetCallbacksRef.current[exIndex]?.()}
                     targetHint={
                       field.templateExerciseId
                         ? (targetHintByExerciseId[field.templateExerciseId] ??
@@ -1444,8 +1442,12 @@ function ExerciseSets({
                 render={({ field }) => (
                   <NumberStepper
                     label="Weight"
-                    value={typeof field.value === "number" ? field.value : null}
-                    onChange={(v) => field.onChange(v)}
+                    value={
+                      typeof field.value === "number" && field.value !== 0
+                        ? field.value
+                        : null
+                    }
+                    onChange={(v) => field.onChange(v === 0 ? null : v)}
                     min={0}
                     step={1}
                     inputMode="decimal"

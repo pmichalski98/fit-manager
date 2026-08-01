@@ -13,8 +13,8 @@
 [X] - already filled for this day is bugged, we need to probably reset state after we click 'save'
 [X] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week
 [X] - 1rep max estimations
-[] - on mobile i cant remove weight, it defaults to 0
-[] - on mobile when i remove all sets from exercise i cant add
+[X] - on mobile i cant remove weight, it defaults to 0
+[X] - on mobile when i remove all sets from exercise i cant add
 [X] - add option to just clear exercise in session because i didnt do it in that session
 [X] - on mobile fix 'done' checkbox styling
 [X] - complete session should be full width on mobile and some padding on bottom
