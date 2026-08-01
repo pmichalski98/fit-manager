@@ -1,6 +1,7 @@
 import { getDailyLogHistory } from "../../actions";
 import { HideableChart } from "./hideable-chart";
 import { KcalChartGraph } from "./kcal-chart-graph";
+import { MacroChartGraph } from "./macro-chart-graph";
 import { WeightChartGraph } from "./weight-chart-graph";
 import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
 
@@ -29,6 +30,19 @@ export async function BodyCharts() {
       weight: Number(log.weight),
     }));
 
+  // Days with at least one macro logged (synced from Fitatu)
+  const macroData = data
+    .filter(
+      (log) =>
+        (log.proteinG ?? 0) > 0 || (log.carbsG ?? 0) > 0 || (log.fatG ?? 0) > 0,
+    )
+    .map((log) => ({
+      date: log.date,
+      protein: log.proteinG ?? null,
+      carbs: log.carbsG ?? null,
+      fat: log.fatG ?? null,
+    }));
+
   // Rendered inside the dashboard's shared chart grid — no wrapper here,
   // so hiding a chart lets the remaining cards flow next to each other
   return (
@@ -54,6 +68,19 @@ export async function BodyCharts() {
             </CardHeader>
             <CardContent>
               <KcalChartGraph data={kcalData} />
+            </CardContent>
+          </Card>
+        </HideableChart>
+      )}
+
+      {macroData.length > 0 && (
+        <HideableChart chartId="macro-history">
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle>Macros History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MacroChartGraph data={macroData} />
             </CardContent>
           </Card>
         </HideableChart>
