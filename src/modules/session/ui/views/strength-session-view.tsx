@@ -48,7 +48,9 @@ import {
   type StrengthSessionFormValues,
 } from "@/modules/session/schemas";
 import { completeStrengthSession } from "@/modules/session/actions";
+import { addExerciseToTraining } from "@/modules/training/actions";
 import { SessionSummaryDialog } from "@/modules/session/ui/components/session-summary-dialog";
+import { AddExerciseDialog } from "@/modules/session/ui/components/add-exercise-dialog";
 import { DiscardSessionButton } from "@/modules/session/ui/components/discard-session-button";
 import type { InProgressSession } from "@/modules/session/types";
 import {
@@ -431,6 +433,58 @@ export function StrengthSessionView({
   // index (which can drift after auto-advance).
   const addSetCallbacksRef = useRef<Record<number, () => void>>({});
 
+  const [addExerciseOpen, setAddExerciseOpen] = useState(false);
+  const handleAddExercise = useCallback(
+    async (name: string, saveToTemplate: boolean) => {
+      const position = exercisesArr.fields.length;
+      const defaultSets = [{ setIndex: 0, reps: 5, weight: undefined }];
+
+      if (saveToTemplate) {
+        try {
+          const row = await addExerciseToTraining(trainingId, name);
+          setCurrentTemplate((prev) => ({
+            ...prev,
+            exercises: [
+              ...prev.exercises,
+              {
+                id: row.id,
+                name: row.name,
+                position: prev.exercises.length,
+                targetSets: row.targetSets,
+                targetRepsMin: row.targetRepsMin,
+                targetRepsMax: row.targetRepsMax,
+              },
+            ],
+          }));
+          exercisesArr.append({
+            templateExerciseId: row.id,
+            name: row.name,
+            position,
+            sets: defaultSets,
+          });
+        } catch {
+          toast.error("Failed to add exercise to template");
+          throw new Error("add-exercise-failed");
+        }
+      } else {
+        exercisesArr.append({
+          templateExerciseId: undefined,
+          name,
+          position,
+          sets: defaultSets,
+        });
+      }
+
+      if (isMobile) {
+        setCurrentExerciseIndex(position);
+      } else {
+        // Card mounts on the next render; scroll once it exists
+        setTimeout(() => handleSidebarClick(position), 100);
+      }
+    },
+    [exercisesArr, trainingId, isMobile, handleSidebarClick],
+  );
+
   const handleRemoveExercise = useCallback(
     (exIndex: number) => {
       const exercise = exercisesArr.fields[exIndex];
@@ -658,6 +712,16 @@ export function StrengthSessionView({
                 ))}
               </SwipeableExerciseNav>
 
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-dashed"
+                disabled={isSubmitting}
+                onClick={() => setAddExerciseOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add exercise
+              </Button>
+
               <SessionNotesField control={form.control} />
             </>
           ) : (
@@ -749,6 +813,17 @@ export function StrengthSessionView({
                           )}
                         </SortableExerciseWrapper>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => setAddExerciseOpen(true)}
+                        disabled={isSubmitting}
+                        className="border-border text-muted-foreground hover:border-primary/40 hover:text-foreground flex h-full w-[calc(50%-0.5rem)] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-xl border border-dashed transition-colors"
+                      >
+                        <Plus className="h-6 w-6" />
+                        <span className="text-sm font-medium">
+                          Add exercise
+                        </span>
+                      </button>
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -816,6 +891,12 @@ export function StrengthSessionView({
         newName={renameConfirm?.newName}
         onDecision={handleRenameDecision}
         onDismiss={handleRenameDismiss}
+      />
+
+      <AddExerciseDialog
+        open={addExerciseOpen}
+        onOpenChange={setAddExerciseOpen}
+        onAdd={handleAddExercise}
       />
     </div>
   );

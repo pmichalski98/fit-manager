@@ -69,7 +69,12 @@ export function TrainingForm({
       type: "cardio",
       name: "",
       exercises: [
-        { name: "", targetSets: null, targetRepsMin: null, targetRepsMax: null },
+        {
+          name: "",
+          targetSets: null,
+          targetRepsMin: null,
+          targetRepsMax: null,
+        },
       ],
     },
   });

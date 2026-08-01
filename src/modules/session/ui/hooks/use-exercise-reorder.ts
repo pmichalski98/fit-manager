@@ -57,6 +57,33 @@ export function useExerciseReorder({
     }),
   );
 
+  /**
+   * Rebuilds template order from reordered form rows, matching by
+   * templateExerciseId. Form indexes can't be trusted against the template:
+   * ad-hoc exercises exist only in the form, and removed exercises exist
+   * only in the template (those keep their relative order at the end).
+   */
+  const templateOrderFromFields = useCallback(
+    (orderedFields: Array<{ templateExerciseId?: string | null }>) => {
+      const byId = new Map(currentTemplate.exercises.map((e) => [e.id, e]));
+      const seen = new Set<string>();
+      const ordered: TemplateExercise[] = [];
+      for (const f of orderedFields) {
+        if (!f.templateExerciseId) continue;
+        const ex = byId.get(f.templateExerciseId);
+        if (ex && !seen.has(ex.id)) {
+          ordered.push(ex);
+          seen.add(ex.id);
+        }
+      }
+      for (const e of currentTemplate.exercises) {
+        if (!seen.has(e.id)) ordered.push(e);
+      }
+      return ordered.map((e, i) => ({ ...e, position: i }));
+    },
+    [currentTemplate.exercises],
+  );
+
   /** Shared: update form positions, persist template, remap progress */
   const applyReorder = useCallback(
     (
@@ -129,11 +156,9 @@ export function useExerciseReorder({
         if (entry) newDone[String(i)] = entry;
       }
 
-      const reorderedExercises = arrayMove(
-        currentTemplate.exercises,
-        oldIndex,
-        newIndex,
-      ).map((e, i) => ({ ...e, position: i }));
+      const reorderedExercises = templateOrderFromFields(
+        arrayMove([...fieldsBefore], oldIndex, newIndex),
+      );
 
       applyReorder(
         reorderedExercises,
@@ -144,7 +169,7 @@ export function useExerciseReorder({
         "move",
       );
     },
-    [exercisesArr, doneMapRef, currentTemplate, applyReorder],
+    [exercisesArr, doneMapRef, templateOrderFromFields, applyReorder],
   );
 
   /** Swap two exercises by 0-based index (for the editable position input) */
@@ -172,18 +197,16 @@ export function useExerciseReorder({
       if (fromEntry) newDone[String(toIndex)] = fromEntry;
       else delete newDone[String(toIndex)];
 
-      // Swap template exercises
-      const newExercises = [...currentTemplate.exercises];
-      const tmp = newExercises[fromIndex]!;
-      newExercises[fromIndex] = {
-        ...newExercises[toIndex]!,
-        position: fromIndex,
-      };
-      newExercises[toIndex] = { ...tmp, position: toIndex };
+      // Rebuild template order from the swapped form rows
+      const swappedFields = [...exercisesArr.fields];
+      const tmp = swappedFields[fromIndex]!;
+      swappedFields[fromIndex] = swappedFields[toIndex]!;
+      swappedFields[toIndex] = tmp;
+      const newExercises = templateOrderFromFields(swappedFields);
 
       applyReorder(newExercises, newDone, fromIndex, toIndex, length, "swap");
     },
-    [exercisesArr, doneMapRef, currentTemplate, applyReorder],
+    [exercisesArr, doneMapRef, templateOrderFromFields, applyReorder],
   );
 
   return {

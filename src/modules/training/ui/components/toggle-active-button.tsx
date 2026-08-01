@@ -21,7 +21,9 @@ export function ToggleActiveButton({
     try {
       setIsPending(true);
       await toggleTrainingActive(trainingId);
-      toast.success(isActive ? "Training marked as inactive" : "Training marked as active");
+      toast.success(
+        isActive ? "Training marked as inactive" : "Training marked as active",
+      );
     } catch {
       toast.error("Failed to update training");
     } finally {

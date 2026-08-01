@@ -56,6 +56,19 @@ export async function updateTraining(
   return { ok: true, data: updated };
 }
 
+export async function addExerciseToTraining(trainingId: string, name: string) {
+  const userId = await requireUserId();
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Exercise name is required");
+  const row = await trainingRepository.addExerciseToTraining(
+    userId,
+    trainingId,
+    trimmed,
+  );
+  revalidatePath("/training");
+  return row;
+}
+
 export async function toggleTrainingActive(trainingId: string) {
   const userId = await requireUserId();
   try {

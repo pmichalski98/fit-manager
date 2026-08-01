@@ -61,6 +61,37 @@ class TrainingRepository {
     });
   }
 
+  /** Appends a single exercise to a training template without touching the rest. */
+  async addExerciseToTraining(
+    userId: string,
+    trainingId: string,
+    name: string,
+  ) {
+    return await db.transaction(async (tx) => {
+      const [owned] = await tx
+        .select({ id: training.id })
+        .from(training)
+        .where(and(eq(training.id, trainingId), eq(training.userId, userId)));
+      if (!owned) throw new Error("Training not found");
+
+      const [posRow] = await tx
+        .select({ maxPosition: max(trainingExercise.position) })
+        .from(trainingExercise)
+        .where(eq(trainingExercise.trainingId, trainingId));
+
+      const [row] = await tx
+        .insert(trainingExercise)
+        .values({
+          trainingId,
+          name,
+          position: (posRow?.maxPosition ?? -1) + 1,
+        })
+        .returning();
+      if (!row) throw new Error("Failed to add exercise");
+      return row;
+    });
+  }
+
   async updateTraining(values: UpdateTrainingValues) {
     return await db.transaction(async (tx) => {
       const [updatedTraining] = await tx

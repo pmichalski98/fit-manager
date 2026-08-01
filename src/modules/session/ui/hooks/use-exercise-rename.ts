@@ -17,6 +17,7 @@ type Template = { name: string; exercises: TemplateExercise[] };
 
 type RenameConfirm = {
   exIndex: number;
+  templateExerciseId: string;
   oldName: string;
   newName: string;
 };
@@ -44,11 +45,29 @@ export function useExerciseRename({
       const trimmed = newName.trim();
       if (!trimmed) return;
 
-      const templateEx = currentTemplate.exercises[exIndex];
-      if (!templateEx || templateEx.name === trimmed) return;
+      // Match by template exercise ID — form indexes can drift from the
+      // template after ad-hoc adds or mid-session removals
+      const templateExerciseId = form.getValues(
+        `exercises.${exIndex}.templateExerciseId`,
+      );
+      const templateEx = templateExerciseId
+        ? currentTemplate.exercises.find((e) => e.id === templateExerciseId)
+        : undefined;
+
+      if (!templateEx) {
+        // Ad-hoc exercise — rename locally, nothing to sync to the template
+        form.setValue(`exercises.${exIndex}.name`, trimmed);
+        return;
+      }
+      if (templateEx.name === trimmed) return;
 
       form.setValue(`exercises.${exIndex}.name`, trimmed);
-      setRenameConfirm({ exIndex, oldName: templateEx.name, newName: trimmed });
+      setRenameConfirm({
+        exIndex,
+        templateExerciseId: templateEx.id,
+        oldName: templateEx.name,
+        newName: trimmed,
+      });
     },
     [currentTemplate.exercises, form],
   );
@@ -56,10 +75,10 @@ export function useExerciseRename({
   const handleRenameDecision = useCallback(
     (replace: boolean) => {
       if (!renameConfirm) return;
-      const { exIndex, newName } = renameConfirm;
+      const { templateExerciseId, newName } = renameConfirm;
 
-      const updated = currentTemplate.exercises.map((e, i) =>
-        i === exIndex ? { ...e, name: newName } : e,
+      const updated = currentTemplate.exercises.map((e) =>
+        e.id === templateExerciseId ? { ...e, name: newName } : e,
       );
 
       setCurrentTemplate((prev) => ({ ...prev, exercises: updated }));
@@ -67,13 +86,13 @@ export function useExerciseRename({
       void updateTraining(trainingId, {
         name: currentTemplate.name,
         type: "strength",
-        exercises: updated.map((e, i) => ({
+        exercises: updated.map((e) => ({
           id: e.id,
           name: e.name,
           targetSets: e.targetSets,
           targetRepsMin: e.targetRepsMin,
           targetRepsMax: e.targetRepsMax,
-          ...(i === exIndex ? { replace } : {}),
+          ...(e.id === templateExerciseId ? { replace } : {}),
         })),
       }).catch(() => toast.error("Failed to save exercise changes"));
 

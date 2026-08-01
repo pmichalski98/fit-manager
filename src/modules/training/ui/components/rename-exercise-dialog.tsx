@@ -34,9 +34,8 @@ export function RenameExerciseDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Exercise Renamed</AlertDialogTitle>
           <AlertDialogDescription>
-            You renamed <strong>{oldName}</strong> to{" "}
-            <strong>{newName}</strong>. Did you correct a typo, or is this a
-            completely new exercise?
+            You renamed <strong>{oldName}</strong> to <strong>{newName}</strong>
+            . Did you correct a typo, or is this a completely new exercise?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
