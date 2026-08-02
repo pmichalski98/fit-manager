@@ -335,3 +335,75 @@ export const trainingSessionCardio = createTable(
 );
 
 export type TrainingSessionCardio = typeof trainingSessionCardio.$inferSelect;
+
+// ─── Nutrition (synced from Fitatu) ─────────────────────────────────────────
+
+// One row per product logged in a Fitatu meal. Rewritten wholesale on each
+// sync of a given day, so re-syncing never duplicates entries.
+export const fitatuMealItem = createTable(
+  "fitatu_meal_item",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: d.date("date").notNull(),
+    mealKey: d.text("meal_key").notNull(),
+    mealName: d.text("meal_name"),
+    name: d.text("name").notNull(),
+    brand: d.text("brand"),
+    measureName: d.text("measure_name"),
+    measureQuantity: d.numeric("measure_quantity", { precision: 8, scale: 2 }),
+    weightG: d.numeric("weight_g", { precision: 8, scale: 1 }),
+    kcal: d.numeric("kcal", { precision: 8, scale: 1 }),
+    protein: d.numeric("protein", { precision: 7, scale: 2 }),
+    carbs: d.numeric("carbs", { precision: 7, scale: 2 }),
+    fat: d.numeric("fat", { precision: 7, scale: 2 }),
+    fiber: d.numeric("fiber", { precision: 7, scale: 2 }),
+    eaten: d.boolean("eaten").notNull().default(true),
+    position: d.integer("position").notNull().default(0),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+  }),
+  (t) => [index("fitatu_meal_item_user_date_idx").on(t.userId, t.date)],
+);
+
+export type FitatuMealItem = typeof fitatuMealItem.$inferSelect;
+
+// LLM analysis of a full week of meals (week starts on Monday).
+export const nutritionInsight = createTable(
+  "nutrition_insight",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    weekStart: d.date("week_start").notNull(),
+    summary: d.text("summary").notNull(),
+    observations: d
+      .jsonb("observations")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    swaps: d.jsonb("swaps").$type<NutritionSwap[]>().notNull().default([]),
+    model: d.text("model").notNull(),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => [
+    uniqueIndex("nutrition_insight_user_week_unique").on(t.userId, t.weekStart),
+  ],
+);
+
+export interface NutritionSwap {
+  /** Product as logged in Fitatu, e.g. "Salami pieprzowe". */
+  from: string;
+  /** Suggested replacement, e.g. "Szynka z piersi kurczaka". */
+  to: string;
+  reason: string;
+  /** Estimated kcal saved per typical portion, null when not quantifiable. */
+  kcalSaved: number | null;
+}
+
+export type NutritionInsight = typeof nutritionInsight.$inferSelect;

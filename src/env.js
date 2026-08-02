@@ -25,6 +25,7 @@ export const env = createEnv({
     FITATU_API_SECRET: z.string().optional(),
     FITATU_SYNC_SECRET: z.string().optional(),
     FITATU_SYNC_USER_EMAIL: z.string().email().optional(),
+    OPENAI_API_KEY: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -63,6 +64,7 @@ export const env = createEnv({
     FITATU_API_SECRET: process.env.FITATU_API_SECRET,
     FITATU_SYNC_SECRET: process.env.FITATU_SYNC_SECRET,
     FITATU_SYNC_USER_EMAIL: process.env.FITATU_SYNC_USER_EMAIL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**

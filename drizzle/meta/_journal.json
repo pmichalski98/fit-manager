@@ -92,6 +92,13 @@
       "when": 1785618428813,
       "tag": "0012_hesitant_taskmaster",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785667065503,
+      "tag": "0013_familiar_puppet_master",
+      "breakpoints": true
     }
   ]
 }

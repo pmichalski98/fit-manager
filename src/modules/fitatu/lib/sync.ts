@@ -1,11 +1,11 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@/env";
 import { db } from "@/server/db";
-import { dailyLog, user } from "@/server/db/schema";
-import { aggregateDayMacros } from "./aggregate";
+import { dailyLog, fitatuMealItem, user } from "@/server/db/schema";
+import { aggregateDayMacros, extractDayItems } from "./aggregate";
 import { FitatuClient } from "./fitatu-client";
-import type { FitatuSyncResult } from "../types";
+import type { FitatuDayItem, FitatuSyncResult } from "../types";
 
 /** Today's date (YYYY-MM-DD) in the Fitatu account's timezone. */
 export function warsawToday(): string {
@@ -23,7 +23,13 @@ export function shiftDate(date: string, days: number): string {
 async function upsertDayMacros(
   userId: string,
   date: string,
-  macros: { kcal: number; proteinG: number; carbsG: number; fatG: number; fiberG: number },
+  macros: {
+    kcal: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    fiberG: number;
+  },
 ) {
   await db
     .insert(dailyLog)
@@ -39,6 +45,44 @@ async function upsertDayMacros(
         updatedAt: sql`now()`,
       },
     });
+}
+
+/** Replaces the stored meal items of a day, so re-syncing stays idempotent. */
+async function replaceDayItems(
+  userId: string,
+  date: string,
+  items: FitatuDayItem[],
+) {
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(fitatuMealItem)
+      .where(
+        and(eq(fitatuMealItem.userId, userId), eq(fitatuMealItem.date, date)),
+      );
+
+    if (items.length === 0) return;
+
+    await tx.insert(fitatuMealItem).values(
+      items.map((item) => ({
+        userId,
+        date,
+        mealKey: item.mealKey,
+        mealName: item.mealName,
+        name: item.name,
+        brand: item.brand,
+        measureName: item.measureName,
+        measureQuantity: item.measureQuantity?.toString() ?? null,
+        weightG: item.weightG?.toString() ?? null,
+        kcal: item.kcal?.toString() ?? null,
+        protein: item.protein?.toString() ?? null,
+        carbs: item.carbs?.toString() ?? null,
+        fat: item.fat?.toString() ?? null,
+        fiber: item.fiber?.toString() ?? null,
+        eaten: item.eaten,
+        position: item.position,
+      })),
+    );
+  });
 }
 
 /**
@@ -78,6 +122,7 @@ export async function syncFitatuDays(
       }
 
       await upsertDayMacros(appUser.id, date, macros);
+      await replaceDayItems(appUser.id, date, extractDayItems(day));
       results.push({ date, status: "synced", macros });
     } catch (error) {
       results.push({
