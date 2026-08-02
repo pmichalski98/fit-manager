@@ -3,7 +3,11 @@ import type { FitatuDayResponse, FitatuLoginResponse } from "../types";
 
 // Unofficial API used by the Fitatu web app itself. Endpoints reverse-engineered
 // by https://github.com/karolswitala/fitatu-mcp and https://github.com/Jezue/fitatu_library
-const FITATU_API_BASE = "https://pl-pl.fitatu.com/api";
+// Auth works on any regional host, but diary data lives only on the cluster
+// matching the account's locale (ROLE_LOCALE_* in the JWT) — other clusters
+// return an empty day scaffold instead of an error.
+const FITATU_DEFAULT_LOCALE = "pl-pl";
+const fitatuApiBase = (locale: string) => `https://${locale}.fitatu.com/api`;
 
 // "api-secret" is the Fitatu web app's own application secret. If it rotates,
 // grab the current value from DevTools (any authenticated request on fitatu.com).
@@ -37,6 +41,17 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+/** Maps e.g. ROLE_LOCALE_EN_GB -> "en-gb" (the account's data cluster). */
+function extractLocaleFromToken(token: string): string | null {
+  const roles = decodeJwtPayload(token)?.roles;
+  if (!Array.isArray(roles)) return null;
+  for (const role of roles) {
+    const match = /^ROLE_LOCALE_([A-Z]{2})_([A-Z]{2})$/.exec(String(role));
+    if (match) return `${match[1]!.toLowerCase()}-${match[2]!.toLowerCase()}`;
+  }
+  return null;
+}
+
 function extractUserIdFromToken(token: string): string | null {
   const payload = decodeJwtPayload(token);
   if (!payload) return null;
@@ -53,6 +68,7 @@ export class FitatuClient {
   private token: string | null = null;
   private refreshToken: string | null = null;
   private userId: string | null = null;
+  private locale: string = FITATU_DEFAULT_LOCALE;
 
   constructor(
     private readonly username: string,
@@ -60,7 +76,7 @@ export class FitatuClient {
   ) {}
 
   async login(): Promise<void> {
-    const res = await fetch(`${FITATU_API_BASE}/login`, {
+    const res = await fetch(`${fitatuApiBase(FITATU_DEFAULT_LOCALE)}/login`, {
       method: "POST",
       headers: baseHeaders(),
       body: JSON.stringify({
@@ -83,6 +99,7 @@ export class FitatuClient {
     this.token = token;
     this.refreshToken = data.refresh_token ?? data.refreshToken ?? null;
     this.userId = extractUserIdFromToken(token);
+    this.locale = extractLocaleFromToken(token) ?? FITATU_DEFAULT_LOCALE;
 
     if (!this.userId) {
       throw new FitatuAuthError("Could not determine Fitatu user id from JWT");
@@ -101,12 +118,15 @@ export class FitatuClient {
     ];
 
     for (const payload of variants) {
-      const res = await fetch(`${FITATU_API_BASE}/token/refresh`, {
-        method: "POST",
-        headers: baseHeaders(),
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+      const res = await fetch(
+        `${fitatuApiBase(FITATU_DEFAULT_LOCALE)}/token/refresh`,
+        {
+          method: "POST",
+          headers: baseHeaders(),
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        },
+      );
       if (!res.ok) continue;
 
       const data = (await res.json()) as FitatuLoginResponse;
@@ -117,6 +137,7 @@ export class FitatuClient {
       this.refreshToken =
         data.refresh_token ?? data.refreshToken ?? this.refreshToken;
       this.userId = extractUserIdFromToken(token) ?? this.userId;
+      this.locale = extractLocaleFromToken(token) ?? this.locale;
       return true;
     }
     return false;
@@ -128,16 +149,18 @@ export class FitatuClient {
       await this.login();
     }
 
-    const url = `${FITATU_API_BASE}/diet-and-activity-plan/${this.userId}/day/${date}`;
     const doFetch = () =>
-      fetch(url, {
-        headers: {
-          ...baseHeaders(),
-          authorization: `Bearer ${this.token}`,
-          "api-cluster": `pl-pl${this.userId}`,
+      fetch(
+        `${fitatuApiBase(this.locale)}/diet-and-activity-plan/${this.userId}/day/${date}`,
+        {
+          headers: {
+            ...baseHeaders(),
+            authorization: `Bearer ${this.token}`,
+            "api-cluster": `${this.locale}${this.userId}`,
+          },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+      );
 
     let res = await doFetch();
     if (res.status === 401) {
