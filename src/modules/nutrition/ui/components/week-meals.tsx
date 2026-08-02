@@ -12,6 +12,40 @@ function round(value: string | null): number | null {
   return value === null ? null : Math.round(Number.parseFloat(value));
 }
 
+function sumMacro(
+  items: FitatuMealItem[],
+  pick: (item: FitatuMealItem) => string | null,
+): number {
+  return Math.round(
+    items.reduce((sum, item) => {
+      const value = pick(item);
+      return sum + (value === null ? 0 : Number.parseFloat(value));
+    }, 0),
+  );
+}
+
+function DayMacros({ items }: { items: FitatuMealItem[] }) {
+  const macros = [
+    { label: "Białko", value: sumMacro(items, (i) => i.protein) },
+    { label: "Węgle", value: sumMacro(items, (i) => i.carbs) },
+    { label: "Tłuszcz", value: sumMacro(items, (i) => i.fat) },
+    { label: "Błonnik", value: sumMacro(items, (i) => i.fiber) },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-4">
+      {macros.map((macro) => (
+        <div key={macro.label} className="flex items-baseline gap-1.5">
+          <span className="text-muted-foreground text-xs">{macro.label}</span>
+          <span className="text-sm font-medium tabular-nums">
+            {macro.value} g
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
   for (const item of items) {
@@ -86,6 +120,8 @@ export function WeekMeals({ items }: { items: FitatuMealItem[] }) {
                   </ul>
                 </div>
               ))}
+
+              <DayMacros items={dayItems} />
             </CardContent>
           </Card>
         );
