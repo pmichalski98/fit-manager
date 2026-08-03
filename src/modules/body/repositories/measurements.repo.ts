@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { bodyMeasurement } from "@/server/db/schema";
@@ -30,6 +30,24 @@ class MeasurementsRepository {
       .orderBy(desc(bodyMeasurement.date))
       .limit(1);
     return row ?? null;
+  }
+
+  async findMeasurementsInRange(
+    userId: string,
+    startDate: string,
+    endDate: string,
+  ) {
+    return db
+      .select()
+      .from(bodyMeasurement)
+      .where(
+        and(
+          eq(bodyMeasurement.userId, userId),
+          gte(bodyMeasurement.date, startDate),
+          lte(bodyMeasurement.date, endDate),
+        ),
+      )
+      .orderBy(asc(bodyMeasurement.date));
   }
 
   async upsertMeasurements(values: MeasurementsWithUserId) {

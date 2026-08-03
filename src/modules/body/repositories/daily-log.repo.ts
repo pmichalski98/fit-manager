@@ -79,6 +79,7 @@ class DailyLogRepository {
         proteinG: dailyLog.proteinG,
         carbsG: dailyLog.carbsG,
         fatG: dailyLog.fatG,
+        fiberG: dailyLog.fiberG,
       })
       .from(dailyLog)
       .where(

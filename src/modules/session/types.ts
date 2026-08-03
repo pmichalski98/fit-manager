@@ -23,6 +23,44 @@ export type InProgressSession = {
   }>;
 };
 
+export type SessionSetDetail = {
+  setIndex: number;
+  reps: number;
+  /** null = bodyweight set */
+  weight: number | null;
+};
+
+export type SessionExerciseDetail = {
+  name: string;
+  position: number;
+  notes: string | null;
+  sets: SessionSetDetail[];
+};
+
+export type SessionCardioDetail = {
+  durationMin: number;
+  distanceKm: number | null;
+  kcal: number | null;
+  avgHr: number | null;
+  cadence: number | null;
+  avgSpeedKmh: number | null;
+  maxSpeedKmh: number | null;
+  avgPowerW: number | null;
+  notes: string | null;
+};
+
+export type SessionDetail = {
+  id: string;
+  date: string;
+  templateName: string;
+  type: "strength" | "cardio";
+  durationMin: number | null;
+  totalLoadKg: number | null;
+  notes: string | null;
+  cardio: SessionCardioDetail | null;
+  exercises: SessionExerciseDetail[];
+};
+
 export type SessionSummary = {
   id: string;
   trainingId: string;

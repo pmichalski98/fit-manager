@@ -5,7 +5,10 @@ import { formatDateYYYYMMDD } from "@/lib/utils";
 import { resolveWeekContext } from "@/modules/dashboard/utils";
 import { DashboardTable } from "@/modules/dashboard/ui/components/dashboard-table";
 import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashboard-skeleton";
-import { TrainingConsistency, TrainingConsistencySkeleton } from "@/modules/dashboard/ui/components/training-consistency";
+import {
+  TrainingConsistency,
+  TrainingConsistencySkeleton,
+} from "@/modules/dashboard/ui/components/training-consistency";
 import { BodyCharts } from "@/modules/dashboard/ui/components/body-charts";
 import { ExerciseProgressChart } from "@/modules/dashboard/ui/components/exercise-progress-chart";
 import {
@@ -14,6 +17,7 @@ import {
   HideableChart,
 } from "@/modules/dashboard/ui/components/hideable-chart";
 import { VolumeProgressChart } from "@/modules/dashboard/ui/components/volume-progress-chart";
+import { ExportDialog } from "@/modules/export/ui/components/export-dialog";
 import {
   getAvailableExerciseNames,
   getStrengthTrainings,
@@ -56,10 +60,17 @@ export default async function DashboardPage(props: PageProps) {
       <div className="space-y-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Dashboard</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Your weekly overview and progress at a glance.</p>
+            <h1 className="text-3xl font-bold tracking-tight md:text-2xl">
+              Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Your weekly overview and progress at a glance.
+            </p>
           </div>
-          <ChartsMenu />
+          <div className="flex items-center gap-2">
+            <ExportDialog />
+            <ChartsMenu />
+          </div>
         </div>
 
         <HideableChart chartId="training-activity">
@@ -90,19 +101,21 @@ export default async function DashboardPage(props: PageProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">Weekly overview</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Weekly overview
+          </h2>
           <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href={`?week=${formatDateYYYYMMDD(previousMonday)}`}>
-              Previous
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`?week=${formatDateYYYYMMDD(nextMonday)}`}>Next</Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="?">This week</Link>
-          </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`?week=${formatDateYYYYMMDD(previousMonday)}`}>
+                Previous
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`?week=${formatDateYYYYMMDD(nextMonday)}`}>Next</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="?">This week</Link>
+            </Button>
           </div>
         </div>
 

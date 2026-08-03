@@ -1,6 +1,16 @@
 "server-only";
 
-import { and, eq, gte, lt, inArray, asc, isNotNull, desc } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gte,
+  lt,
+  lte,
+  inArray,
+  asc,
+  isNotNull,
+  desc,
+} from "drizzle-orm";
 import { isToday } from "date-fns";
 
 import { db } from "@/server/db";
@@ -12,7 +22,7 @@ import {
   trainingSessionSet,
 } from "@/server/db/schema";
 import type { CardioSessionFormValues } from "../schemas";
-import type { SessionSummary } from "../types";
+import type { SessionDetail, SessionSummary } from "../types";
 import { buildExerciseRecords, type ExerciseRecord } from "../lib/set-progress";
 
 function cardioFieldsFromInput(input: CardioSessionFormValues) {
@@ -391,6 +401,130 @@ class SessionRepository {
             }
           : undefined,
         strength: strengthSummary,
+      };
+    });
+  }
+
+  /**
+   * Full per-set session data for a date range, for the AI export.
+   * Filters on the `date` column (the semantic training day) rather than
+   * `startAt`, which for retroactively added cardio holds the insertion time.
+   */
+  async getDetailedSessionsInRange(
+    userId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<SessionDetail[]> {
+    // 1) Completed sessions in range
+    const sessions = await db
+      .select()
+      .from(trainingSession)
+      .where(
+        and(
+          eq(trainingSession.userId, userId),
+          gte(trainingSession.date, startDate),
+          lte(trainingSession.date, endDate),
+          isNotNull(trainingSession.endAt),
+        ),
+      )
+      .orderBy(asc(trainingSession.date), asc(trainingSession.startAt));
+
+    if (sessions.length === 0) return [];
+
+    const sessionIds = sessions.map((s) => s.id);
+    const trainingIds = sessions.map((s) => s.trainingId);
+
+    // 2) Template info
+    const templates = await db
+      .select()
+      .from(training)
+      .where(inArray(training.id, trainingIds));
+    const tplById = new Map(templates.map((t) => [t.id, t]));
+
+    // 3) Cardio metrics
+    const cardioMetrics = await db
+      .select()
+      .from(trainingSessionCardio)
+      .where(inArray(trainingSessionCardio.sessionId, sessionIds));
+    const cardioBySession = new Map(cardioMetrics.map((c) => [c.sessionId, c]));
+
+    // 4) Exercises and raw sets. No isDone filter: legacy sessions
+    // (completeStrengthSession path) left it false on every set.
+    const strengthSessionIds = sessions
+      .filter((s) => s.type === "strength")
+      .map((s) => s.id);
+
+    type ExerciseRow = typeof trainingSessionExercise.$inferSelect;
+    type SetRow = typeof trainingSessionSet.$inferSelect;
+
+    const exercisesBySession = new Map<string, ExerciseRow[]>();
+    const setsByExercise = new Map<string, SetRow[]>();
+
+    if (strengthSessionIds.length > 0) {
+      const exercises = await db
+        .select()
+        .from(trainingSessionExercise)
+        .where(inArray(trainingSessionExercise.sessionId, strengthSessionIds))
+        .orderBy(asc(trainingSessionExercise.position));
+
+      for (const ex of exercises) {
+        const arr = exercisesBySession.get(ex.sessionId) ?? [];
+        arr.push(ex);
+        exercisesBySession.set(ex.sessionId, arr);
+      }
+
+      const exerciseIds = exercises.map((e) => e.id);
+      if (exerciseIds.length > 0) {
+        const sets = await db
+          .select()
+          .from(trainingSessionSet)
+          .where(inArray(trainingSessionSet.sessionExerciseId, exerciseIds))
+          .orderBy(asc(trainingSessionSet.setIndex));
+
+        for (const s of sets) {
+          const arr = setsByExercise.get(s.sessionExerciseId) ?? [];
+          arr.push(s);
+          setsByExercise.set(s.sessionExerciseId, arr);
+        }
+      }
+    }
+
+    return sessions.map((s) => {
+      const cardio = cardioBySession.get(s.id);
+      return {
+        id: s.id,
+        date: s.date,
+        templateName: tplById.get(s.trainingId)?.name ?? "Unknown Training",
+        type: s.type,
+        durationMin: s.durationMin ?? null,
+        totalLoadKg: s.totalLoadKg ?? null,
+        notes: s.notes ?? null,
+        cardio: cardio
+          ? {
+              durationMin: cardio.durationMin,
+              distanceKm:
+                cardio.distanceKm != null ? Number(cardio.distanceKm) : null,
+              kcal: cardio.kcal ?? null,
+              avgHr: cardio.avgHr ?? null,
+              cadence: cardio.cadence ?? null,
+              avgSpeedKmh:
+                cardio.avgSpeedKmh != null ? Number(cardio.avgSpeedKmh) : null,
+              maxSpeedKmh:
+                cardio.maxSpeedKmh != null ? Number(cardio.maxSpeedKmh) : null,
+              avgPowerW: cardio.avgPowerW ?? null,
+              notes: cardio.notes ?? null,
+            }
+          : null,
+        exercises: (exercisesBySession.get(s.id) ?? []).map((ex) => ({
+          name: ex.name,
+          position: ex.position,
+          notes: ex.notes ?? null,
+          sets: (setsByExercise.get(ex.id) ?? []).map((set) => ({
+            setIndex: set.setIndex,
+            reps: set.reps,
+            weight: set.weight != null ? Number(set.weight) : null,
+          })),
+        })),
       };
     });
   }
