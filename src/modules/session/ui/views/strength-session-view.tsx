@@ -1636,7 +1636,7 @@ function ExerciseSets({
                     <Trophy className="h-3 w-3" /> PR
                   </span>
                 )}
-                {!isPr && progress.delta !== "none" && (
+                {progress.delta !== "none" && (
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
