@@ -92,13 +92,10 @@ class SessionRepository {
           type: "strength",
           startAt: startAt,
           endAt: new Date(),
-          durationMin: summary?.durationSec ?? null, // Assuming input might be minutes or seconds? Logic might need check.
-          // Wait, summary.durationSec suggests seconds. Schema expects minutes.
-          // If summary.durationSec is passed, I should convert to minutes if needed.
-          // However, this function signature hasn't changed in the plan, just the repo method.
-          // I'll leave it as is for now but note that durationMin expects minutes.
-          // If existing calls pass seconds, this is a bug in existing code or schema mismatch.
-          // I'll assume durationSec is converted or handled elsewhere for now as this wasn't explicitly in plan to fix existing writes, only read.
+          durationMin:
+            summary?.durationSec != null
+              ? Math.round(summary.durationSec / 60)
+              : null,
           totalLoadKg: summary?.totalLoadKg ?? null,
           notes: summary?.notes ?? null,
         })
@@ -588,7 +585,10 @@ class SessionRepository {
         .set({
           status: "completed",
           endAt: now,
-          durationMin: summary.durationSec,
+          durationMin:
+            summary.durationSec != null
+              ? Math.round(summary.durationSec / 60)
+              : null,
           totalLoadKg: summary.totalLoadKg,
           updatedAt: now,
         })

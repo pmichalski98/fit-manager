@@ -28,6 +28,7 @@ import {
   TrendingDown,
   Trophy,
   StickyNote,
+  Flame,
 } from "lucide-react";
 import { DndContext } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
@@ -73,6 +74,7 @@ import {
   isSetRecord,
   type ExerciseRecord,
 } from "@/modules/session/lib/set-progress";
+import { generateWarmupSets } from "@/modules/session/lib/warmup";
 import { cn } from "@/lib/utils";
 
 /** Minimum exercise count before scroll navigation (arrows + dots) is shown */
@@ -1096,6 +1098,25 @@ function ExerciseCard({
   // Open by default when a note was restored (resume); toggleable afterwards
   const [notesOpen, setNotesOpen] = useState(hasNote);
 
+  const [warmupOpen, setWarmupOpen] = useState(false);
+  const setsValue = useWatch({ control, name: `exercises.${exIndex}.sets` });
+  // Working weight: first set entered this session, else last session's top set
+  const firstSetWeight = setsValue?.[0]?.weight;
+  const prevTopWeight = prevSets.reduce(
+    (max, s) => Math.max(max, s.weight ?? 0),
+    0,
+  );
+  const workingWeight =
+    firstSetWeight != null && firstSetWeight > 0
+      ? firstSetWeight
+      : prevTopWeight > 0
+        ? prevTopWeight
+        : null;
+  const warmupSets =
+    warmupOpen && workingWeight != null
+      ? generateWarmupSets(workingWeight)
+      : [];
+
   // Sync displayed position when exIndex changes (e.g. after another card's swap)
   useEffect(() => {
     if (posInputRef.current && document.activeElement !== posInputRef.current) {
@@ -1179,6 +1200,21 @@ function ExerciseCard({
             size="icon"
             className={cn(
               "h-8 w-8",
+              warmupOpen ? "text-primary" : "text-muted-foreground",
+            )}
+            tabIndex={-1}
+            disabled={isSubmitting}
+            onClick={() => setWarmupOpen((v) => !v)}
+            title="Warmup sets"
+          >
+            <Flame className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-8 w-8",
               hasNote ? "text-primary" : "text-muted-foreground",
             )}
             tabIndex={-1}
@@ -1221,6 +1257,36 @@ function ExerciseCard({
         <p className="text-muted-foreground px-4 pt-1 text-xs italic sm:px-5">
           Last note: “{prevNote}”
         </p>
+      )}
+      {warmupOpen && (
+        <div className="px-4 pt-2 sm:px-5">
+          {workingWeight != null && warmupSets.length > 0 ? (
+            <div className="bg-muted/50 rounded-lg px-3 py-2">
+              <p className="text-muted-foreground text-xs font-medium">
+                Warmup for {workingWeight} kg
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {warmupSets.map((s) => (
+                  <li
+                    key={s.label}
+                    className="flex items-baseline gap-2 text-sm tabular-nums"
+                  >
+                    <span className="text-muted-foreground w-9 shrink-0 text-xs">
+                      {s.label}
+                    </span>
+                    <span className="font-medium">{s.weightKg} kg</span>
+                    <span className="text-muted-foreground">× {s.reps}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              Enter a working weight (or finish a previous session) to generate
+              warmup sets.
+            </p>
+          )}
+        </div>
       )}
       {notesOpen && (
         <div className="px-4 pt-2 sm:px-5">
