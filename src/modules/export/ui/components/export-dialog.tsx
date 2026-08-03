@@ -3,9 +3,11 @@
 import { format, subMonths, subYears } from "date-fns";
 import { Copy, Download, FileDown } from "lucide-react";
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -16,41 +18,46 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { cn, formatDateYYYYMMDD, getTodayDateYYYYMMDD } from "@/lib/utils";
-import {
-  useChartRange,
-  type ChartRange,
-} from "@/modules/dashboard/ui/components/chart-range";
+import { cn, formatDateYYYYMMDD } from "@/lib/utils";
 import { exportDataForAnalysis } from "@/modules/export/actions";
 
-type ExportRange = Exclude<ChartRange, "all">;
+const PRESETS = [
+  { label: "1M", months: 1 },
+  { label: "3M", months: 3 },
+  { label: "6M", months: 6 },
+  { label: "1Y", months: 12 },
+] as const;
 
-const RANGES: { value: ExportRange; label: string }[] = [
-  { value: "1m", label: "1M" },
-  { value: "3m", label: "3M" },
-  { value: "6m", label: "6M" },
-  { value: "1y", label: "1Y" },
-];
+function presetRange(months: number): DateRange {
+  const today = new Date();
+  const from = months === 12 ? subYears(today, 1) : subMonths(today, months);
+  return { from, to: today };
+}
 
-function resolveRange(range: ChartRange) {
-  const now = new Date();
-  const start =
-    range === "1y" || range === "all"
-      ? subYears(now, 1)
-      : subMonths(now, { "1m": 1, "3m": 3, "6m": 6 }[range]);
-  return { start: formatDateYYYYMMDD(start), end: getTodayDateYYYYMMDD() };
+function sameDay(a: Date | undefined, b: Date | undefined): boolean {
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    formatDateYYYYMMDD(a) === formatDateYYYYMMDD(b)
+  );
 }
 
 export function ExportDialog() {
-  const [range, setRange] = useChartRange("export-range", "1m");
+  const [range, setRange] = useState<DateRange | undefined>(() =>
+    presetRange(1),
+  );
   const [pending, setPending] = useState<"copy" | "download" | null>(null);
 
-  const resolved = resolveRange(range);
+  const complete = range?.from !== undefined && range?.to !== undefined;
 
   const runExport = async (mode: "copy" | "download") => {
+    if (!range?.from || !range?.to) return;
     try {
       setPending(mode);
-      const result = await exportDataForAnalysis(resolveRange(range));
+      const result = await exportDataForAnalysis({
+        start: formatDateYYYYMMDD(range.from),
+        end: formatDateYYYYMMDD(range.to),
+      });
       if (!result.ok) {
         toast.error(result.error ?? "Export failed");
         return;
@@ -84,7 +91,7 @@ export function ExportDialog() {
           Export for AI
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Export data for AI analysis</DialogTitle>
           <DialogDescription>
@@ -92,40 +99,55 @@ export function ExportDialog() {
             Markdown — paste it into an AI chat to analyze your progress.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
+        <div className="flex flex-col items-center gap-2">
           <div className="bg-muted flex w-fit items-center gap-0.5 rounded-lg p-0.5">
-            {RANGES.map((r) => (
-              <button
-                key={r.value}
-                type="button"
-                onClick={() => setRange(r.value)}
-                className={cn(
-                  "rounded-md px-2 py-1 text-xs font-medium transition-colors",
-                  range === r.value
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
+            {PRESETS.map((preset) => {
+              const target = presetRange(preset.months);
+              const active =
+                sameDay(range?.from, target.from) &&
+                sameDay(range?.to, target.to);
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => setRange(presetRange(preset.months))}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                    active
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
           </div>
+          <Calendar
+            mode="range"
+            weekStartsOn={1}
+            selected={range}
+            onSelect={setRange}
+            defaultMonth={range?.from}
+            disabled={{ after: new Date() }}
+          />
           <p className="text-muted-foreground text-sm">
-            {format(new Date(resolved.start), "MMM d, yyyy")} –{" "}
-            {format(new Date(resolved.end), "MMM d, yyyy")}
+            {range?.from && range?.to
+              ? `${format(range.from, "MMM d, yyyy")} – ${format(range.to, "MMM d, yyyy")}`
+              : "Select a date range"}
           </p>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
             variant="outline"
-            disabled={pending !== null}
+            disabled={pending !== null || !complete}
             onClick={() => runExport("copy")}
           >
             {pending === "copy" ? <Spinner /> : <Copy className="size-4" />}
             Copy to clipboard
           </Button>
           <Button
-            disabled={pending !== null}
+            disabled={pending !== null || !complete}
             onClick={() => runExport("download")}
           >
             {pending === "download" ? (
