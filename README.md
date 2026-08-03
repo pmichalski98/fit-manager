@@ -1,31 +1,52 @@
-[X] - maybe add notes to each exercise/training
-[X] - add last trained at after training strength session complete
-[] - AI weekly summaries
-[X] - update envs on both machines
-[X] - move logo link to root page in navbar on mobile
-[X] - add editing trainings (position and names) special cases when we only change name or when we completly remove exercise, if we remove exercise then delete all previous records of that in sessions, if we only change name, then we leave data like reps and weight
-[X] - fix dashboard page
-[] - polish skeletons loaders
-[X] - body weight and measurements charts
-[X] - charts of progress per exercise
-[X] - polish strength session page
-[] - finish training session ending summaries
-[X] - already filled for this day is bugged, we need to probably reset state after we click 'save'
-[X] - Training Consistency: A GitHub-contribution-style heatmap or simple bar chart of workouts per week
-[X] - 1rep max estimations
-[X] - on mobile i cant remove weight, it defaults to 0
-[X] - on mobile when i remove all sets from exercise i cant add
-[X] - add option to just clear exercise in session because i didnt do it in that session
-[X] - on mobile fix 'done' checkbox styling
-[X] - complete session should be full width on mobile and some padding on bottom
-[X] - after i click complete session, button is not disabled and i dont see loading state
-[] - add summary on cardio session and redirect
-[X] - see if i can submit training session with one exercise being empty
-[X] - add form logs, because sometimes i cant submit training session
-[X] - add date unique constraint so i cant put 2 trainings on same day
-[X] - fix dashboard table layout shits + filter by date not createdAt
-[X] - add some session refreshing so i dont have to log often
-[] - body fat estimations with and without AI
-[] - supersets, combining 2 exercises on UI only
-[X] - compact UI for better UX in training session
-[X] - potential move this project to vps instead of vercel
+# Fit Manager
+
+A self-hosted fitness tracking app I built for my own daily use — strength training, nutrition, body measurements and progress analytics in one place, installable as a PWA on mobile.
+
+<!-- TODO: add a screenshot or short demo GIF here -->
+
+## Features
+
+- **Live workout sessions** — training templates with target sets/rep ranges, per-set logging with autosave and resume, rest timers, exercise notes, drag-and-drop reordering and ad-hoc exercise additions mid-session
+- **Progress feedback while you lift** — each set is compared against the same set from your previous session via estimated 1RM (Brzycki), with PR detection against all-time records and a warmup set generator for heavy compound lifts
+- **Dashboard analytics** — weight history, per-exercise strength progress, training volume, workout consistency heatmap, and calorie/macro history charts with configurable visibility and date ranges
+- **Automatic nutrition sync** — daily meals, calories and macros pulled from Fitatu (unofficial API) on a cron schedule, with weekly AI-generated nutrition analysis (OpenAI)
+- **Strava integration** — cardio activities imported automatically via webhook
+- **Body tracking** — weight, body measurements, and progress photos (stored in S3)
+
+## Tech stack
+
+Next.js (App Router) · React 19 · TypeScript · Bun · Tailwind CSS 4 · shadcn/ui (Radix) · Drizzle ORM · PostgreSQL · better-auth (GitHub/Google OAuth) · Recharts · Sentry · Docker
+
+Deployed on a VPS via Docker with a GitHub Actions → GHCR image pipeline; database migrations run automatically on container start.
+
+## Running locally
+
+Requires [Bun](https://bun.sh) and Docker (for the local database).
+
+```bash
+git clone git@github.com:pmichalski98/fit-manager.git
+cd fit-manager
+bun install
+
+cp .env.example .env      # fill in the values — comments in the file explain each one
+./start-database.sh       # starts a local Postgres container
+
+bun run db:push           # sync schema to the database
+bun run dev               # http://localhost:3000
+```
+
+The database URL, better-auth settings, GitHub/Google OAuth credentials and S3 keys are required; the Strava, Fitatu and OpenAI integrations are optional — without them the app runs and the related features just stay empty.
+
+## Project structure
+
+```
+src/
+├── app/           # Next.js App Router routes (auth, dashboard, training, nutrition, body, photo)
+├── modules/       # feature modules: session, training, dashboard, nutrition, fitatu, strava, body, photo, auth
+│   └── <module>/  # actions, repositories, schemas, lib, ui per module
+└── server/db/     # Drizzle schema and client
+```
+
+## Status
+
+Personal project under active development — I use it for every workout, so features get added and refined based on real training needs.
