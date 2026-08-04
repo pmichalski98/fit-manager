@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -18,13 +19,21 @@ export function AddPhotoDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">Add photo</Button>
+        <Button>
+          <Plus strokeWidth={2.5} />
+          Add photo
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Add progress photo</DialogTitle>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-[440px]">
+        <DialogHeader className="border-b px-5 py-[18px]">
+          <DialogTitle className="section-marker text-xs font-bold tracking-[0.1em] uppercase">
+            Add photo
+          </DialogTitle>
         </DialogHeader>
-        <PhotoForm onSuccess={() => setOpen(false)} />
+        <PhotoForm
+          onSuccess={() => setOpen(false)}
+          onCancel={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

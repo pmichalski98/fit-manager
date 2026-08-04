@@ -3,7 +3,6 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type ImagesPreviewProps = {
@@ -42,13 +41,13 @@ function ImagesPreview({ imageFiles, onDelete }: ImagesPreviewProps) {
     <>
       {imageFiles && imageFiles.length > 0 && (
         <div>
-          <CardTitle className="text-lg">
+          <p className="label-caps">
             {imageFiles.length === 1 ? "Selected photo" : "Selected images"}
-          </CardTitle>
+          </p>
           <div
             className={
               imageFiles.length === 1
-                ? "mt-2 w-40"
+                ? "mt-2 w-[140px]"
                 : "mt-2 grid grid-cols-2 gap-4 md:grid-cols-3"
             }
           >

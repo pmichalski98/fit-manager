@@ -28,12 +28,18 @@ type DateFormFieldProps<
   control: Control<TFieldValues>;
   name: TName;
   label: string;
+  labelClassName?: string;
 };
 
 export function DateFormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->({ control, name, label }: DateFormFieldProps<TFieldValues, TName>) {
+>({
+  control,
+  name,
+  label,
+  labelClassName,
+}: DateFormFieldProps<TFieldValues, TName>) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -42,7 +48,7 @@ export function DateFormField<
       name={name}
       render={({ field }) => (
         <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className={labelClassName}>{label}</FormLabel>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <FormControl>

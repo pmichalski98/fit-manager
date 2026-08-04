@@ -1,10 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useRef, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { DialogFooter } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -16,13 +18,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { DateFormField } from "@/components/date-form-field";
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
+import { getDailyLogByDate } from "@/modules/body/actions";
 import { uploadPhoto } from "@/modules/photo/actions";
 import { photoSchema, type PhotoFormValues } from "@/modules/photo/schemas";
 
 import ImagesDragDrop from "./images-drag-drop";
 import ImagesPreview from "./images-preview";
 
-export function PhotoForm({ onSuccess }: { onSuccess?: () => void }) {
+export function PhotoForm({
+  onSuccess,
+  onCancel,
+}: {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}) {
   const form = useForm<PhotoFormValues>({
     resolver: zodResolver(photoSchema) as Resolver<PhotoFormValues>,
     defaultValues: {
@@ -32,6 +41,36 @@ export function PhotoForm({ onSuccess }: { onSuccess?: () => void }) {
   });
 
   const image = form.watch("image");
+  const dateValue = form.watch("date");
+
+  // Prefill weight from the daily log of the selected date; never clobber a
+  // value the user typed themselves.
+  const [isPrefilled, setIsPrefilled] = useState(false);
+  const lastPrefillRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!dateValue) return;
+    let cancelled = false;
+    void getDailyLogByDate(dateValue).then((result) => {
+      if (cancelled || !result.ok) return;
+      const logWeight = result.data?.weight;
+      const current = form.getValues("weight");
+      const isUntouched = current === "" || current === lastPrefillRef.current;
+      if (!isUntouched) return;
+      if (logWeight != null) {
+        const normalized = String(Number.parseFloat(logWeight));
+        form.setValue("weight", normalized);
+        lastPrefillRef.current = normalized;
+        setIsPrefilled(true);
+      } else if (current !== "" && current === lastPrefillRef.current) {
+        form.setValue("weight", "");
+        lastPrefillRef.current = null;
+        setIsPrefilled(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dateValue, form]);
 
   const handleDelete = (_index: number) => {
     form.setValue("image", undefined as unknown as File, {
@@ -75,43 +114,59 @@ export function PhotoForm({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <DateFormField control={form.control} name="date" label="Date" />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-4 p-5">
+          <ImagesDragDrop form={form} />
 
-        <FormField
-          control={form.control}
-          name="weight"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Weight (kg)</FormLabel>
-              <FormControl>
-                <Input type="number" inputMode="decimal" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Photo</p>
-          <ImagesDragDrop
-            form={form}
-            title="Upload Photo"
-            description="Drag and drop your photo here, or click to browse"
-            buttonLabel="Choose photo"
+          <ImagesPreview
+            imageFiles={image ? [image] : []}
+            onDelete={handleDelete}
           />
+
+          <div className="grid grid-cols-2 gap-3">
+            <DateFormField
+              control={form.control}
+              name="date"
+              label="Date"
+              labelClassName="label-caps"
+            />
+
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="label-caps">Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      placeholder="84.2"
+                      className="text-center font-mono"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {isPrefilled && (
+            <p className="text-faint font-mono text-[11px]">
+              Weight prefilled from that day&apos;s log — override if needed.
+            </p>
+          )}
         </div>
 
-        <ImagesPreview
-          imageFiles={image ? [image] : []}
-          onDelete={handleDelete}
-        />
-
-        <div className="flex justify-end">
+        <DialogFooter className="border-t px-5 py-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Save photo"}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Form>
   );

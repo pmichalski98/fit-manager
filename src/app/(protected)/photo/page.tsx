@@ -6,12 +6,12 @@ import PhotoGalleryView from "@/modules/photo/components/views/photo-gallery-vie
 
 export default async function PhotoPage() {
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="text-center md:text-left">
-          <h1 className="text-3xl font-bold tracking-tight md:text-2xl">Photos</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Upload progress photos with date and weight.
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-[22px] font-bold tracking-tight">Photo</h1>
+          <p className="text-muted-foreground mt-1 text-[11px] font-medium tracking-[0.08em] uppercase">
+            Progress photos · compare your physique over time
           </p>
         </div>
 

@@ -8,8 +8,8 @@ export default async function PhotoGalleryView() {
 
   if (error) {
     return (
-      <div className="py-12">
-        <p className="text-muted-foreground">
+      <div className="rounded-[10px] border border-dashed p-12 text-center">
+        <p className="text-muted-foreground text-sm">
           There was a problem loading your photos.
         </p>
       </div>
@@ -18,17 +18,14 @@ export default async function PhotoGalleryView() {
 
   if (!photos || photos.length === 0) {
     return (
-      <div className="py-12">
-        <p className="text-muted-foreground">
-          You don&apos;t have any photos yet.
+      <div className="rounded-[10px] border border-dashed p-12 text-center">
+        <p className="text-muted-foreground text-sm">
+          You don&apos;t have any photos yet. Add your first progress photo to
+          start comparing.
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="">
-      <PhotoGalleryClient photos={photos} />
-    </div>
-  );
+  return <PhotoGalleryClient photos={photos} />;
 }

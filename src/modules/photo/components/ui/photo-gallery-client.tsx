@@ -62,10 +62,11 @@ export default function PhotoGalleryClient({
     });
   };
 
-  const isSelected = (id: string) => selectedIds.includes(id);
+  const selectionTag = (id: string): "A" | "B" | null =>
+    selectedIds[0] === id ? "A" : selectedIds[1] === id ? "B" : null;
 
   return (
-    <div className="space-y-8">
+    <>
       <DeletePhotoDialog
         open={!!photoToDelete}
         onOpenChange={(open) => !open && setPhotoToDelete(null)}
@@ -73,30 +74,35 @@ export default function PhotoGalleryClient({
         isDeleting={isDeleting}
       />
 
-      <PhotoComparison selectedPhotos={selectedPhotos} />
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,560px)_1fr]">
+        <PhotoComparison selectedPhotos={selectedPhotos} />
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold tracking-tight">
-            All progress photos
-          </h3>
-          <p className="text-muted-foreground text-xs">
-            Click any photo to select or deselect it for comparison.
-          </p>
-        </div>
+        <div className="bg-card flex flex-col gap-3.5 rounded-[10px] border p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h3 className="text-[11px] font-semibold tracking-[0.1em] uppercase">
+              All photos{" "}
+              <span className="text-faint font-mono tracking-normal">
+                {photos.length}
+              </span>
+            </h3>
+            <p className="text-faint text-[11px]">
+              Click a photo to select it for comparison.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {photos.map((photo) => (
-            <PhotoCard
-              key={photo.id}
-              photo={photo}
-              selected={isSelected(photo.id)}
-              onToggleSelect={handleToggleSelect}
-              onDelete={setPhotoToDelete}
-            />
-          ))}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2.5">
+            {photos.map((photo) => (
+              <PhotoCard
+                key={photo.id}
+                photo={photo}
+                selectionTag={selectionTag(photo.id)}
+                onToggleSelect={handleToggleSelect}
+                onDelete={setPhotoToDelete}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

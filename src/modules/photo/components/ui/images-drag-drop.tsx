@@ -6,7 +6,6 @@ import { useDropzone } from "react-dropzone";
 import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
   FormControl,
   FormField,
@@ -14,25 +13,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 import type { PhotoFormValues } from "@/modules/photo/schemas";
 
 type ImagesDragDropProps = {
   form: UseFormReturn<PhotoFormValues>;
-  /**
-   * UI text overrides.
-   */
-  title?: string;
-  description?: string;
-  buttonLabel?: string;
 };
 
-function ImagesDragDrop({
-  form,
-  title = "Upload Images",
-  description = "Drag and drop your images here, or click to browse",
-  buttonLabel = "Choose Files",
-}: ImagesDragDropProps) {
+function ImagesDragDrop({ form }: ImagesDragDropProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const handleDrop = async () => {
@@ -131,29 +120,22 @@ function ImagesDragDrop({
           <FormControl>
             <div
               {...getRootProps()}
-              className={`cursor-pointer rounded-md border-2 border-dashed p-4 text-center ${
-                isDragActive ? "border-primary bg-primary/5" : "border-border"
-              }`}
+              className={cn(
+                "bg-input-bg flex min-h-[160px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-lg border border-dashed p-4 text-center transition-colors",
+                isDragActive
+                  ? "border-primary text-primary"
+                  : "border-input text-faint hover:border-primary hover:text-primary",
+              )}
             >
               <input {...getInputProps()} />
-              <Upload className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-
-              <h3 className="text-foreground mb-2 text-lg font-medium">
-                {title}
-              </h3>
-              <p className="text-muted-foreground mb-4">{description}</p>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2 bg-transparent"
-              >
-                <Upload className="h-4 w-4" />
-                {buttonLabel}
-              </Button>
-              <p className="text-muted-foreground mt-2 text-xs">
-                Supported formats: JPEG, PNG, WEBP, HEIC ( Max{" "}
-                {(MAX_FILE_SIZE / 1000000).toFixed(0)} MB )
-              </p>
+              <Upload className="size-[26px]" strokeWidth={1.5} />
+              <span className="text-[11px] font-semibold tracking-[0.06em] uppercase">
+                Drag a photo here or click
+              </span>
+              <span className="text-faint font-mono text-[10px]">
+                JPG · PNG · WEBP · HEIC · max{" "}
+                {(MAX_FILE_SIZE / 1000000).toFixed(0)} MB
+              </span>
             </div>
           </FormControl>
 
