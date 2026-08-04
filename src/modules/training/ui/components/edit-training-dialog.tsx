@@ -44,7 +44,7 @@ export function EditTrainingDialog({ training }: { training: Training }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon-sm">
+        <Button variant="outline" size="icon">
           <Pencil className="size-4" />
           <span className="sr-only">Edit training</span>
         </Button>

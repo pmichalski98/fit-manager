@@ -3,10 +3,11 @@ import {
   training,
   trainingExercise,
   trainingSession,
+  trainingSessionCardio,
   trainingSessionExercise,
   type trainingTypeEnum,
 } from "@/server/db/schema";
-import { and, eq, inArray, max } from "drizzle-orm";
+import { and, desc, eq, inArray, max } from "drizzle-orm";
 
 type ExerciseTargets = {
   targetSets?: number | null;
@@ -230,7 +231,16 @@ class TrainingRepository {
     const ids = trainings.map((t) => t.id);
     type TrainingRow = typeof training.$inferSelect;
     type ExerciseRow = typeof trainingExercise.$inferSelect;
-    type TrainingWithExercises = TrainingRow & { exercises: ExerciseRow[] };
+    type LastCardioStats = {
+      durationMin: number;
+      distanceKm: string | null;
+      kcal: number | null;
+      avgSpeedKmh: string | null;
+    };
+    type TrainingWithExercises = TrainingRow & {
+      exercises: ExerciseRow[];
+      lastCardio: LastCardioStats | null;
+    };
     if (ids.length === 0) return [] as TrainingWithExercises[];
 
     const exercises = await db
@@ -246,9 +256,38 @@ class TrainingRepository {
       if (arr) arr.push(ex);
     }
 
+    // Latest cardio session stats per cardio training
+    const cardioIds = trainings
+      .filter((t) => t.type === "cardio")
+      .map((t) => t.id);
+    const lastCardioByTrainingId = new Map<string, LastCardioStats>();
+    if (cardioIds.length > 0) {
+      const cardioRows = await db
+        .select({
+          trainingId: trainingSession.trainingId,
+          durationMin: trainingSessionCardio.durationMin,
+          distanceKm: trainingSessionCardio.distanceKm,
+          kcal: trainingSessionCardio.kcal,
+          avgSpeedKmh: trainingSessionCardio.avgSpeedKmh,
+        })
+        .from(trainingSessionCardio)
+        .innerJoin(
+          trainingSession,
+          eq(trainingSessionCardio.sessionId, trainingSession.id),
+        )
+        .where(inArray(trainingSession.trainingId, cardioIds))
+        .orderBy(desc(trainingSession.startAt));
+      for (const { trainingId, ...stats } of cardioRows) {
+        if (!lastCardioByTrainingId.has(trainingId)) {
+          lastCardioByTrainingId.set(trainingId, stats);
+        }
+      }
+    }
+
     const trainingsWithExercises = trainings.map((t) => ({
       ...t,
       exercises: byTrainingId.get(t.id) ?? [],
+      lastCardio: lastCardioByTrainingId.get(t.id) ?? null,
     }));
 
     // Sort by lastSessionAt ascending (oldest first), with nulls last

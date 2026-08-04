@@ -34,7 +34,7 @@ export function ToggleActiveButton({
   return (
     <Button
       variant="outline"
-      size="icon-sm"
+      size="icon"
       aria-label={isActive ? "Mark as inactive" : "Mark as active"}
       disabled={isPending}
       onClick={handleToggle}

@@ -42,8 +42,8 @@ export function DeleteTrainingButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
-          variant="destructive"
-          size="icon-sm"
+          variant="outline-destructive"
+          size="icon"
           aria-label="Delete training"
           disabled={isDeleting}
         >

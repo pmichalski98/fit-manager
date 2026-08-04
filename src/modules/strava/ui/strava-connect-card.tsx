@@ -1,13 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Bike, Download, Loader2, Unlink, Zap, ZapOff } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import {
@@ -90,80 +83,92 @@ export function StravaConnectCard() {
   if (status === null) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Bike className="h-5 w-5 text-orange-500" />
-          <CardTitle className="text-lg">Strava</CardTitle>
-        </div>
-        <CardDescription>
-          {status.connected
-            ? `Connected — ${status.importedCount} activities imported`
-            : "Connect your Strava account to import cycling activities"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {status.connected ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={handleImport}
-              disabled={isPending}
-              variant="default"
-              size="sm"
-            >
-              {isPending && action === "import" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              Import Activities
-            </Button>
-            <Button
-              onClick={handleWebhookToggle}
-              disabled={isPending}
-              variant={status.webhookActive ? "secondary" : "outline"}
-              size="sm"
-            >
-              {isPending && action === "webhook" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : status.webhookActive ? (
-                <Zap className="mr-2 h-4 w-4 text-green-500" />
-              ) : (
-                <ZapOff className="mr-2 h-4 w-4" />
-              )}
-              {status.webhookActive ? "Auto-sync on" : "Enable auto-sync"}
-            </Button>
-            <Button
-              onClick={handleDisconnect}
-              disabled={isPending}
-              variant="outline"
-              size="sm"
-            >
-              {isPending && action === "disconnect" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Unlink className="mr-2 h-4 w-4" />
-              )}
-              Disconnect
-            </Button>
-          </div>
-        ) : (
-          <Button asChild variant="default" size="sm">
-            <a href="/api/strava/auth/connect">
-              <Bike className="mr-2 h-4 w-4" />
-              Connect Strava
-            </a>
-          </Button>
-        )}
-        {importResult && (
-          <p className="text-muted-foreground text-sm">
-            Imported {importResult.imported} activities
-            {importResult.skipped > 0 &&
-              `, skipped ${importResult.skipped} (already imported)`}
+    <div className="bg-card flex flex-wrap items-center justify-between gap-4 rounded-[10px] border px-5 py-[18px]">
+      <div className="flex min-w-0 items-center gap-3">
+        <Bike className="text-cardio size-5 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-xs font-bold tracking-[0.06em] uppercase">
+            Strava
           </p>
-        )}
-        {error && <p className="text-sm text-red-500">{error}</p>}
-      </CardContent>
-    </Card>
+          <p className="text-muted-foreground mt-0.5 font-mono text-[11px]">
+            {status.connected ? (
+              <>
+                connected · {status.importedCount} activities · auto-sync{" "}
+                <span
+                  className={
+                    status.webhookActive ? "text-primary" : "text-faint"
+                  }
+                >
+                  {status.webhookActive ? "ON" : "OFF"}
+                </span>
+                {importResult && (
+                  <>
+                    {" "}
+                    · imported {importResult.imported}
+                    {importResult.skipped > 0 &&
+                      `, skipped ${importResult.skipped}`}
+                  </>
+                )}
+              </>
+            ) : (
+              "not connected · import cycling activities automatically"
+            )}
+            {error && <span className="text-destructive"> · {error}</span>}
+          </p>
+        </div>
+      </div>
+      {status.connected ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleImport}
+            disabled={isPending}
+            variant="outline"
+            size="sm"
+          >
+            {isPending && action === "import" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Download />
+            )}
+            Import
+          </Button>
+          <Button
+            onClick={handleWebhookToggle}
+            disabled={isPending}
+            variant="outline"
+            size="sm"
+          >
+            {isPending && action === "webhook" ? (
+              <Loader2 className="animate-spin" />
+            ) : status.webhookActive ? (
+              <Zap className="text-primary" />
+            ) : (
+              <ZapOff />
+            )}
+            Auto-sync
+          </Button>
+          <Button
+            onClick={handleDisconnect}
+            disabled={isPending}
+            variant="outline-destructive"
+            size="sm"
+          >
+            {isPending && action === "disconnect" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Unlink />
+            )}
+            Disconnect
+          </Button>
+        </div>
+      ) : (
+        <Button asChild size="sm">
+          <a href="/api/strava/auth/connect">
+            <Bike />
+            Connect Strava
+          </a>
+        </Button>
+      )}
+    </div>
   );
 }
