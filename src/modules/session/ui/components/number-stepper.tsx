@@ -112,11 +112,11 @@ export function NumberStepper({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+        <span className="text-muted-foreground text-[9px] font-semibold tracking-[0.1em] uppercase">
           {label}
         </span>
         {previousValue != null && (
-          <span className="text-muted-foreground/60 text-[10px] tabular-nums">
+          <span className="text-faint font-mono text-[10px]">
             prev{" "}
             {previousValue === 0 && label === "Weight" ? "BW" : previousValue}
           </span>
@@ -124,8 +124,8 @@ export function NumberStepper({
       </div>
       <div
         className={cn(
-          "bg-muted/60 dark:bg-muted/40 ring-border flex items-center overflow-hidden rounded-xl ring-1 transition-all",
-          disabled && "opacity-40",
+          "bg-background ring-border flex items-center overflow-hidden rounded-lg ring-1 transition-all ring-inset",
+          disabled && "opacity-45",
         )}
       >
         <button
@@ -159,7 +159,7 @@ export function NumberStepper({
                 commitEdit();
               }
             }}
-            className="h-11 min-w-0 flex-1 bg-transparent text-center text-base font-semibold tabular-nums outline-none"
+            className="h-11 min-w-0 flex-1 bg-transparent text-center font-mono text-base font-semibold outline-none"
           />
         ) : (
           <button
@@ -168,7 +168,7 @@ export function NumberStepper({
             onFocus={handleValueClick}
             disabled={disabled}
             className={cn(
-              "h-11 min-w-0 flex-1 text-center text-base font-semibold tabular-nums transition-colors",
+              "h-11 min-w-0 flex-1 text-center font-mono text-base font-semibold transition-colors",
               numericValue == null && "text-muted-foreground",
             )}
           >

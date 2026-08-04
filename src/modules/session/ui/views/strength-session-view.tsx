@@ -762,15 +762,14 @@ export function StrengthSessionView({
                 ))}
               </SwipeableExerciseNav>
 
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                className="w-full border-dashed"
+                className="border-input text-muted-foreground hover:border-primary hover:text-primary flex h-[34px] w-full items-center justify-center gap-1.5 rounded-sm border border-dashed text-[11px] font-semibold tracking-[0.06em] uppercase transition-colors disabled:pointer-events-none disabled:opacity-50"
                 disabled={isSubmitting}
                 onClick={() => setAddExerciseOpen(true)}
               >
-                <Plus className="mr-2 h-4 w-4" /> Add exercise
-              </Button>
+                <Plus className="size-3.5" strokeWidth={2.5} /> Add exercise
+              </button>
 
               <SessionNotesField control={form.control} />
             </>
@@ -868,10 +867,10 @@ export function StrengthSessionView({
                         type="button"
                         onClick={() => setAddExerciseOpen(true)}
                         disabled={isSubmitting}
-                        className="border-border text-muted-foreground hover:border-primary/40 hover:text-foreground flex h-full w-[calc(50%-0.5rem)] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-xl border border-dashed transition-colors"
+                        className="border-input text-faint hover:border-primary hover:text-primary flex h-full w-[calc(50%-0.5rem)] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed transition-colors"
                       >
-                        <Plus className="h-6 w-6" />
-                        <span className="text-sm font-medium">
+                        <Plus className="size-[22px]" />
+                        <span className="text-[11px] font-semibold tracking-[0.06em] uppercase">
                           Add exercise
                         </span>
                       </button>
@@ -892,10 +891,10 @@ export function StrengthSessionView({
                         <div
                           key={i}
                           className={cn(
-                            "h-1.5 w-1.5 rounded-full transition-all duration-300",
+                            "h-[5px] rounded-[3px] transition-all duration-300",
                             i >= visibleRange[0] && i <= visibleRange[1]
-                              ? "bg-primary"
-                              : "bg-muted-foreground/25",
+                              ? "bg-primary w-3.5"
+                              : "bg-input w-[5px]",
                           )}
                         />
                       ))}
@@ -1004,9 +1003,9 @@ function ScrollArrow({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:opacity-0"
+      className="text-faint hover:bg-card hover:text-foreground flex size-[26px] items-center justify-center rounded-[4px] transition-colors disabled:opacity-0"
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="size-3.5" />
     </button>
   );
 }
@@ -1176,8 +1175,9 @@ function ExerciseCard({
   return (
     <div
       className={cn(
-        "bg-card flex h-full flex-col rounded-xl border shadow-sm transition-all",
-        isActive && "ring-primary/20 ring-1",
+        "bg-card flex h-full flex-col rounded-[10px] border transition-all",
+        isActive &&
+          "border-primary ring-primary/25 shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-1",
       )}
     >
       {/* Exercise header — fixed at top */}
@@ -1190,10 +1190,10 @@ function ExerciseCard({
             tabIndex={-1}
             defaultValue={exIndex + 1}
             className={cn(
-              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-center text-xs font-bold outline-none",
+              "inline-flex size-[26px] shrink-0 items-center justify-center rounded-sm text-center font-mono text-xs font-bold outline-none",
               isActive
                 ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground",
+                : "bg-secondary text-muted-foreground",
             )}
             onFocus={(e) => e.target.select()}
             onBlur={(e) => {
@@ -1223,7 +1223,7 @@ function ExerciseCard({
             type="text"
             defaultValue={field.name}
             tabIndex={-1}
-            className="hover:border-border focus:border-primary min-w-0 flex-1 truncate border-b border-transparent bg-transparent text-base font-semibold transition-colors outline-none"
+            className="hover:border-border focus:border-primary min-w-0 flex-1 truncate border-b border-transparent bg-transparent text-[15px] font-bold tracking-tight transition-colors outline-none"
             onBlur={(e) => onNameBlur?.(exIndex, e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") localNameRef.current?.blur();
@@ -1236,11 +1236,11 @@ function ExerciseCard({
               type="button"
               variant="ghost"
               size="sm"
-              className="text-muted-foreground h-8 gap-1 px-2 text-xs"
+              className="text-muted-foreground hover:text-primary h-7 gap-1 px-2 text-[11px]"
               disabled={isSubmitting}
               onClick={onAddSet}
             >
-              <Plus className="h-3.5 w-3.5" /> Set
+              <Plus className="size-3.5" strokeWidth={2.5} /> Set
             </Button>
           )}
           <Button
@@ -1248,22 +1248,22 @@ function ExerciseCard({
             variant="ghost"
             size="icon"
             className={cn(
-              "h-8 w-8",
-              warmupOpen ? "text-primary" : "text-muted-foreground",
+              "hover:text-cardio size-7",
+              warmupOpen ? "text-cardio" : "text-muted-foreground",
             )}
             tabIndex={-1}
             disabled={isSubmitting}
             onClick={() => setWarmupOpen((v) => !v)}
             title="Warmup sets"
           >
-            <Flame className="h-4 w-4" />
+            <Flame className="size-3.5" />
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className={cn(
-              "h-8 w-8",
+              "size-7",
               hasNote ? "text-primary" : "text-muted-foreground",
             )}
             tabIndex={-1}
@@ -1271,19 +1271,19 @@ function ExerciseCard({
             onClick={() => setNotesOpen((v) => !v)}
             title="Exercise notes"
           >
-            <StickyNote className="h-4 w-4" />
+            <StickyNote className="size-3.5" />
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+            className="text-muted-foreground hover:text-destructive size-7"
             tabIndex={-1}
             disabled={isSubmitting}
             onClick={() => onRemove(exIndex)}
             title="Remove exercise"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-3.5" />
           </Button>
           {dragListeners && (
             <button
@@ -1297,30 +1297,34 @@ function ExerciseCard({
           )}
         </div>
       </div>
-      {targetHint && (
-        <p className="text-muted-foreground px-4 pt-1 text-xs sm:px-5">
-          Target: <span className="font-medium">{targetHint}</span>
+      {(targetHint || prevSets.length > 0) && (
+        <p className="text-muted-foreground px-4 pt-1 font-mono text-[11px] sm:px-5">
+          {targetHint ? `target ${targetHint}` : null}
+          {targetHint && prevSets.length > 0 ? " · " : null}
+          {prevSets.length > 0
+            ? `prev ${prevSets.length} ${prevSets.length === 1 ? "set" : "sets"}`
+            : null}
         </p>
       )}
       {prevNote && (
-        <p className="text-muted-foreground px-4 pt-1 text-xs italic sm:px-5">
+        <p className="text-muted-foreground px-4 pt-1 text-[11px] italic sm:px-5">
           Last note: “{prevNote}”
         </p>
       )}
       {warmupOpen && (
         <div className="px-4 pt-2 sm:px-5">
           {workingWeight != null && warmupSets.length > 0 ? (
-            <div className="bg-muted/50 rounded-lg px-3 py-2">
-              <p className="text-muted-foreground text-xs font-medium">
+            <div className="bg-input-bg rounded-lg border px-3 py-2">
+              <p className="text-muted-foreground text-[10px] font-semibold tracking-[0.08em] uppercase">
                 Warmup for {workingWeight} kg
               </p>
               <ul className="mt-1 space-y-0.5">
                 {warmupSets.map((s) => (
                   <li
                     key={s.label}
-                    className="flex items-baseline gap-2 text-sm tabular-nums"
+                    className="flex items-baseline gap-2 font-mono text-xs"
                   >
-                    <span className="text-muted-foreground w-9 shrink-0 text-xs">
+                    <span className="text-muted-foreground w-9 shrink-0 text-[10px]">
                       {s.label}
                     </span>
                     <span className="font-medium">{s.weightKg} kg</span>
@@ -1422,7 +1426,7 @@ function ExerciseSets({
   const [localMostRecentDoneAt, setLocalMostRecentDoneAt] = useState<
     number | null
   >(null);
-  const [currentRest, setCurrentRest] = useState("00:00:00");
+  const [currentRest, setCurrentRest] = useState("00:00");
 
   const { fields, append, remove } = useFieldArray({
     name: `exercises.${exIndex}.sets`,
@@ -1487,7 +1491,7 @@ function ExerciseSets({
 
   useEffect(() => {
     if (!isActive) {
-      setCurrentRest("00:00:00");
+      setCurrentRest("00:00");
       return;
     }
     const restStart =
@@ -1506,7 +1510,7 @@ function ExerciseSets({
       const s = Math.floor((diff % 60000) / 1000)
         .toString()
         .padStart(2, "0");
-      setCurrentRest(`${h}:${m}:${s}`);
+      setCurrentRest(h === "00" ? `${m}:${s}` : `${h}:${m}:${s}`);
     }, 1000);
     return () => clearInterval(i);
   }, [
@@ -1575,38 +1579,15 @@ function ExerciseSets({
     <div className="space-y-2">
       {/* Rest timer — prominent when active */}
       {isActive && (
-        <div className="bg-primary/5 dark:bg-primary/10 flex items-center justify-between rounded-lg px-3 py-2">
-          <span className="text-primary text-xs font-medium">Rest timer</span>
-          <span className="text-primary text-sm font-bold tabular-nums">
+        <div className="bg-primary/8 border-primary/30 flex items-center justify-between rounded-lg border px-3.5 py-1.5">
+          <span className="text-primary text-[10px] font-semibold tracking-[0.1em] uppercase">
+            Rest timer
+          </span>
+          <span className="text-primary font-mono text-xl font-semibold">
             {currentRest}
           </span>
         </div>
       )}
-
-      {/* Set comparison badge */}
-      {(() => {
-        const prevCount = prevSets.length;
-        const currentCount = fields.length;
-        if (prevCount === 0) return null;
-        if (currentCount === prevCount)
-          return (
-            <div className="text-muted-foreground text-xs">
-              {prevCount} sets — same as last time
-            </div>
-          );
-        if (currentCount > prevCount)
-          return (
-            <div className="text-xs font-medium text-emerald-500">
-              +{currentCount - prevCount} more set
-              {currentCount - prevCount > 1 ? "s" : ""} than last time
-            </div>
-          );
-        return (
-          <div className="text-xs font-medium text-rose-400">
-            {currentCount}/{prevCount} sets vs last time
-          </div>
-        );
-      })()}
 
       {/* Set rows */}
       {fields.map((f, setIdx) => {
@@ -1630,10 +1611,8 @@ function ExerciseSets({
           <div
             key={f.id}
             className={cn(
-              "rounded-xl border p-3 transition-all",
-              isDone
-                ? "border-primary/20 bg-primary/5 dark:bg-primary/10"
-                : "border-border bg-muted/30 dark:bg-muted/20",
+              "rounded-lg border px-3 py-2.5 transition-all",
+              isDone ? "border-primary/25 bg-primary/6" : "bg-input-bg",
             )}
           >
             {/* Set header */}
@@ -1641,10 +1620,10 @@ function ExerciseSets({
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1 text-xs font-bold",
+                    "inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-[4px] px-1 font-mono text-[11px] font-bold",
                     isDone
-                      ? "bg-primary/15 text-primary"
-                      : "bg-muted text-muted-foreground",
+                      ? "bg-primary/18 text-primary"
+                      : "bg-secondary text-muted-foreground",
                   )}
                 >
                   {setIdx + 1}
@@ -1656,22 +1635,22 @@ function ExerciseSets({
                   tabIndex={-1}
                   onClick={() => handleToggleDone(f.id, setIdx, !isDone)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
+                    "inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-[3px] text-[11px] font-semibold tracking-[0.04em] uppercase transition-all",
                     isDone
-                      ? "bg-primary/15 text-primary"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80",
+                      ? "bg-primary/18 text-primary border-transparent"
+                      : "border-input text-muted-foreground hover:border-primary hover:text-primary",
                   )}
                 >
                   {isDone ? (
-                    <Check className="h-3.5 w-3.5" />
+                    <Check className="size-3" strokeWidth={3} />
                   ) : (
-                    <div className="h-3.5 w-3.5 rounded-sm border border-current opacity-40" />
+                    <div className="size-[11px] rounded-[2px] border border-current opacity-50" />
                   )}
                   {isDone ? "Done" : "Mark done"}
                 </button>
 
                 {restValue !== undefined && (
-                  <span className="text-muted-foreground text-[11px] tabular-nums">
+                  <span className="text-muted-foreground font-mono text-[10px]">
                     rest {formatMs(restValue)}
                   </span>
                 )}
@@ -1679,41 +1658,41 @@ function ExerciseSets({
               <div className="flex items-center gap-1">
                 {isPr && (
                   <span
-                    className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-500"
+                    className="inline-flex items-center gap-1 rounded-[4px] bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-500"
                     title="Personal record — best ever for this exercise"
                   >
-                    <Trophy className="h-3 w-3" /> PR
+                    <Trophy className="size-[11px]" /> PR
                   </span>
                 )}
                 {progress.delta !== "none" && (
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                      "inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-mono text-[10px] font-semibold",
                       progress.delta === "up"
-                        ? "bg-emerald-500/10 text-emerald-500"
+                        ? "bg-primary/12 text-primary"
                         : progress.delta === "down"
-                          ? "bg-rose-500/10 text-rose-400"
+                          ? "bg-destructive/10 text-destructive"
                           : "text-muted-foreground/60",
                     )}
                     title="Estimated 1RM vs same set last session"
                   >
                     {progress.delta === "up" && (
-                      <TrendingUp className="h-3 w-3" />
+                      <TrendingUp className="size-[11px]" />
                     )}
                     {progress.delta === "down" && (
-                      <TrendingDown className="h-3 w-3" />
+                      <TrendingDown className="size-[11px]" />
                     )}
                     {progress.label}
                   </span>
                 )}
                 <button
                   type="button"
-                  className="text-muted-foreground/40 hover:text-destructive p-1 transition-colors"
+                  className="text-faint hover:text-destructive p-1 transition-colors"
                   tabIndex={-1}
                   disabled={disabled}
                   onClick={() => remove(setIdx)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="size-3.5" />
                 </button>
               </div>
             </div>
@@ -1770,10 +1749,9 @@ function ExerciseSets({
 
       {/* Add set — visible on desktop, hidden on mobile (moved outside swipe container) */}
       {!hideAddSet && (
-        <Button
+        <button
           type="button"
-          variant="outline"
-          className="w-full border-dashed"
+          className="border-input text-muted-foreground hover:border-primary hover:text-primary flex h-[34px] w-full items-center justify-center gap-1.5 rounded-sm border border-dashed text-[11px] font-semibold tracking-[0.06em] uppercase transition-colors disabled:pointer-events-none disabled:opacity-50"
           disabled={disabled}
           onClick={() => {
             const lastSet = sets?.[sets.length - 1];
@@ -1784,8 +1762,8 @@ function ExerciseSets({
             });
           }}
         >
-          <Plus className="mr-2 h-4 w-4" /> Add set
-        </Button>
+          <Plus className="size-3.5" strokeWidth={2.5} /> Add set
+        </button>
       )}
     </div>
   );

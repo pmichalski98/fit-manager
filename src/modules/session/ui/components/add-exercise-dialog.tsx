@@ -45,11 +45,13 @@ export function AddExerciseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Add exercise</DialogTitle>
+      <DialogContent className="gap-0 p-0 sm:max-w-sm">
+        <DialogHeader className="border-b px-5 py-[18px]">
+          <DialogTitle className="section-marker text-xs font-bold tracking-[0.1em] uppercase">
+            Add exercise
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 p-5">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -73,7 +75,7 @@ export function AddExerciseDialog({
             </Label>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="border-t px-5 py-4">
           <Button
             type="button"
             onClick={() => void handleSubmit()}
@@ -81,9 +83,9 @@ export function AddExerciseDialog({
             className="w-full"
           >
             {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="animate-spin" />
             ) : (
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus strokeWidth={2.5} />
             )}
             Add exercise
           </Button>

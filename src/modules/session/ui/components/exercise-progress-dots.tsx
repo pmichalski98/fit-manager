@@ -35,18 +35,18 @@ export function ExerciseProgressDots({
               onClick={() => onDotClick(i)}
               aria-label={`Go to ${exerciseNames[i]}`}
               className={cn(
-                "relative h-1.5 flex-1 overflow-hidden rounded-full transition-all",
-                isCurrent ? "bg-primary/20" : "bg-muted-foreground/15",
+                "relative h-[5px] flex-1 overflow-hidden rounded-[3px] transition-all",
+                isCurrent ? "bg-primary/20" : "bg-input",
               )}
             >
               <div
                 className={cn(
-                  "absolute inset-y-0 left-0 rounded-full transition-all duration-300",
+                  "absolute inset-y-0 left-0 rounded-[3px] transition-all duration-300",
                   isComplete
                     ? "bg-primary"
                     : isCurrent
                       ? "bg-primary"
-                      : "bg-muted-foreground/30",
+                      : "bg-faint",
                 )}
                 style={{ width: isComplete ? "100%" : `${fillPercent}%` }}
               />
@@ -57,11 +57,11 @@ export function ExerciseProgressDots({
 
       {/* Exercise name + set count */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold">
+        <span className="text-sm font-bold tracking-tight">
           {exerciseNames[currentIndex] ?? ""}
         </span>
         {setLabel && (
-          <span className="text-muted-foreground bg-muted/60 rounded-md px-2 py-0.5 text-xs tabular-nums">
+          <span className="text-muted-foreground bg-secondary rounded-[4px] px-2 py-0.5 font-mono text-[11px]">
             Set {setLabel}
           </span>
         )}
