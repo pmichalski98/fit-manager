@@ -1,13 +1,5 @@
 import { formatDateYYYYMMDD } from "@/lib/utils";
 
-export function formatShortDayLabel(d: Date) {
-  return d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function formatDurationMin(min: number | null | undefined) {
   if (!min || min <= 0) return "—";
   const h = Math.floor(min / 60);
@@ -16,17 +8,9 @@ export function formatDurationMin(min: number | null | undefined) {
   return `${m}m`;
 }
 
-export function strengthExerciseLabel(ex: {
-  name: string;
-  setCount: number;
-  avgReps: number;
-  avgWeightKg: number | null;
-}) {
-  const weightPart =
-    ex.avgWeightKg != null ? `${ex.avgWeightKg.toFixed(1)}kg` : "";
-  return weightPart
-    ? `${ex.name} ${ex.setCount}x${ex.avgReps}x${weightPart}`
-    : `${ex.name} ${ex.setCount}x${ex.avgReps}`;
+/** 31240 → "31 240" — mono-friendly thousands grouping used across the dashboard */
+export function formatVolumeKg(v: number): string {
+  return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
 export function average(values: number[]): number | null {

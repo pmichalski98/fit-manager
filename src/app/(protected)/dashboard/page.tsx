@@ -1,8 +1,5 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { format, getISOWeek } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { formatDateYYYYMMDD } from "@/lib/utils";
 import {
   QuickLogSection,
   QuickLogSectionSkeleton,
@@ -16,8 +13,10 @@ import {
   MeasurementsCardSkeleton,
 } from "@/modules/dashboard/ui/components/measurements-card";
 import { resolveWeekContext } from "@/modules/dashboard/utils";
-import { DashboardTable } from "@/modules/dashboard/ui/components/dashboard-table";
-import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashboard-skeleton";
+import {
+  WeekOverview,
+  WeekOverviewSkeleton,
+} from "@/modules/dashboard/ui/components/week-overview";
 import {
   TrainingConsistency,
   TrainingConsistencySkeleton,
@@ -130,35 +129,14 @@ export default async function DashboardPage(props: PageProps) {
           <MeasurementsCard />
         </Suspense>
 
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">
-            Weekly overview
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`?week=${formatDateYYYYMMDD(previousMonday)}`}>
-                Previous
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`?week=${formatDateYYYYMMDD(nextMonday)}`}>Next</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="?">This week</Link>
-            </Button>
-          </div>
-        </div>
-
-        <Suspense
-          fallback={
-            <DashboardTableSkeleton dayDates={dayDates} dayKeys={dayKeys} />
-          }
-        >
-          <DashboardTable
+        <Suspense fallback={<WeekOverviewSkeleton />}>
+          <WeekOverview
             monday={monday}
             sunday={sunday}
             prevMonday={prevMonday}
             prevSunday={prevSunday}
+            previousMonday={previousMonday}
+            nextMonday={nextMonday}
             dayDates={dayDates}
             dayKeys={dayKeys}
           />
