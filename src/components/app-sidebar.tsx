@@ -15,45 +15,46 @@ import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/navigation";
 import { ThemeButton } from "@/components/theme-button";
 import { SidebarUserButton } from "@/components/sidebar-user-button";
-import Image from "next/image";
+import { DumbbellIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function AppSidebar() {
   const pathname = usePathname();
 
-  const activeStyles =
-    "bg-gradient-to-r from-primary/15 via-primary/8 to-transparent text-primary border-l-2 border-primary font-semibold dark:from-primary/20 dark:via-primary/10 hover:from-primary/20 hover:via-primary/10 dark:hover:from-primary/25 dark:hover:via-primary/15";
-
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 py-3">
-        <Link href="/" className="flex items-center gap-3">
-          <Image src="/logo.png" alt="Fit Manager" width={39} height={39} />
-          <p className="text-base font-bold tracking-tight text-foreground">
-            Fitness Manager
+      <SidebarHeader className="px-5 py-5">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="bg-primary flex size-[30px] shrink-0 items-center justify-center rounded-sm">
+            <DumbbellIcon
+              className="text-primary-foreground size-[17px]"
+              strokeWidth={2.5}
+            />
+          </span>
+          <p className="text-foreground text-[13px] font-bold tracking-[0.06em] uppercase">
+            Fit Manager
           </p>
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="px-3">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {NAV_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     className={cn(
-                      "h-10 border-l-2 border-transparent transition-all duration-200",
-                      "hover:from-sidebar-accent hover:via-sidebar-accent/30 hover:bg-gradient-to-r hover:to-transparent",
-                      pathname === item.href && activeStyles,
+                      "text-secondary-foreground h-[38px] gap-2.5 rounded-sm px-2.5 text-xs font-semibold tracking-[0.04em] uppercase transition-colors",
+                      "hover:bg-secondary hover:text-foreground",
+                      pathname === item.href &&
+                        "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
                     )}
                     asChild
                   >
                     <Link href={item.href}>
-                      <item.icon />
-                      <span className="text-sm font-medium tracking-tight">
-                        {item.label}
-                      </span>
+                      <item.icon className="size-[15px]" />
+                      <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -62,11 +63,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="gap-2 border-t px-3 py-3">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Preferences
-          </span>
+      <SidebarFooter className="gap-2 border-t p-3">
+        <div className="flex items-center justify-between px-1.5">
+          <span className="label-caps">Preferences</span>
           <ThemeButton />
         </div>
         <SidebarUserButton />

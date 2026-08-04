@@ -3,6 +3,18 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { LayoutWrapper } from "@/components/layout-wrapper";
 import "@/styles/globals.css";
 import { type Metadata, type Viewport } from "next";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-mono",
+});
 
 export const viewport: Viewport = {
   viewportFit: "cover",
@@ -28,7 +40,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
-      <html lang="en" suppressHydrationWarning>
+      <html
+        lang="en"
+        className={`${inter.variable} ${plexMono.variable}`}
+        suppressHydrationWarning
+      >
         <head />
         <body>
           <ThemeProvider
