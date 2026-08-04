@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { RenameExerciseDialog } from "./rename-exercise-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogFooter } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -28,13 +29,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 import { createTraining, updateTraining } from "@/modules/training/actions";
 import {
@@ -47,12 +42,14 @@ type TrainingFormProps = {
   trainingId?: string;
   defaultValues?: CreateTrainingInput;
   onSuccess?: (values: CreateTrainingInput) => void;
+  onCancel?: () => void;
 };
 
 export function TrainingForm({
   trainingId,
   defaultValues,
   onSuccess,
+  onCancel,
 }: TrainingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingSubmitValues, setPendingSubmitValues] =
@@ -66,7 +63,7 @@ export function TrainingForm({
   const form = useForm<CreateTrainingInput>({
     resolver: zodResolver(trainingFormSchema) as Resolver<CreateTrainingInput>,
     defaultValues: defaultValues ?? {
-      type: "cardio",
+      type: "strength",
       name: "",
       exercises: [
         {
@@ -203,57 +200,106 @@ export function TrainingForm({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type</FormLabel>
-                  <FormControl>
-                    <Select
-                      disabled={!!trainingId}
-                      value={field.value}
-                      onValueChange={(v) => field.onChange(v)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="strength">Strength</SelectItem>
-                        <SelectItem value="cardio">Cardio</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="flex flex-col gap-5 p-5">
+            <div className="flex gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="min-w-0 flex-1">
+                    <FormLabel className="label-caps">Training name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Push Day / Easy run"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Chest day / Easy run" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              {!trainingId && (
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="label-caps">Type</FormLabel>
+                      <FormControl>
+                        <div className="bg-input-bg border-input flex h-[34px] gap-0.5 rounded-sm border p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => field.onChange("strength")}
+                            className={cn(
+                              "rounded-[4px] px-3.5 text-[11px] tracking-[0.04em] uppercase transition-colors",
+                              field.value === "strength"
+                                ? "bg-primary text-primary-foreground font-bold"
+                                : "text-muted-foreground hover:text-primary font-semibold",
+                            )}
+                          >
+                            Strength
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => field.onChange("cardio")}
+                            className={cn(
+                              "rounded-[4px] px-3.5 text-[11px] tracking-[0.04em] uppercase transition-colors",
+                              field.value === "cardio"
+                                ? "bg-cardio text-primary-foreground font-bold"
+                                : "text-muted-foreground hover:text-cardio font-semibold",
+                            )}
+                          >
+                            Cardio
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
-          </div>
+            </div>
 
-          {isStrength ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">Exercises</h3>
-                <Button
+            {isStrength ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2.5 pb-0.5">
+                  <span className="w-[50px] shrink-0" />
+                  <span className="label-caps min-w-0 flex-1">Exercise</span>
+                  <span className="label-caps w-14 shrink-0 text-center">
+                    Sets
+                  </span>
+                  <span className="label-caps w-14 shrink-0 text-center">
+                    Min
+                  </span>
+                  <span className="label-caps w-14 shrink-0 text-center">
+                    Max
+                  </span>
+                  <span className="w-7 shrink-0" />
+                </div>
+
+                <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+                  <SortableContext
+                    items={fields.map((f) => f._id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="flex flex-col gap-2">
+                      {fields.map((field, index) => (
+                        <ExerciseRow
+                          key={field._id}
+                          id={field._id}
+                          index={index}
+                          onRemove={() => remove(index)}
+                          control={form.control}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={() =>
                     append({
                       name: "",
@@ -262,44 +308,30 @@ export function TrainingForm({
                       targetRepsMax: null,
                     })
                   }
+                  className="border-input text-muted-foreground hover:border-primary hover:text-primary ml-[60px] flex h-[34px] items-center justify-center gap-1.5 rounded-sm border border-dashed text-[11px] font-semibold tracking-[0.06em] uppercase transition-colors"
                 >
-                  <Plus className="size-4" /> Add exercise
-                </Button>
+                  <Plus className="size-3.5" />
+                  Add exercise
+                </button>
+                <FormMessage>{exercisesErrorMessage}</FormMessage>
               </div>
+            ) : null}
+          </div>
 
-              <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-                <SortableContext
-                  items={fields.map((f) => f._id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-2">
-                    {fields.map((field, index) => (
-                      <ExerciseRow
-                        key={field._id}
-                        id={field._id}
-                        index={index}
-                        onRemove={() => remove(index)}
-                        control={form.control}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-              <FormMessage>{exercisesErrorMessage}</FormMessage>
-            </div>
-          ) : null}
-
-          <div className="flex justify-end">
+          <DialogFooter className="border-t px-5 py-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting
                 ? trainingId
-                  ? "Updating..."
+                  ? "Saving..."
                   : "Creating..."
                 : trainingId
-                  ? "Update training"
-                  : "Create training"}
+                  ? "Save changes"
+                  : "Create"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </Form>
 

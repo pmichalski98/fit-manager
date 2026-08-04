@@ -27,11 +27,16 @@ export function CreateTrainingDialog({
           New training
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>New Training</DialogTitle>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-[620px]">
+        <DialogHeader className="border-b px-5 py-[18px]">
+          <DialogTitle className="section-marker text-xs font-bold tracking-[0.1em] uppercase">
+            New training
+          </DialogTitle>
         </DialogHeader>
-        <TrainingForm onSuccess={() => setOpen(false)} />
+        <TrainingForm
+          onSuccess={() => setOpen(false)}
+          onCancel={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

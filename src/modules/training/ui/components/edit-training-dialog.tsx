@@ -49,14 +49,17 @@ export function EditTrainingDialog({ training }: { training: Training }) {
           <span className="sr-only">Edit training</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Edit Training</DialogTitle>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-[620px]">
+        <DialogHeader className="border-b px-5 py-[18px]">
+          <DialogTitle className="section-marker text-xs font-bold tracking-[0.1em] uppercase">
+            Edit training
+          </DialogTitle>
         </DialogHeader>
         <TrainingForm
           trainingId={training.id}
           defaultValues={defaultValues}
           onSuccess={() => setOpen(false)}
+          onCancel={() => setOpen(false)}
         />
       </DialogContent>
     </Dialog>

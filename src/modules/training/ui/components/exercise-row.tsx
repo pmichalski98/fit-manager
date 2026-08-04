@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import {
   FormControl,
   FormField,
@@ -49,103 +48,102 @@ export function ExerciseRow({
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-start gap-2">
+    <div ref={setNodeRef} style={style} className="flex items-start gap-2.5">
       <button
         type="button"
-        className="text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-grab rounded-md border p-2"
+        aria-label="Drag to reorder"
+        className="text-faint hover:text-secondary-foreground flex h-[34px] w-5 shrink-0 cursor-grab items-center justify-center transition-colors"
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="size-4" />
+        <GripVertical className="size-3.5" />
       </button>
-      <div className="flex-1 space-y-2">
-        <FormField
-          control={control}
-          name={`exercises.${index}.name` as const}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="sr-only">Exercise name</FormLabel>
-              <FormControl>
-                <Input placeholder={`Exercise #${index + 1}`} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-3 gap-2">
-          <FormField
-            control={control}
-            name={`exercises.${index}.targetSets` as const}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="sr-only">Target sets</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    placeholder="Sets"
-                    {...field}
-                    value={field.value ?? ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`exercises.${index}.targetRepsMin` as const}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="sr-only">Min reps</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    placeholder="Min reps"
-                    {...field}
-                    value={field.value ?? ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`exercises.${index}.targetRepsMax` as const}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="sr-only">Max reps</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    placeholder="Max reps"
-                    {...field}
-                    value={field.value ?? ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
+      <span className="text-faint flex h-[34px] w-5 shrink-0 items-center justify-end font-mono text-[11px]">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <FormField
+        control={control}
+        name={`exercises.${index}.name` as const}
+        render={({ field }) => (
+          <FormItem className="min-w-0 flex-1">
+            <FormLabel className="sr-only">Exercise name</FormLabel>
+            <FormControl>
+              <Input placeholder="Exercise name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name={`exercises.${index}.targetSets` as const}
+        render={({ field }) => (
+          <FormItem className="w-14 shrink-0">
+            <FormLabel className="sr-only">Target sets</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                placeholder="—"
+                className="px-1 text-center font-mono"
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name={`exercises.${index}.targetRepsMin` as const}
+        render={({ field }) => (
+          <FormItem className="w-14 shrink-0">
+            <FormLabel className="sr-only">Min reps</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                placeholder="—"
+                className="px-1 text-center font-mono"
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name={`exercises.${index}.targetRepsMax` as const}
+        render={({ field }) => (
+          <FormItem className="w-14 shrink-0">
+            <FormLabel className="sr-only">Max reps</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                placeholder="—"
+                className="px-1 text-center font-mono"
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogTrigger asChild>
-          <Button
+          <button
             type="button"
-            variant="destructive"
-            size="icon-sm"
-            aria-label="Remove"
+            aria-label="Remove exercise"
+            className="text-faint hover:text-destructive flex h-[34px] w-7 shrink-0 items-center justify-center transition-colors"
           >
-            <Trash2 className="size-4" />
-          </Button>
+            <Trash2 className="size-3.5" />
+          </button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
