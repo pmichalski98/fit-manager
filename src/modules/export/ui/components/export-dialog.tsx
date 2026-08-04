@@ -91,16 +91,20 @@ export function ExportDialog() {
           Export for AI
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Export data for AI analysis</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-[420px]">
+        <DialogHeader className="border-b px-5 py-[18px]">
+          <DialogTitle className="section-marker text-xs font-bold tracking-[0.1em] uppercase">
+            Export data for AI
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4 p-5">
+          <DialogDescription className="text-secondary-foreground text-xs leading-relaxed">
             Exports weight, nutrition, training and body measurements as
             Markdown — paste it into an AI chat to analyze your progress.
           </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col items-center gap-2">
-          <div className="bg-muted flex w-fit items-center gap-0.5 rounded-lg p-0.5">
+
+          <div className="bg-input-bg border-input flex w-fit gap-0.5 rounded-sm border p-0.5">
             {PRESETS.map((preset) => {
               const target = presetRange(preset.months);
               const active =
@@ -112,10 +116,10 @@ export function ExportDialog() {
                   type="button"
                   onClick={() => setRange(presetRange(preset.months))}
                   className={cn(
-                    "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                    "rounded-[4px] px-3.5 py-[5px] font-mono text-[11px] transition-colors",
                     active
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "bg-primary text-primary-foreground font-bold"
+                      : "text-muted-foreground hover:text-foreground font-semibold",
                   )}
                 >
                   {preset.label}
@@ -123,37 +127,50 @@ export function ExportDialog() {
               );
             })}
           </div>
-          <Calendar
-            mode="range"
-            weekStartsOn={1}
-            selected={range}
-            onSelect={setRange}
-            defaultMonth={range?.from}
-            disabled={{ after: new Date() }}
-          />
-          <p className="text-muted-foreground text-sm">
-            {range?.from && range?.to
-              ? `${format(range.from, "MMM d, yyyy")} – ${format(range.to, "MMM d, yyyy")}`
-              : "Select a date range"}
-          </p>
+
+          <div className="flex flex-col items-center gap-2">
+            <Calendar
+              mode="range"
+              weekStartsOn={1}
+              selected={range}
+              onSelect={setRange}
+              defaultMonth={range?.from}
+              disabled={{ after: new Date() }}
+              className="w-full bg-transparent p-0 font-mono"
+              classNames={{
+                caption_label:
+                  "text-[11px] font-semibold uppercase tracking-[0.08em] select-none",
+                weekday:
+                  "text-faint flex-1 text-[10px] font-semibold select-none",
+              }}
+            />
+            <p className="text-secondary-foreground text-center font-mono text-[11px]">
+              {range?.from && range?.to
+                ? `${format(range.from, "d MMM yyyy")} — ${format(range.to, "d MMM yyyy")}`
+                : "Select a date range"}
+            </p>
+          </div>
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+
+        <DialogFooter className="border-t px-5 py-4">
           <Button
             variant="outline"
+            size="sm"
             disabled={pending !== null || !complete}
             onClick={() => runExport("copy")}
           >
-            {pending === "copy" ? <Spinner /> : <Copy className="size-4" />}
-            Copy to clipboard
+            {pending === "copy" ? <Spinner /> : <Copy className="size-3.5" />}
+            Copy
           </Button>
           <Button
+            size="sm"
             disabled={pending !== null || !complete}
             onClick={() => runExport("download")}
           >
             {pending === "download" ? (
               <Spinner />
             ) : (
-              <Download className="size-4" />
+              <Download className="size-3.5" />
             )}
             Download .md
           </Button>
