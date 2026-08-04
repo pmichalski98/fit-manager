@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -29,17 +28,11 @@ export function CaloricGoalDialog({ defaultGoal }: Props) {
           <span className="sr-only">Set caloric goal</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="gap-0 p-0 sm:max-w-[380px]">
+        <DialogHeader className="border-b px-5 py-[18px]">
           <DialogTitle className="section-marker text-xs font-bold tracking-[0.1em] uppercase">
             Set caloric goal
           </DialogTitle>
-          {defaultGoal && (
-            <DialogDescription>
-              Your current caloric goal is{" "}
-              <span className="text-primary font-bold">{defaultGoal} kcal</span>
-            </DialogDescription>
-          )}
         </DialogHeader>
         <CaloricGoalForm defaultGoal={defaultGoal} />
       </DialogContent>

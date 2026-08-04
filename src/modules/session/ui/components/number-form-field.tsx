@@ -34,6 +34,8 @@ export function NumberFormField<
             <Input
               type="number"
               inputMode="numeric"
+              placeholder="—"
+              className="text-center font-mono"
               {...field}
               value={field.value ?? ""}
             />

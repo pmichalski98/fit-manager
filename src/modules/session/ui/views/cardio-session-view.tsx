@@ -6,7 +6,6 @@ import { format } from "date-fns";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -68,83 +67,98 @@ export function CardioSessionView({ template, last }: Props) {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{template.name}</h1>
+    <div className="max-w-2xl space-y-5">
+      <div>
+        <h1 className="text-[22px] font-bold tracking-tight">
+          {template.name}
+        </h1>
+        <p className="text-muted-foreground mt-1 text-[11px] font-medium tracking-[0.08em] uppercase">
+          Cardio session · log your ride
+        </p>
+      </div>
+
       {last?.metrics ? (
-        <Alert variant="accent">
-          <History />
-          <AlertDescription>
-            <span className="font-medium">
-              Using values from your last session
-            </span>{" "}
-            <span className="text-muted-foreground">
-              ({format(new Date(last.session.date), "MMM d, yyyy")}) — adjust as
-              needed.
-            </span>
-          </AlertDescription>
-        </Alert>
+        <div className="bg-card flex flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg border px-3.5 py-2.5 text-xs">
+          <History className="text-muted-foreground size-3.5 shrink-0 self-center" />
+          <span className="font-semibold">Values from your last session</span>
+          <span className="text-muted-foreground font-mono">
+            {format(new Date(last.session.date), "MMM d, yyyy")}
+          </span>
+          <span className="text-muted-foreground">adjust as needed.</span>
+        </div>
       ) : null}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <DateFormField control={form.control} name="date" label="Date" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <NumberFormField
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="bg-card rounded-[10px] border"
+        >
+          <div className="flex flex-col gap-4 p-5">
+            <DateFormField control={form.control} name="date" label="Date" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <NumberFormField
+                control={form.control}
+                name="durationMin"
+                label="Duration (min)"
+              />
+              <NumberFormField
+                control={form.control}
+                name="kcal"
+                label="Kcal"
+              />
+              <NumberFormField
+                control={form.control}
+                name="distanceKm"
+                label="Distance (km)"
+              />
+              <NumberFormField
+                control={form.control}
+                name="cadence"
+                label="Cadence (rpm)"
+              />
+              <NumberFormField
+                control={form.control}
+                name="avgHr"
+                label="Avg Heart Rate (bpm)"
+              />
+              <NumberFormField
+                control={form.control}
+                name="avgSpeedKmh"
+                label="Avg Speed (km/h)"
+              />
+              <NumberFormField
+                control={form.control}
+                name="maxSpeedKmh"
+                label="Max Speed (km/h)"
+              />
+              <NumberFormField
+                control={form.control}
+                name="avgPowerW"
+                label="Avg Power (W)"
+              />
+            </div>
+            <FormField
               control={form.control}
-              name="durationMin"
-              label="Duration (min)"
-            />
-            <NumberFormField control={form.control} name="kcal" label="Kcal" />
-            <NumberFormField
-              control={form.control}
-              name="distanceKm"
-              label="Distance (km)"
-            />
-            <NumberFormField
-              control={form.control}
-              name="cadence"
-              label="Cadence (rpm)"
-            />
-            <NumberFormField
-              control={form.control}
-              name="avgHr"
-              label="Avg Heart Rate (bpm)"
-            />
-            <NumberFormField
-              control={form.control}
-              name="avgSpeedKmh"
-              label="Avg Speed (km/h)"
-            />
-            <NumberFormField
-              control={form.control}
-              name="maxSpeedKmh"
-              label="Max Speed (km/h)"
-            />
-            <NumberFormField
-              control={form.control}
-              name="avgPowerW"
-              label="Avg Power (W)"
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes (optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="Add any notes about the session"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Notes (optional)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="Add any notes about the session"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex justify-end">
-            <Button type="submit">Complete session</Button>
+          <div className="flex justify-end border-t px-5 py-4">
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Saving..." : "Complete session"}
+            </Button>
           </div>
         </form>
       </Form>
