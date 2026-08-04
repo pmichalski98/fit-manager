@@ -86,8 +86,8 @@ export function ExportDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <FileDown className="size-4" />
+        <Button variant="outline-accent" size="sm">
+          <FileDown className="size-3.5" />
           Export for AI
         </Button>
       </DialogTrigger>

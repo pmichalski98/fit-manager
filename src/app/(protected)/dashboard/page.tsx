@@ -1,7 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { format, getISOWeek } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { formatDateYYYYMMDD } from "@/lib/utils";
+import {
+  QuickLogSection,
+  QuickLogSectionSkeleton,
+} from "@/modules/dashboard/ui/components/quick-log-section";
 import { resolveWeekContext } from "@/modules/dashboard/utils";
 import { DashboardTable } from "@/modules/dashboard/ui/components/dashboard-table";
 import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashboard-skeleton";
@@ -55,16 +60,16 @@ export default async function DashboardPage(props: PageProps) {
     console.error("Failed to fetch dashboard data", error as Error);
   }
 
+  const now = new Date();
+
   return (
     <ChartVisibilityProvider>
-      <div className="space-y-8">
-        <div className="flex items-start justify-between gap-4">
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight md:text-2xl">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Your weekly overview and progress at a glance.
+            <h1 className="text-[22px] font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1 font-mono text-[11px] font-medium tracking-[0.08em] uppercase">
+              {format(now, "EEE · d MMM yyyy")} · week {getISOWeek(now)}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -72,6 +77,10 @@ export default async function DashboardPage(props: PageProps) {
             <ChartsMenu />
           </div>
         </div>
+
+        <Suspense fallback={<QuickLogSectionSkeleton />}>
+          <QuickLogSection />
+        </Suspense>
 
         <HideableChart chartId="training-activity">
           <Suspense fallback={<TrainingConsistencySkeleton />}>

@@ -61,7 +61,7 @@ export async function createOrUpdateDailyLog(input: DailyLogFormValues) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
   } finally {
-    revalidatePath("/body");
+    revalidatePath("/dashboard");
   }
 }
 
@@ -91,7 +91,7 @@ export async function createOrUpdateMeasurements(
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
   } finally {
-    revalidatePath("/body");
+    revalidatePath("/dashboard");
   }
 }
 
@@ -111,7 +111,7 @@ export async function updateUserCaloricGoal(input: GoalFormValues) {
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
   } finally {
-    revalidatePath("/body");
+    revalidatePath("/dashboard");
   }
 }
 

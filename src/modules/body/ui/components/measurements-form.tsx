@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { differenceInDays, format } from "date-fns";
+import { HistoryIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DialogClose, DialogFooter } from "@/components/ui/dialog";
 
 import { createOrUpdateMeasurements } from "@/modules/body/actions";
 import {
@@ -23,13 +26,23 @@ import {
 } from "@/modules/body/schemas";
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
 import type { BodyMeasurement } from "@/server/db/schema";
-import { DateFormField } from "@/components/date-form-field";
+
+const MEASUREMENT_FIELDS = [
+  { name: "neck", label: "Neck" },
+  { name: "chest", label: "Chest" },
+  { name: "waist", label: "Waist" },
+  { name: "bellybutton", label: "Belly button" },
+  { name: "hips", label: "Hips" },
+  { name: "biceps", label: "Biceps" },
+  { name: "thigh", label: "Thigh" },
+] as const;
 
 type Props = {
   last: BodyMeasurement | null;
+  onSuccess?: () => void;
 };
 
-export function MeasurementsForm({ last }: Props) {
+export function MeasurementsForm({ last, onSuccess }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<MeasurementsFormValues>({
@@ -54,6 +67,7 @@ export function MeasurementsForm({ last }: Props) {
       setIsSubmitting(true);
       await createOrUpdateMeasurements(values);
       toast.success("Measurements saved");
+      onSuccess?.();
     } catch {
       toast.error("Failed to save measurements");
     } finally {
@@ -61,67 +75,99 @@ export function MeasurementsForm({ last }: Props) {
     }
   };
 
-  const measurementField = (
-    name: keyof MeasurementsFormValues,
-    label: string,
-    _step = "0.1",
-  ) => (
-    <FormField
-      key={String(name)}
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-
-          <FormControl>
-            <Input type="number" inputMode="decimal" {...field} />
-          </FormControl>
-          {last?.[name] ? (
-            <FormLabel className="text-primary/70 text-xs font-semibold">
-              Previous: {last?.[name]} cm {last.date}
-            </FormLabel>
-          ) : null}
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
+  const ageDays = last?.date
+    ? differenceInDays(new Date(), new Date(last.date))
+    : null;
+  const isStale = ageDays != null && ageDays > 14;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <DateFormField control={form.control} name="date" label="Date" />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-4 p-5">
+          {isStale ? (
+            <div className="border-cardio/40 bg-cardio/10 flex items-center gap-2.5 rounded-md border px-3.5 py-2.5 text-xs">
+              <HistoryIcon className="text-cardio size-3.5 shrink-0" />
+              <span>
+                Last measurements{" "}
+                <span className="text-cardio font-mono">
+                  {ageDays} days ago
+                </span>{" "}
+                ({format(new Date(last!.date), "d MMM yyyy")}) — save new ones
+                to keep your progress accurate.
+              </span>
+            </div>
+          ) : null}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {measurementField("neck", "Neck (cm)")}
-          {measurementField("chest", "Chest (cm)")}
-          {measurementField("waist", "Waist (cm)")}
-          {measurementField("bellybutton", "Belly button (cm)")}
-          {measurementField("hips", "Hips (cm)")}
-          {measurementField("biceps", "Biceps (cm)")}
-          {measurementField("thigh", "Thigh (cm)")}
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="max-w-[200px]">
+                <FormLabel className="label-caps">Date</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    className="font-mono scheme-light dark:scheme-dark"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {MEASUREMENT_FIELDS.map(({ name, label }) => (
+              <FormField
+                key={name}
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                  <FormItem className="gap-1.5">
+                    <FormLabel className="label-caps">{label}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        className="text-center font-mono"
+                        {...field}
+                      />
+                    </FormControl>
+                    <span className="text-faint font-mono text-[10px]">
+                      {last?.[name] ? `prev. ${last[name]} cm` : " "}
+                    </span>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="label-caps">Notes</FormLabel>
+                <FormControl>
+                  <Input type="text" placeholder="Optional" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Input type="text" placeholder="Optional" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save"}
+        <DialogFooter className="border-t px-5 py-4">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" size="sm">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button type="submit" size="sm" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save measurements"}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Form>
   );
