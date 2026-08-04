@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -24,6 +18,9 @@ import {
   subDays,
 } from "date-fns";
 import { cn } from "@/lib/utils";
+
+// Cell 12px + 3px gap — used for month label positioning
+const CELL_STRIDE = 15;
 
 export async function TrainingConsistency() {
   const data = await getConsistencyGraphData();
@@ -47,8 +44,6 @@ export async function TrainingConsistency() {
   }
 
   // 2. Align to Monday
-  // We want to ensure we encompass all sessions.
-  // If first session is mid-week, we still need to start from Monday of that week.
   const graphStartDate = startOfWeek(startDate, { weekStartsOn: 1 });
   const graphEndDate = today;
 
@@ -64,17 +59,11 @@ export async function TrainingConsistency() {
       continue;
     }
 
-    // Using ISO string split to get the YYYY-MM-DD part correctly in local context might be tricky if 'date' is string or Date
-    // The repo returns { date: string, type: string } because of the fix?
-    // Actually the type definition in repo says date: Date | string now maybe?
-    // Let's handle it robustly.
-
     const dateObj = typeof s.date === "string" ? new Date(s.date) : s.date;
     const key = format(dateObj, "yyyy-MM-dd");
 
     const existing = sessionsMap.get(key) ?? [];
 
-    // Count every row
     totalSessions++;
     if (s.type === "cardio") cardioCount++;
     if (s.type === "strength") strengthCount++;
@@ -87,20 +76,11 @@ export async function TrainingConsistency() {
   const weeks: Date[][] = [];
   let currentWeekStart = graphStartDate;
 
-  // We'll track month changes for labels
   const monthLabels: { index: number; label: string; isYearStart?: boolean }[] =
     [];
-  // Weeks containing Jan 1 get a visual year separator
   const yearStartWeeks = new Set<number>();
 
   let weekIndex = 0;
-  // Stop if currentWeekStart is strictly AFTER graphEndDate.
-  // If currentWeekStart contains graphEndDate (today), we process it.
-  // addDays(graphEndDate, 1) check was slightly loose or correct?
-  // We want the week containing today to be the last week.
-  // "startOfWeek" of today matches the last week's start.
-  // So while currentWeekStart <= startOfWeek(today)
-
   const lastWeekStart = startOfWeek(graphEndDate, { weekStartsOn: 1 });
 
   while (!isAfter(currentWeekStart, lastWeekStart)) {
@@ -138,182 +118,181 @@ export async function TrainingConsistency() {
   }
 
   return (
-    <div>
-      <Card className="bg-card">
-        <CardHeader>
-          <CardTitle>Training Activity</CardTitle>
-        </CardHeader>
-        {/* Graph Container */}
-        <CardContent className="flex gap-2">
-          {/* Weekday Labels Column - stays fixed */}
-          <div className="text-card-foreground flex shrink-0 flex-col justify-between text-xs">
-            <div className="h-4" />
-            <div className="h-3" />
-            <div className="h-3 leading-3">Mon</div>
-            <div className="h-3" />
-            <div className="h-3 leading-3">Wed</div>
-            <div className="h-3" />
-            <div className="h-3 leading-3">Fri</div>
-            <div className="h-3" />
-          </div>
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-baseline justify-between gap-2">
+        <CardTitle>Training Activity</CardTitle>
+        <div className="text-muted-foreground flex items-center gap-3.5 font-mono text-[11px]">
+          <span className="flex items-center gap-1.5">
+            <span className="bg-primary size-[9px] rounded-[2px]" />
+            {strengthCount} strength
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="bg-cardio size-[9px] rounded-[2px]" />
+            {cardioCount} cardio
+          </span>
+          <span>Σ {totalSessions}</span>
+        </div>
+      </CardHeader>
+      <CardContent className="flex gap-2.5">
+        {/* Weekday Labels Column - stays fixed */}
+        <div className="text-faint flex shrink-0 flex-col gap-[3px] font-mono text-[10px]">
+          <div className="h-3.5" />
+          <div className="h-3" />
+          <div className="h-3 leading-3">Mon</div>
+          <div className="h-3" />
+          <div className="h-3 leading-3">Wed</div>
+          <div className="h-3" />
+          <div className="h-3 leading-3">Fri</div>
+          <div className="h-3" />
+        </div>
 
-          {/* Scrollable grid area */}
-          <AutoScrollContainer className="no-scrollbar min-w-0 flex-1 overflow-x-auto">
-            <div className="flex min-w-[460px] flex-col gap-1">
-              {/* Month Labels Row */}
-              <div className="text-card-foreground relative h-4 text-xs">
-                {monthLabels.map((m, i) => {
-                  const next = monthLabels[i + 1];
-                  const endIndex = next ? next.index : weeks.length;
-                  const centerOffset = ((endIndex - m.index) * 16) / 2;
-                  const leftPosition = m.index * 16 + centerOffset;
+        {/* Scrollable grid area */}
+        <AutoScrollContainer className="no-scrollbar min-w-0 flex-1 overflow-x-auto">
+          <div className="flex min-w-[460px] flex-col gap-[3px]">
+            {/* Month Labels Row */}
+            <div className="text-faint relative h-3.5 font-mono text-[10px]">
+              {monthLabels.map((m, i) => {
+                const next = monthLabels[i + 1];
+                const endIndex = next ? next.index : weeks.length;
+                const centerOffset = ((endIndex - m.index) * CELL_STRIDE) / 2;
+                const leftPosition = m.index * CELL_STRIDE + centerOffset;
 
-                  return (
-                    <span
-                      key={i}
-                      className={cn(
-                        "absolute whitespace-nowrap",
-                        m.isYearStart && "text-foreground font-semibold",
-                      )}
-                      style={{
-                        left: `${leftPosition}px`,
-                        transform: "translateX(-50%)",
-                      }}
-                    >
-                      {m.label}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {/* Grid */}
-              <div className="flex gap-1">
-                {weeks.map((week, weekIdx) => (
-                  <div
-                    key={weekIdx}
+                return (
+                  <span
+                    key={i}
                     className={cn(
-                      "flex flex-col gap-1",
-                      // Vertical rule in the gap before the week containing Jan 1
-                      yearStartWeeks.has(weekIdx) &&
-                        "before:bg-border relative before:absolute before:top-0 before:bottom-0 before:-left-[2.5px] before:w-px",
+                      "absolute whitespace-nowrap",
+                      m.isYearStart && "text-foreground font-semibold",
                     )}
+                    style={{
+                      left: `${leftPosition}px`,
+                      transform: "translateX(-50%)",
+                    }}
                   >
-                    {week.map((day, dayIdx) => {
-                      const key = format(day, "yyyy-MM-dd");
-                      const isFuture = isAfter(day, today);
-
-                      if (isFuture) {
-                        return null;
-                      }
-
-                      const types = sessionsMap.get(key);
-                      let colorClass = "bg-muted dark:bg-secondary-foreground/30";
-                      if (types && types.length > 0) {
-                        const hasStrength = types.includes("strength");
-                        const hasCardio = types.includes("cardio");
-
-                        if (hasStrength && hasCardio) {
-                          colorClass = "bg-chart-1";
-                        } else if (hasStrength) {
-                          colorClass = "bg-chart-2";
-                        } else if (hasCardio) {
-                          colorClass = "bg-chart-3";
-                        }
-                      }
-
-                      const isToday = isSameDay(day, today);
-                      const formattedDate = format(day, "MMM d, yyyy");
-                      const formattedTypes = types
-                        ? types
-                            .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
-                            .join(", ")
-                        : "No training";
-
-                      return (
-                        <div key={dayIdx} className="h-3 w-3">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div
-                                className={`h-full w-full rounded-[2px] ${colorClass} ${isToday ? "ring-1 ring-white ring-offset-1 ring-offset-background" : ""}`}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-center">
-                                <div className="font-bold">{formattedTypes}</div>
-                                <div className="text-muted-foreground text-xs">
-                                  {formattedDate}
-                                </div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+                    {m.label}
+                  </span>
+                );
+              })}
             </div>
-          </AutoScrollContainer>
-        </CardContent>
 
-        <CardFooter className="text-card-foreground flex flex-wrap items-center justify-end gap-3 text-sm md:gap-4">
-          <div className="flex items-center gap-2 text-xs">
-            <div className="bg-chart-2 h-3 w-3 rounded-sm" />
-            <span>{strengthCount} Strength</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="bg-chart-3 h-3 w-3 rounded-sm" />
-            <span>{cardioCount} Cardio</span>
-          </div>
-          <div className="text-card-foreground/70 ml-2 text-xs">
-            Total: {totalSessions}
-          </div>
-        </CardFooter>
-      </Card>
+            {/* Grid */}
+            <div className="flex gap-[3px]">
+              {weeks.map((week, weekIdx) => (
+                <div
+                  key={weekIdx}
+                  className={cn(
+                    "flex flex-col gap-[3px]",
+                    // Vertical rule in the gap before the week containing Jan 1
+                    yearStartWeeks.has(weekIdx) &&
+                      "before:bg-border relative before:absolute before:top-0 before:bottom-0 before:-left-[2px] before:w-px",
+                  )}
+                >
+                  {week.map((day, dayIdx) => {
+                    const key = format(day, "yyyy-MM-dd");
+                    const isFuture = isAfter(day, today);
 
-      {/* Summary Footer */}
-    </div>
+                    if (isFuture) {
+                      return null;
+                    }
+
+                    const types = sessionsMap.get(key);
+                    let colorClass = "bg-heatmap-empty";
+                    if (types && types.length > 0) {
+                      const hasStrength = types.includes("strength");
+                      const hasCardio = types.includes("cardio");
+
+                      if (hasStrength && hasCardio) {
+                        colorClass = "bg-heatmap-both";
+                      } else if (hasStrength) {
+                        colorClass = "bg-primary";
+                      } else if (hasCardio) {
+                        colorClass = "bg-cardio";
+                      }
+                    }
+
+                    const isToday = isSameDay(day, today);
+                    const formattedDate = format(day, "MMM d, yyyy");
+                    const formattedTypes = types
+                      ? types
+                          .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+                          .join(", ")
+                      : "No training";
+
+                    return (
+                      <div key={dayIdx} className="h-3 w-3">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                "h-full w-full rounded-[2px]",
+                                colorClass,
+                                isToday && "ring-primary ring-2",
+                              )}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <span className="font-mono text-xs">
+                              {formattedTypes} — {formattedDate}
+                            </span>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </AutoScrollContainer>
+      </CardContent>
+    </Card>
   );
 }
 
-const SKELETON_WEEKS = 18;
+// More columns than any viewport can show — the grid is right-aligned and
+// clipped on the left, mirroring the real graph after its auto-scroll
+const SKELETON_WEEKS = 80;
 const SKELETON_ROWS = 7;
 
 export function TrainingConsistencySkeleton() {
   return (
-    <Card className="bg-card">
-      <CardHeader>
-        <Skeleton className="h-5 w-36" />
+    <Card>
+      <CardHeader className="flex flex-row items-baseline justify-between">
+        <Skeleton className="h-3.5 w-32" />
+        <div className="flex items-center gap-3.5">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-8" />
+        </div>
       </CardHeader>
-      <CardContent className="flex gap-2">
+      <CardContent className="flex gap-2.5">
         {/* Day labels */}
-        <div className="flex shrink-0 flex-col justify-between text-xs text-muted-foreground">
-          <div className="h-4" />
+        <div className="text-faint flex shrink-0 flex-col gap-[3px] font-mono text-[10px]">
+          <div className="h-3.5" />
           <div className="h-3" />
           <Skeleton className="h-3 w-6" />
           <div className="h-3" />
           <Skeleton className="h-3 w-6" />
           <div className="h-3" />
-          <Skeleton className="h-3 w-4" />
+          <Skeleton className="h-3 w-5" />
           <div className="h-3" />
         </div>
         {/* Grid */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-hidden">
           {/* Month labels */}
-          <div className="mb-1 flex h-4 gap-[52px]">
-            <Skeleton className="h-3 w-7" />
-            <Skeleton className="h-3 w-7" />
-            <Skeleton className="h-3 w-7" />
-            <Skeleton className="h-3 w-7" />
+          <div className="mb-[3px] flex h-3.5 justify-end gap-[48px] overflow-hidden">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} className="h-3 w-7 shrink-0" />
+            ))}
           </div>
           {/* Dot grid */}
-          <div className="flex gap-1">
+          <div className="flex justify-end gap-[3px]">
             {Array.from({ length: SKELETON_WEEKS }).map((_, w) => (
-              <div key={w} className="flex flex-col gap-1">
+              <div key={w} className="flex shrink-0 flex-col gap-[3px]">
                 {Array.from({ length: SKELETON_ROWS }).map((_, d) => (
                   <div
                     key={d}
-                    className="size-3 animate-pulse rounded-[2px] bg-muted dark:bg-secondary-foreground/20"
+                    className="bg-heatmap-empty size-3 animate-pulse rounded-[2px]"
                     style={{ animationDelay: `${(w * 7 + d) * 15}ms` }}
                   />
                 ))}
@@ -322,11 +301,6 @@ export function TrainingConsistencySkeleton() {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-end gap-3 md:gap-4">
-        <Skeleton className="h-3 w-20" />
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="h-3 w-14" />
-      </CardFooter>
     </Card>
   );
 }

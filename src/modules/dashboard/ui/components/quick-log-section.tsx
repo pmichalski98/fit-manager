@@ -1,3 +1,5 @@
+import { differenceInDays } from "date-fns";
+
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
 import {
   getCaloricGoal,
@@ -22,12 +24,19 @@ export async function QuickLogSection() {
     getLatestMeasurements(),
   ]);
 
+  // Computed on the server and passed down as a plain prop — computing it
+  // inside the client component would risk an SSR/client hydration mismatch
+  const measurementsAgeDays = lastMeasurement?.date
+    ? differenceInDays(new Date(), new Date(lastMeasurement.date))
+    : null;
+
   return (
     <QuickLogBar
       todayLog={todayLog ?? null}
       latestLog={latestLog ?? null}
       caloricGoal={caloricGoal ?? null}
       lastMeasurement={lastMeasurement ?? null}
+      measurementsAgeDays={measurementsAgeDays}
     />
   );
 }

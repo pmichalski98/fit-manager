@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { differenceInDays } from "date-fns";
 import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
@@ -24,6 +23,7 @@ type Props = {
   latestLog: DailyLog | null;
   caloricGoal: number | null;
   lastMeasurement: BodyMeasurement | null;
+  measurementsAgeDays: number | null;
 };
 
 export function QuickLogBar({
@@ -31,6 +31,7 @@ export function QuickLogBar({
   latestLog,
   caloricGoal,
   lastMeasurement,
+  measurementsAgeDays,
 }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -55,9 +56,7 @@ export function QuickLogBar({
     }
   };
 
-  const ageDays = lastMeasurement?.date
-    ? differenceInDays(new Date(), new Date(lastMeasurement.date))
-    : null;
+  const ageDays = measurementsAgeDays;
   const isStale = ageDays == null || ageDays > 14;
   const measurementsStatus =
     ageDays == null
