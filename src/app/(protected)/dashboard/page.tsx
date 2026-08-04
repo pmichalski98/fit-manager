@@ -7,6 +7,10 @@ import {
   QuickLogSection,
   QuickLogSectionSkeleton,
 } from "@/modules/dashboard/ui/components/quick-log-section";
+import {
+  KpiStrip,
+  KpiStripSkeleton,
+} from "@/modules/dashboard/ui/components/kpi-strip";
 import { resolveWeekContext } from "@/modules/dashboard/utils";
 import { DashboardTable } from "@/modules/dashboard/ui/components/dashboard-table";
 import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashboard-skeleton";
@@ -80,6 +84,15 @@ export default async function DashboardPage(props: PageProps) {
 
         <Suspense fallback={<QuickLogSectionSkeleton />}>
           <QuickLogSection />
+        </Suspense>
+
+        <Suspense fallback={<KpiStripSkeleton />}>
+          <KpiStrip
+            monday={monday}
+            sunday={sunday}
+            prevMonday={prevMonday}
+            prevSunday={prevSunday}
+          />
         </Suspense>
 
         <HideableChart chartId="training-activity">

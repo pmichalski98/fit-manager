@@ -69,6 +69,7 @@ export type SessionSummary = {
   startAt: Date;
   endAt: Date | null;
   durationMin: number | null; // Changed from durationSec
+  totalLoadKg: number | null;
   cardio?: {
     durationMin: number | null;
     distanceKm: number | null;

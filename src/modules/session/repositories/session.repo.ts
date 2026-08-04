@@ -393,6 +393,7 @@ class SessionRepository {
         startAt: s.startAt,
         endAt: s.endAt,
         durationMin: s.durationMin ?? null,
+        totalLoadKg: s.totalLoadKg ?? null,
         cardio: cardio
           ? {
               durationMin: cardio.durationMin,
