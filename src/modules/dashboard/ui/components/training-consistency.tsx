@@ -1,10 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { getConsistencyGraphData } from "@/modules/dashboard/actions";
 import { AutoScrollContainer } from "./auto-scroll-container";
 import {
@@ -219,24 +214,15 @@ export async function TrainingConsistency() {
                       : "No training";
 
                     return (
-                      <div key={dayIdx} className="h-3 w-3">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={cn(
-                                "h-full w-full rounded-[2px]",
-                                colorClass,
-                                isToday && "ring-primary ring-2",
-                              )}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <span className="font-mono text-xs">
-                              {formattedTypes} — {formattedDate}
-                            </span>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                      <div
+                        key={dayIdx}
+                        title={`${formattedTypes} — ${formattedDate}`}
+                        className={cn(
+                          "h-3 w-3 rounded-[2px]",
+                          colorClass,
+                          isToday && "ring-primary ring-2",
+                        )}
+                      />
                     );
                   })}
                 </div>
