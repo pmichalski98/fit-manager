@@ -1,13 +1,12 @@
 import { ImageResponse } from "next/og";
 
 export const size = {
-  width: 180,
-  height: 180,
+  width: 32,
+  height: 32,
 };
 export const contentType = "image/png";
 
-// Carbon logo mark: lime rounded square + lucide dumbbell, matching the
-// in-app sidebar logo (bg-primary square with DumbbellIcon).
+// Favicon: same Carbon logo mark as apple-icon, at browser-tab size.
 export default function Icon() {
   return new ImageResponse(
     (
@@ -19,12 +18,12 @@ export default function Icon() {
           alignItems: "center",
           justifyContent: "center",
           background: "#abe83b",
-          borderRadius: "36px",
+          borderRadius: "6px",
         }}
       >
         <svg
-          width="104"
-          height="104"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="#1f2b12"

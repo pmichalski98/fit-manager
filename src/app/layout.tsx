@@ -18,15 +18,15 @@ const plexMono = IBM_Plex_Mono({
 
 export const viewport: Viewport = {
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#121317" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f6f8" },
+  ],
 };
 
 export const metadata: Metadata = {
   title: "Fit Manager",
   description: "Your fitness tracking companion",
-  icons: [
-    { rel: "icon", url: "/favicon.ico" },
-    { rel: "apple-touch-icon", url: "/apple-touch-icon.png" },
-  ],
   manifest: "/site.webmanifest",
   appleWebApp: {
     capable: true,
@@ -49,7 +49,7 @@ export default function RootLayout({
         <body>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
