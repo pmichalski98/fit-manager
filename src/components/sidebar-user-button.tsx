@@ -2,8 +2,7 @@
 
 import { ChevronUpIcon, LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FaSpinner } from "react-icons/fa";
-import GeneratedAvatar from "@/components/generated.avatar";
+import { InitialsAvatar } from "@/components/initials-avatar";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,11 +30,11 @@ export function SidebarUserButton() {
 
   if (isPending) {
     return (
-      <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-        <Skeleton className="size-8 rounded-full" />
+      <div className="flex items-center gap-2.5 rounded-sm p-2">
+        <Skeleton className="size-[30px]" />
         <div className="flex-1 space-y-1.5">
-          <Skeleton className="h-3.5 w-20" />
-          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-2.5 w-24" />
         </div>
       </div>
     );
@@ -47,26 +46,23 @@ export function SidebarUserButton() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring">
+      <DropdownMenuTrigger className="group hover:bg-secondary flex w-full items-center gap-2.5 rounded-sm p-2 text-left transition-colors focus-visible:outline-none">
         {user.image ? (
-          <Avatar className="size-8 ring-1 ring-sidebar-border">
+          <Avatar className="size-[30px] rounded-sm">
             <AvatarImage src={user.image} />
           </Avatar>
         ) : (
-          <GeneratedAvatar
-            seed={user.name ?? user.email}
-            className="size-8 ring-1 ring-sidebar-border"
-          />
+          <InitialsAvatar seed={user.name ?? user.email} />
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium leading-tight">
+          <p className="truncate text-xs leading-tight font-semibold">
             {user.name}
           </p>
-          <p className="truncate text-xs text-muted-foreground leading-tight">
+          <p className="text-faint truncate text-[10px] leading-tight">
             {user.email}
           </p>
         </div>
-        <ChevronUpIcon className="size-4 shrink-0 text-muted-foreground" />
+        <ChevronUpIcon className="text-faint size-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-[var(--radix-dropdown-menu-trigger-width)]"
@@ -74,11 +70,8 @@ export function SidebarUserButton() {
         align="start"
         sideOffset={8}
       >
-        <DropdownMenuItem
-          className="gap-2 text-destructive focus:text-destructive"
-          onClick={handleLogout}
-        >
-          <LogOutIcon className="size-4" />
+        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+          <LogOutIcon className="size-3.5" />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
