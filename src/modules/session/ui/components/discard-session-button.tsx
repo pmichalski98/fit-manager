@@ -43,13 +43,12 @@ export function DiscardSessionButton({ sessionId }: DiscardSessionButtonProps) {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline-destructive"
           size="icon"
-          className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8"
           aria-label="Discard session"
           disabled={isDiscarding}
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

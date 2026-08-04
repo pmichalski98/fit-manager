@@ -23,9 +23,7 @@ export function ExerciseSidebar({
       className="sticky top-32 hidden h-fit w-60 shrink-0 lg:block"
       aria-label="Exercises"
     >
-      <div className="text-muted-foreground mb-2 text-[11px] font-medium tracking-wide uppercase">
-        Exercises
-      </div>
+      <div className="label-caps mb-2">Exercises</div>
       <div className="flex flex-col gap-0.5">
         {exercises.map((ex, i) => {
           const p = progressByExercise[i];
@@ -41,54 +39,45 @@ export function ExerciseSidebar({
               type="button"
               onClick={() => onExerciseClick(i)}
               className={cn(
-                "relative flex w-full items-center gap-2.5 overflow-hidden rounded-lg px-2.5 py-2 text-left text-sm transition-all",
+                "hover:bg-card relative flex w-full items-center gap-2.5 overflow-hidden rounded-sm px-2.5 py-2 text-left transition-all",
                 isActive
-                  ? "text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "text-foreground font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
               )}
               aria-current={isActive ? "true" : undefined}
             >
               {/* Progress fill background */}
               <div
                 className={cn(
-                  "absolute inset-y-0 left-0 rounded-lg transition-all duration-300",
+                  "absolute inset-y-0 left-0 rounded-sm transition-all duration-300",
                   isComplete
-                    ? "bg-primary/15"
+                    ? "bg-primary/12"
                     : fillPercent > 0
-                      ? "bg-primary/10"
-                      : isActive
-                        ? "bg-primary/5"
-                        : "",
+                      ? "bg-primary/8"
+                      : "",
                 )}
-                style={{
-                  width:
-                    fillPercent > 0
-                      ? `${fillPercent}%`
-                      : isActive
-                        ? "100%"
-                        : "0%",
-                }}
+                style={{ width: `${fillPercent}%` }}
               />
 
               {/* Status indicator */}
-              <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+              <div className="relative flex size-[18px] shrink-0 items-center justify-center">
                 {isComplete ? (
-                  <div className="bg-primary flex h-5 w-5 items-center justify-center rounded-full">
+                  <div className="bg-primary flex size-[18px] items-center justify-center rounded-[4px]">
                     <Check
-                      className="text-primary-foreground h-3 w-3"
-                      strokeWidth={3}
+                      className="text-primary-foreground size-[11px]"
+                      strokeWidth={3.5}
                     />
                   </div>
                 ) : (
-                  <div className="bg-muted-foreground/25 h-2.5 w-2.5 rounded-full" />
+                  <div className="border-input size-[9px] rounded-[2px] border" />
                 )}
               </div>
 
-              <span className="relative min-w-0 flex-1 text-[13px] leading-tight break-words">
+              <span className="relative min-w-0 flex-1 text-xs leading-tight break-words">
                 {ex.name}
               </span>
               {setLabel && (
-                <span className="text-muted-foreground relative shrink-0 text-xs tabular-nums">
+                <span className="text-muted-foreground relative shrink-0 font-mono text-[11px]">
                   {setLabel}
                 </span>
               )}

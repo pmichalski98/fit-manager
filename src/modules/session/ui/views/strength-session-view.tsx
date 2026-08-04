@@ -40,7 +40,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormField } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { NumberStepper } from "@/modules/session/ui/components/number-stepper";
@@ -69,6 +68,7 @@ import { useExerciseReorder } from "@/modules/session/ui/hooks/use-exercise-reor
 import { useHorizontalScroll } from "@/modules/session/ui/hooks/use-horizontal-scroll";
 import { RenameExerciseDialog } from "@/modules/training/ui/components/rename-exercise-dialog";
 import { formatExerciseTarget } from "@/modules/training/lib/format-target";
+import { formatVolumeKg } from "@/modules/dashboard/utils";
 import {
   getSetProgress,
   isSetRecord,
@@ -582,6 +582,37 @@ export function StrengthSessionView({
     progress: Array<{ name: string; delta: number }>;
   } | null>(null);
 
+  const sessionStats = useMemo(() => {
+    let setsDone = 0;
+    let setsTotal = 0;
+    let exercisesDone = 0;
+    for (let i = 0; i < exercisesArr.fields.length; i++) {
+      const p = progressByExercise[i];
+      if (!p) continue;
+      setsDone += p.done;
+      setsTotal += p.total;
+      if (p.total > 0 && p.done >= p.total) exercisesDone++;
+    }
+    return { setsDone, setsTotal, exercisesDone };
+  }, [exercisesArr.fields.length, progressByExercise]);
+
+  // Volume of completed sets; doneTrigger bumps whenever a set is toggled
+  const doneVolume = useMemo(() => {
+    const values = form.getValues("exercises") ?? [];
+    let vol = 0;
+    for (const [exKey, setsMap] of Object.entries(doneMapRef.current)) {
+      const ex = values[Number(exKey)];
+      if (!ex) continue;
+      for (const [setKey, isDone] of Object.entries(setsMap)) {
+        if (!isDone) continue;
+        const s = ex.sets?.[Number(setKey)];
+        if (s) vol += (s.weight ?? 0) * (s.reps ?? 0);
+      }
+    }
+    return vol;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneTrigger, form]);
+
   const handleClose = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
@@ -595,20 +626,40 @@ export function StrengthSessionView({
   return (
     <div className="space-y-4">
       {/* Header — negative top margin absorbs layout padding so sticky position is seamless */}
-      <div className="bg-background/80 border-border/50 sticky top-0 z-40 -mx-4 -mt-[calc(var(--safe-top)+1.5rem)] border-b px-4 pt-[calc(var(--safe-top)+1.5rem)] pb-3 backdrop-blur-xl md:-mx-6 md:-mt-6 md:px-6 md:pt-6">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-bold">
-              {currentTemplate.name}
-            </h1>
-            <SaveStatusIndicator status={saveStatus} />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="bg-muted/60 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5">
-              <Timer className="text-primary h-3.5 w-3.5" />
-              <span className="text-sm font-semibold tabular-nums">
-                {elapsed}
+      <div className="bg-background/85 sticky top-0 z-40 -mx-4 -mt-[calc(var(--safe-top)+1.5rem)] border-b px-4 pt-[calc(var(--safe-top)+1.5rem)] pb-3 backdrop-blur-xl md:-mx-6 md:-mt-6 md:px-6 md:pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3.5">
+            <div className="min-w-0">
+              <h1 className="truncate text-[17px] font-bold tracking-tight">
+                {currentTemplate.name}
+              </h1>
+              <SaveStatusIndicator status={saveStatus} />
+            </div>
+            <div className="text-muted-foreground hidden shrink-0 gap-3.5 border-l pl-3.5 font-mono text-[11px] uppercase md:flex">
+              <span>
+                Sets{" "}
+                <span className="text-foreground">
+                  {sessionStats.setsDone}/{sessionStats.setsTotal}
+                </span>
               </span>
+              <span>
+                Ex.{" "}
+                <span className="text-foreground">
+                  {sessionStats.exercisesDone}/{exercisesArr.fields.length}
+                </span>
+              </span>
+              <span>
+                Vol{" "}
+                <span className="text-foreground">
+                  {formatVolumeKg(doneVolume)} kg
+                </span>
+              </span>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="bg-card flex items-center gap-2 rounded-sm border px-3 py-1.5">
+              <Timer className="text-primary size-3.5" />
+              <span className="font-mono text-sm font-semibold">{elapsed}</span>
             </div>
             <DiscardSessionButton sessionId={sessionId} />
           </div>
@@ -617,45 +668,42 @@ export function StrengthSessionView({
 
       {showBanner &&
         (isResuming ? (
-          <Alert className="animate-in fade-in border-blue-500/30 bg-blue-500/10 duration-200">
-            <RotateCcw className="h-4 w-4" />
-            <AlertDescription>
-              <span className="font-medium">Resuming session</span>{" "}
-              <span className="text-muted-foreground" suppressHydrationWarning>
-                started{" "}
-                {new Date(inProgress!.startAt).toLocaleString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-                . Your progress has been restored.
-              </span>
-            </AlertDescription>
-          </Alert>
+          <div className="bg-card animate-in fade-in flex flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg border px-3.5 py-2.5 text-xs duration-200">
+            <RotateCcw className="text-muted-foreground size-3.5 shrink-0 self-center" />
+            <span className="font-semibold">Resuming session</span>
+            <span
+              className="text-muted-foreground font-mono"
+              suppressHydrationWarning
+            >
+              started{" "}
+              {new Date(inProgress!.startAt).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            <span className="text-muted-foreground">
+              Your progress has been restored.
+            </span>
+          </div>
         ) : last?.exercises?.some((e) => (e.sets?.length ?? 0) > 0) ? (
-          <Alert className="bg-muted/40 border-border animate-in fade-in duration-200">
-            <History />
-            <AlertDescription>
-              <span className="font-medium">
-                Using values from your last session
-              </span>{" "}
-              <span className="text-muted-foreground">
-                (
-                {new Date(last.session.startAt).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-                ) — adjust as needed.
+          <div className="bg-card animate-in fade-in flex flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg border px-3.5 py-2.5 text-xs duration-200">
+            <History className="text-muted-foreground size-3.5 shrink-0 self-center" />
+            <span className="font-semibold">Values from your last session</span>
+            <span className="text-muted-foreground font-mono">
+              {new Date(last.session.startAt).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+            {lastSessionNote && (
+              <span className="text-muted-foreground italic">
+                “{lastSessionNote}”
               </span>
-              {lastSessionNote && (
-                <span className="text-muted-foreground mt-1 block italic">
-                  “{lastSessionNote}”
-                </span>
-              )}
-            </AlertDescription>
-          </Alert>
+            )}
+          </div>
         ) : null)}
 
       <Form {...form}>
@@ -740,6 +788,7 @@ export function StrengthSessionView({
                 <Button
                   className="w-full"
                   type="submit"
+                  size="lg"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -907,23 +956,23 @@ export function StrengthSessionView({
 function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   if (status === "idle") return null;
   return (
-    <span className="text-muted-foreground flex items-center gap-1 text-xs">
+    <span className="text-muted-foreground flex items-center gap-1 font-mono text-[11px]">
       {status === "saving" && (
         <>
-          <Loader2 className="h-3 w-3 animate-spin" />
-          <span>Saving…</span>
+          <Loader2 className="size-3 animate-spin" />
+          <span>saving…</span>
         </>
       )}
       {status === "saved" && (
         <>
-          <Check className="text-primary h-3 w-3" />
-          <span className="text-primary">Saved</span>
+          <Check className="text-primary size-3" strokeWidth={2.5} />
+          <span className="text-primary">saved</span>
         </>
       )}
       {status === "error" && (
         <>
-          <CloudOff className="h-3 w-3 text-rose-500" />
-          <span className="text-rose-500">Save failed</span>
+          <CloudOff className="text-destructive size-3" />
+          <span className="text-destructive">save failed</span>
         </>
       )}
       {status === "stale" && (
@@ -932,8 +981,8 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
           onClick={() => window.location.reload()}
           className="flex items-center gap-1 text-amber-500"
         >
-          <RefreshCw className="h-3 w-3" />
-          <span>App updated — tap to refresh</span>
+          <RefreshCw className="size-3" />
+          <span>app updated — tap to refresh</span>
         </button>
       )}
     </span>
@@ -1023,7 +1072,7 @@ function SessionNotesField({
           onChange={field.onChange}
           placeholder="Session notes (optional)"
           rows={2}
-          className={cn("bg-card resize-none text-sm", className)}
+          className={cn("bg-card resize-none text-xs", className)}
         />
       )}
     />
