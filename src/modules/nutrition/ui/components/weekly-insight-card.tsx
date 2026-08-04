@@ -1,65 +1,55 @@
-import { ArrowRightIcon } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import type { NutritionInsight } from "@/server/db/schema";
 import { GenerateInsightButton } from "./generate-insight-button";
 
 interface WeeklyInsightCardProps {
   weekStart: string;
-  weekEnd: string;
   insight: NutritionInsight | null;
   hasMeals: boolean;
 }
 
 export function WeeklyInsightCard({
   weekStart,
-  weekEnd,
   insight,
   hasMeals,
 }: WeeklyInsightCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Analiza tygodnia</CardTitle>
-        <CardDescription>
-          {weekStart} — {weekEnd}
-          {insight ? ` · ${insight.model}` : ""}
-        </CardDescription>
+    <div className="bg-card flex flex-col gap-4 rounded-[10px] border p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="section-marker text-[11px] font-semibold tracking-[0.1em] uppercase">
+          Analiza tygodnia{" "}
+          {insight && (
+            <span className="text-faint font-mono font-normal tracking-normal normal-case">
+              {insight.model}
+            </span>
+          )}
+        </h2>
         {hasMeals && (
-          <CardAction>
-            <GenerateInsightButton
-              weekStart={weekStart}
-              hasInsight={insight !== null}
-            />
-          </CardAction>
+          <GenerateInsightButton
+            weekStart={weekStart}
+            hasInsight={insight !== null}
+          />
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-6">
-        {!insight && (
-          <p className="text-muted-foreground text-sm">
-            {hasMeals
-              ? "Ten tydzień nie został jeszcze przeanalizowany."
-              : "Brak zsynchronizowanych posiłków w tym tygodniu."}
+      {!insight && (
+        <p className="text-muted-foreground text-xs">
+          {hasMeals
+            ? "Ten tydzień nie został jeszcze przeanalizowany."
+            : "Brak zsynchronizowanych posiłków w tym tygodniu."}
+        </p>
+      )}
+
+      {insight && (
+        <>
+          <p className="max-w-[720px] text-[13px] leading-relaxed">
+            {insight.summary}
           </p>
-        )}
 
-        {insight && (
-          <>
-            <p className="text-sm leading-relaxed">{insight.summary}</p>
-
+          <div className="grid gap-5 md:grid-cols-2">
             {insight.observations.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Spostrzeżenia</h3>
-                <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
+                <h3 className="label-caps">Spostrzeżenia</h3>
+                <ul className="text-secondary-foreground list-disc space-y-1.5 pl-4 text-xs leading-relaxed">
                   {insight.observations.map((observation, index) => (
                     <li key={index}>{observation}</li>
                   ))}
@@ -69,21 +59,24 @@ export function WeeklyInsightCard({
 
             {insight.swaps.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Proponowane zamienniki</h3>
-                <ul className="space-y-3">
+                <h3 className="label-caps">Proponowane zamienniki</h3>
+                <ul className="space-y-2">
                   {insight.swaps.map((swap, index) => (
-                    <li key={index} className="rounded-md border p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{swap.from}</span>
-                        <ArrowRightIcon className="text-muted-foreground size-4" />
-                        <span className="font-medium">{swap.to}</span>
+                    <li
+                      key={index}
+                      className="bg-input-bg rounded-sm border px-3 py-2.5"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-semibold">{swap.from}</span>
+                        <span className="text-faint">→</span>
+                        <span className="font-semibold">{swap.to}</span>
                         {swap.kcalSaved !== null && (
-                          <Badge variant="secondary">
+                          <span className="bg-primary/10 text-primary rounded-[4px] px-1.5 py-px font-mono text-[10px]">
                             −{Math.round(swap.kcalSaved)} kcal
-                          </Badge>
+                          </span>
                         )}
                       </div>
-                      <p className="text-muted-foreground mt-1">
+                      <p className="text-muted-foreground mt-1 text-[11px]">
                         {swap.reason}
                       </p>
                     </li>
@@ -91,9 +84,9 @@ export function WeeklyInsightCard({
                 </ul>
               </div>
             )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

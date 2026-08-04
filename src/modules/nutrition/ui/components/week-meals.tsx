@@ -1,12 +1,8 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { FitatuMealItem } from "@/server/db/schema";
 import { weekdayName } from "../../lib/week";
+
+const FIBER_TARGET_G = 30;
 
 function round(value: string | null): number | null {
   return value === null ? null : Math.round(Number.parseFloat(value));
@@ -24,28 +20,6 @@ function sumMacro(
   );
 }
 
-function DayMacros({ items }: { items: FitatuMealItem[] }) {
-  const macros = [
-    { label: "Białko", value: sumMacro(items, (i) => i.protein) },
-    { label: "Węgle", value: sumMacro(items, (i) => i.carbs) },
-    { label: "Tłuszcz", value: sumMacro(items, (i) => i.fat) },
-    { label: "Błonnik", value: sumMacro(items, (i) => i.fiber) },
-  ];
-
-  return (
-    <div className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-4">
-      {macros.map((macro) => (
-        <div key={macro.label} className="flex items-baseline gap-1.5">
-          <span className="text-muted-foreground text-xs">{macro.label}</span>
-          <span className="text-sm font-medium tabular-nums">
-            {macro.value} g
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
   for (const item of items) {
@@ -56,17 +30,28 @@ function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
   return map;
 }
 
-export function WeekMeals({ items }: { items: FitatuMealItem[] }) {
+/** "2026-07-27" → "27.07" */
+function formatDayDate(date: string): string {
+  return `${date.slice(8, 10)}.${date.slice(5, 7)}`;
+}
+
+export function WeekMeals({
+  items,
+  caloricGoal,
+}: {
+  items: FitatuMealItem[];
+  caloricGoal: number | null;
+}) {
   if (items.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Posiłki</CardTitle>
-          <CardDescription>
-            Brak zsynchronizowanych posiłków w tym tygodniu.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="bg-card rounded-[10px] border p-5">
+        <h3 className="text-[11px] font-semibold tracking-[0.1em] uppercase">
+          Posiłki
+        </h3>
+        <p className="text-muted-foreground mt-1.5 text-xs">
+          Brak zsynchronizowanych posiłków w tym tygodniu.
+        </p>
+      </div>
     );
   }
 
@@ -75,55 +60,99 @@ export function WeekMeals({ items }: { items: FitatuMealItem[] }) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {days.map(([date, dayItems]) => {
         const dayKcal = dayItems.reduce(
           (sum, item) => sum + (round(item.kcal) ?? 0),
           0,
         );
+        const protein = sumMacro(dayItems, (i) => i.protein);
+        const carbs = sumMacro(dayItems, (i) => i.carbs);
+        const fat = sumMacro(dayItems, (i) => i.fat);
+        const fiber = sumMacro(dayItems, (i) => i.fiber);
         const meals = groupBy(
           dayItems,
           (item) => item.mealName ?? item.mealKey,
         );
 
         return (
-          <Card key={date}>
-            <CardHeader>
-              <CardTitle className="text-base">
+          <div
+            key={date}
+            className="bg-card overflow-hidden rounded-[10px] border"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b px-5 py-3.5">
+              <h3 className="text-[11px] font-semibold tracking-[0.1em] uppercase">
                 {weekdayName(date)}{" "}
-                <span className="text-muted-foreground font-normal">
-                  {date}
+                <span className="text-faint font-mono tracking-normal">
+                  {formatDayDate(date)}
                 </span>
-              </CardTitle>
-              <CardDescription>{dayKcal} kcal</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h3>
+              <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
+                <span
+                  className={cn(
+                    caloricGoal == null
+                      ? "text-foreground"
+                      : dayKcal <= caloricGoal
+                        ? "text-primary"
+                        : "text-cardio",
+                  )}
+                >
+                  {dayKcal} kcal
+                </span>
+                <span>
+                  B <span className="text-foreground">{protein}g</span>
+                </span>
+                <span>
+                  W <span className="text-foreground">{carbs}g</span>
+                </span>
+                <span>
+                  T <span className="text-foreground">{fat}g</span>
+                </span>
+                <span>
+                  BŁ{" "}
+                  <span
+                    className={cn(
+                      fiber >= FIBER_TARGET_G
+                        ? "text-foreground"
+                        : "text-cardio",
+                    )}
+                  >
+                    {fiber}g
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
               {[...meals.entries()].map(([meal, mealItems]) => (
-                <div key={meal} className="space-y-1">
-                  <h3 className="text-sm font-medium capitalize">{meal}</h3>
-                  <ul className="text-muted-foreground space-y-1 text-sm">
+                <div
+                  key={meal}
+                  className="flex flex-col gap-1.5 border-r px-5 py-3 last:border-r-0"
+                >
+                  <h4 className="text-primary text-[10px] font-semibold tracking-[0.1em] uppercase">
+                    {meal}
+                  </h4>
+                  <div className="flex flex-col gap-1">
                     {mealItems.map((item) => (
-                      <li
+                      <div
                         key={item.id}
-                        className="flex flex-wrap justify-between gap-x-4"
+                        className="flex items-baseline justify-between gap-2.5 text-xs"
                       >
-                        <span>
+                        <span className="text-secondary-foreground min-w-0">
                           {item.name}
                           {item.brand ? ` · ${item.brand}` : ""}
-                          {item.weightG ? ` — ${round(item.weightG)} g` : ""}
+                          {item.weightG ? ` ${round(item.weightG)} g` : ""}
                         </span>
-                        <span className="tabular-nums">
-                          {round(item.kcal) ?? "?"} kcal
+                        <span className="text-faint shrink-0 font-mono text-[11px]">
+                          {round(item.kcal) ?? "?"}
                         </span>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ))}
-
-              <DayMacros items={dayItems} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         );
       })}
     </div>

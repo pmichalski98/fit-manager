@@ -1,6 +1,6 @@
 "use client";
 
-import { SparklesIcon } from "lucide-react";
+import { Loader2, RefreshCw, SparklesIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -41,12 +41,18 @@ export function GenerateInsightButton({
       disabled={isPending}
       onClick={handleClick}
     >
-      <SparklesIcon className="size-4" />
+      {isPending ? (
+        <Loader2 className="animate-spin" />
+      ) : hasInsight ? (
+        <RefreshCw />
+      ) : (
+        <SparklesIcon />
+      )}
       {isPending
         ? "Analizuję…"
         : hasInsight
-          ? "Przeanalizuj ponownie"
-          : "Przeanalizuj tydzień"}
+          ? "Analizuj ponownie"
+          : "Analizuj tydzień"}
     </Button>
   );
 }
