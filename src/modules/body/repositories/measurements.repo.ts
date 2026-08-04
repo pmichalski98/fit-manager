@@ -32,6 +32,17 @@ class MeasurementsRepository {
     return row ?? null;
   }
 
+  /** Most recent measurement entries, returned oldest-first. */
+  async findRecentMeasurements(userId: string, limit: number) {
+    const rows = await db
+      .select()
+      .from(bodyMeasurement)
+      .where(and(eq(bodyMeasurement.userId, userId)))
+      .orderBy(desc(bodyMeasurement.date))
+      .limit(limit);
+    return rows.reverse();
+  }
+
   async findMeasurementsInRange(
     userId: string,
     startDate: string,

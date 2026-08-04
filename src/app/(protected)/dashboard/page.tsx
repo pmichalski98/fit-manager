@@ -11,6 +11,10 @@ import {
   KpiStrip,
   KpiStripSkeleton,
 } from "@/modules/dashboard/ui/components/kpi-strip";
+import {
+  MeasurementsCard,
+  MeasurementsCardSkeleton,
+} from "@/modules/dashboard/ui/components/measurements-card";
 import { resolveWeekContext } from "@/modules/dashboard/utils";
 import { DashboardTable } from "@/modules/dashboard/ui/components/dashboard-table";
 import { DashboardTableSkeleton } from "@/modules/dashboard/ui/components/dashboard-skeleton";
@@ -121,6 +125,10 @@ export default async function DashboardPage(props: PageProps) {
             <VolumeProgressChart strengthTrainings={strengthTrainings} />
           </HideableChart>
         </div>
+
+        <Suspense fallback={<MeasurementsCardSkeleton />}>
+          <MeasurementsCard />
+        </Suspense>
 
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold tracking-tight">
