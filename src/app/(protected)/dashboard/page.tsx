@@ -101,7 +101,7 @@ export default async function DashboardPage(props: PageProps) {
           </Suspense>
         </HideableChart>
 
-        <div className="grid items-start gap-10 md:grid-cols-2">
+        <div className="grid items-start gap-4 md:grid-cols-2">
           <Suspense
             fallback={
               <>

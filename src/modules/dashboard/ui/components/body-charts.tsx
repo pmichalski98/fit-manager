@@ -1,12 +1,15 @@
 import { getDailyLogHistory } from "../../actions";
+import { getCaloricGoal } from "@/modules/body/actions";
 import { HideableChart } from "./hideable-chart";
 import { KcalChartGraph } from "./kcal-chart-graph";
 import { MacroChartGraph } from "./macro-chart-graph";
 import { WeightChartGraph } from "./weight-chart-graph";
-import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
 
 export async function BodyCharts() {
-  const data = await getDailyLogHistory();
+  const [data, { data: caloricGoal }] = await Promise.all([
+    getDailyLogHistory(),
+    getCaloricGoal(),
+  ]);
 
   if (!data || data.length === 0) {
     return null;
@@ -49,40 +52,19 @@ export async function BodyCharts() {
     <>
       {weightData.length > 0 && (
         <HideableChart chartId="weight-history">
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle>Weight History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <WeightChartGraph data={weightData} />
-            </CardContent>
-          </Card>
+          <WeightChartGraph data={weightData} />
         </HideableChart>
       )}
 
       {kcalData.length > 0 && (
         <HideableChart chartId="kcal-history">
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle>Caloric Intake History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <KcalChartGraph data={kcalData} />
-            </CardContent>
-          </Card>
+          <KcalChartGraph data={kcalData} caloricGoal={caloricGoal ?? null} />
         </HideableChart>
       )}
 
       {macroData.length > 0 && (
         <HideableChart chartId="macro-history">
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle>Macros History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MacroChartGraph data={macroData} />
-            </CardContent>
-          </Card>
+          <MacroChartGraph data={macroData} />
         </HideableChart>
       )}
     </>

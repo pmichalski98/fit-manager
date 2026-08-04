@@ -11,11 +11,21 @@ const RANGES: { value: ChartRange; label: string }[] = [
   { value: "3m", label: "3M" },
   { value: "6m", label: "6M" },
   { value: "1y", label: "1Y" },
-  { value: "all", label: "All" },
+  { value: "all", label: "MAX" },
 ];
 
+const RANGE_LABELS: Record<ChartRange, string> = {
+  "1m": "1M",
+  "3m": "3M",
+  "6m": "6M",
+  "1y": "1Y",
+  all: "MAX",
+};
+
+export const rangeLabel = (range: ChartRange) => RANGE_LABELS[range];
+
 const isChartRange = (v: unknown): v is ChartRange =>
-  RANGES.some((r) => r.value === v);
+  typeof v === "string" && v in RANGE_LABELS;
 
 export function useChartRange(
   storageKey: string,
@@ -62,17 +72,17 @@ export function ChartRangeSelect({
   onChange: (value: ChartRange) => void;
 }) {
   return (
-    <div className="bg-muted flex w-fit items-center gap-0.5 rounded-lg p-0.5">
+    <div className="flex w-fit items-center gap-0.5 font-mono text-[10px] font-semibold">
       {RANGES.map((r) => (
         <button
           key={r.value}
           type="button"
           onClick={() => onChange(r.value)}
           className={cn(
-            "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+            "rounded-[4px] px-2 py-[3px] transition-colors",
             value === r.value
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
+              ? "bg-primary text-primary-foreground"
+              : "text-faint hover:text-foreground",
           )}
         >
           {r.label}

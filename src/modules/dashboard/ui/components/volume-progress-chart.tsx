@@ -7,7 +7,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { parseISO, format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -17,18 +16,29 @@ import {
 } from "@/components/ui/select";
 import { getTrainingVolumeProgress } from "../../actions";
 import { toast } from "sonner";
-import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartRangeSelect,
   filterByDateRange,
+  rangeLabel,
   useChartRange,
 } from "./chart-range";
+import {
+  AXIS_TICK,
+  CHART_ASPECT,
+  GRID_STROKE,
+  formatDateTick,
+  formatTooltipDate,
+} from "./chart-style";
 
 type VolumeProgressChartProps = {
   strengthTrainings: { id: string; name: string }[];
 };
 
 const STORAGE_KEY = "fit-manager-last-volume-training";
+
+const formatVolume = (v: number) =>
+  String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 export function VolumeProgressChart({
   strengthTrainings,
@@ -38,6 +48,13 @@ export function VolumeProgressChart({
   const [isPending, startTransition] = useTransition();
   const [range, setRange] = useChartRange("fit-manager-chart-range-volume");
   const filteredData = filterByDateRange(data, range);
+
+  const first = filteredData[0];
+  const last = filteredData[filteredData.length - 1];
+  const volumePct =
+    first && last && first.volume > 0
+      ? ((last.volume - first.volume) / first.volume) * 100
+      : null;
 
   const fetchProgress = (trainingId: string) => {
     startTransition(async () => {
@@ -74,16 +91,17 @@ export function VolumeProgressChart({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader>
-        <CardTitle>Training Volume</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <CardTitle className="shrink-0">Training volume</CardTitle>
+        <div className="flex min-w-0 items-center gap-2">
           <Select
             value={selectedTrainingId}
             onValueChange={handleTrainingChange}
           >
-            <SelectTrigger className="w-full sm:w-[280px]">
+            <SelectTrigger
+              size="sm"
+              className="min-w-[120px] flex-1 sm:max-w-[200px]"
+            >
               <SelectValue placeholder="Select training" />
             </SelectTrigger>
             <SelectContent>
@@ -96,96 +114,104 @@ export function VolumeProgressChart({
           </Select>
           <ChartRangeSelect value={range} onChange={setRange} />
         </div>
-      </CardContent>
+      </CardHeader>
+
+      {last ? (
+        <CardContent className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
+          <span>
+            last session{" "}
+            <span className="text-foreground">
+              {formatVolume(last.volume)} kg
+            </span>
+          </span>
+          {volumePct != null && Math.abs(volumePct) >= 0.05 ? (
+            <span className="text-primary">
+              {volumePct > 0 ? "▲ +" : "▼ "}
+              {Math.abs(volumePct).toFixed(1)}% / {rangeLabel(range)}
+            </span>
+          ) : null}
+        </CardContent>
+      ) : null}
 
       <CardContent>
-        <div className="h-[300px] w-full">
-          {!selectedTrainingId ? (
-            <div className="text-muted-foreground flex h-full items-center justify-center">
-              Select a training to view volume progress
-            </div>
-          ) : isPending ? (
-            <div className="text-muted-foreground flex h-full items-center justify-center">
-              Loading...
-            </div>
-          ) : filteredData.length === 0 ? (
-            <div className="text-muted-foreground flex h-full items-center justify-center">
-              {data.length === 0
-                ? "No completed sessions for this training yet"
-                : "No sessions in this range"}
-            </div>
-          ) : (
-            <ChartContainer
-              config={{
-                volume: {
-                  label: "Volume (kg)",
-                  color: "var(--chart-3)",
-                },
-              }}
-              className="h-full w-full"
+        {!selectedTrainingId ? (
+          <EmptyState>Select a training to view volume progress</EmptyState>
+        ) : isPending ? (
+          <EmptyState>Loading...</EmptyState>
+        ) : filteredData.length === 0 ? (
+          <EmptyState>
+            {data.length === 0
+              ? "No completed sessions for this training yet"
+              : "No sessions in this range"}
+          </EmptyState>
+        ) : (
+          <ChartContainer
+            config={{
+              volume: {
+                label: "Volume (kg)",
+                color: "var(--chart-1)",
+              },
+            }}
+            className={CHART_ASPECT}
+          >
+            <LineChart
+              data={filteredData}
+              margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
             >
-              <LineChart
-                data={filteredData}
-                margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  minTickGap={32}
-                  tickFormatter={(value: unknown) => {
-                    if (typeof value !== "string") return "";
-                    try {
-                      return format(parseISO(value), "MMM d");
-                    } catch {
-                      return value;
-                    }
-                  }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  width={50}
-                  domain={["auto", "auto"]}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      labelFormatter={(value: unknown) => {
-                        if (typeof value !== "string") return "";
-                        try {
-                          return format(parseISO(value), "MMM d, yyyy");
-                        } catch {
-                          return value;
-                        }
-                      }}
-                      formatter={(value) => (
-                        <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
-                          Volume
-                          <span className="text-foreground ml-auto font-mono font-medium">
-                            {Number(value).toLocaleString()} kg
-                          </span>
-                        </div>
-                      )}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="volume"
-                  strokeWidth={2}
-                  activeDot={{ r: 6 }}
-                  stroke="var(--chart-3)"
-                  dot={false}
-                />
-              </LineChart>
-            </ChartContainer>
-          )}
-        </div>
+              <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={48}
+                tick={AXIS_TICK}
+                tickFormatter={formatDateTick}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickCount={4}
+                width={50}
+                tick={AXIS_TICK}
+                domain={["auto", "auto"]}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={formatTooltipDate}
+                    formatter={(value) => (
+                      <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
+                        Volume
+                        <span className="text-foreground ml-auto font-mono font-medium">
+                          {formatVolume(Number(value))} kg
+                        </span>
+                      </div>
+                    )}
+                  />
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="volume"
+                strokeWidth={2}
+                stroke="var(--chart-1)"
+                activeDot={{ r: 4 }}
+                dot={false}
+              />
+            </LineChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-muted-foreground flex aspect-video items-center justify-center font-mono text-xs">
+      {children}
+    </div>
   );
 }

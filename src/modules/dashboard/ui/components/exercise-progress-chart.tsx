@@ -7,7 +7,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { parseISO, format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -17,18 +16,20 @@ import {
 } from "@/components/ui/select";
 import { getExerciseProgress } from "../../actions";
 import { toast } from "sonner";
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardAction,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartRangeSelect,
   filterByDateRange,
+  rangeLabel,
   useChartRange,
 } from "./chart-range";
+import {
+  AXIS_TICK,
+  CHART_ASPECT,
+  GRID_STROKE,
+  formatDateTick,
+  formatTooltipDate,
+} from "./chart-style";
 
 type ExerciseProgressChartProps = {
   availableExercises: string[];
@@ -47,9 +48,9 @@ export function ExerciseProgressChart({
   const [range, setRange] = useChartRange("fit-manager-chart-range-exercise");
   const filteredData = filterByDateRange(data, range);
 
-  // Calculate current estimated 1RM (based on latest data point)
-  const lastDataPoint = data[data.length - 1];
-  const currentOneRepMax = lastDataPoint ? lastDataPoint.oneRepMax : 0;
+  const first = filteredData[0];
+  const last = filteredData[filteredData.length - 1];
+  const delta = first && last ? last.weight - first.weight : null;
 
   const fetchProgress = (exercise: string) => {
     startTransition(async () => {
@@ -89,13 +90,14 @@ export function ExerciseProgressChart({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader>
-        <CardTitle>Exercise Progress</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <CardTitle className="shrink-0">Exercise progress</CardTitle>
+        <div className="flex min-w-0 items-center gap-2">
           <Select value={selectedExercise} onValueChange={handleExerciseChange}>
-            <SelectTrigger className="w-full sm:w-[280px]">
+            <SelectTrigger
+              size="sm"
+              className="min-w-[120px] flex-1 sm:max-w-[200px]"
+            >
               <SelectValue placeholder="Select exercise" />
             </SelectTrigger>
             <SelectContent>
@@ -108,108 +110,125 @@ export function ExerciseProgressChart({
           </Select>
           <ChartRangeSelect value={range} onChange={setRange} />
         </div>
-      </CardContent>
+      </CardHeader>
+
+      {last ? (
+        <CardContent className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
+          <span>
+            last{" "}
+            <span className="text-foreground">
+              {last.weight} kg × {last.reps}
+            </span>
+          </span>
+          <span>
+            e1RM <span className="text-primary">{last.oneRepMax} kg</span>
+          </span>
+          {delta != null && delta !== 0 ? (
+            <span className="text-primary">
+              {delta > 0 ? "▲ +" : "▼ "}
+              {Math.abs(delta)} kg / {rangeLabel(range)}
+            </span>
+          ) : null}
+        </CardContent>
+      ) : null}
 
       <CardContent>
-        <div className="h-[300px] w-full">
-          {!selectedExercise ? (
-            <div className="text-muted-foreground flex h-full items-center justify-center">
-              Select an exercise to view progress
-            </div>
-          ) : isPending ? (
-            <div className="text-muted-foreground flex h-full items-center justify-center">
-              Loading...
-            </div>
-          ) : filteredData.length === 0 ? (
-            <div className="text-muted-foreground flex h-full items-center justify-center">
-              {data.length === 0
-                ? "No data available for this exercise"
-                : "No data in this range"}
-            </div>
-          ) : (
-            <ChartContainer
-              config={{
-                weight: {
-                  label: "Weight (kg)",
-                  color: "var(--chart-1)",
-                },
-              }}
-              className="h-full w-full"
+        {!selectedExercise ? (
+          <EmptyState>Select an exercise to view progress</EmptyState>
+        ) : isPending ? (
+          <EmptyState>Loading...</EmptyState>
+        ) : filteredData.length === 0 ? (
+          <EmptyState>
+            {data.length === 0
+              ? "No data available for this exercise"
+              : "No data in this range"}
+          </EmptyState>
+        ) : (
+          <ChartContainer
+            config={{
+              weight: {
+                label: "Weight (kg)",
+                color: "var(--chart-1)",
+              },
+            }}
+            className={CHART_ASPECT}
+          >
+            <LineChart
+              data={filteredData}
+              margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
             >
-              <LineChart
-                data={filteredData}
-                margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  minTickGap={32}
-                  tickFormatter={(value: unknown) => {
-                    if (typeof value !== "string") return "";
-                    try {
-                      return format(parseISO(value), "MMM d");
-                    } catch {
-                      return value;
-                    }
-                  }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  width={40}
-                  domain={["dataMin - 5", "dataMax + 5"]}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      labelFormatter={(value: unknown) => {
-                        if (typeof value !== "string") return "";
-                        try {
-                          return format(parseISO(value), "MMM d, yyyy");
-                        } catch {
-                          return value;
-                        }
-                      }}
-                      formatter={(value, name, item) => {
-                        if (name === "weight") {
-                          return (
-                            <>
-                              <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
-                                Weight
-                                <span className="text-foreground ml-auto font-mono font-medium">
-                                  {value} kg
-                                </span>
-                              </div>
-                              <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
-                                Reps
-                                <span className="text-foreground ml-auto font-mono font-medium">
-                                  {(item.payload as { reps: number }).reps}
-                                </span>
-                              </div>
-                            </>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="weight"
-                  strokeWidth={2}
-                  activeDot={{ r: 6 }}
-                  stroke="var(--chart-1)"
-                />
-              </LineChart>
-            </ChartContainer>
-          )}
-        </div>
+              <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={48}
+                tick={AXIS_TICK}
+                tickFormatter={formatDateTick}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickCount={4}
+                width={40}
+                tick={AXIS_TICK}
+                domain={["dataMin - 5", "dataMax + 5"]}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={formatTooltipDate}
+                    formatter={(value, name, item) => {
+                      if (name === "weight") {
+                        return (
+                          <>
+                            <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
+                              Weight
+                              <span className="text-foreground ml-auto font-mono font-medium">
+                                {value} kg
+                              </span>
+                            </div>
+                            <div className="text-muted-foreground flex min-w-[130px] items-center gap-2 text-xs">
+                              Reps
+                              <span className="text-foreground ml-auto font-mono font-medium">
+                                {(item.payload as { reps: number }).reps}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="weight"
+                strokeWidth={2}
+                stroke="var(--chart-1)"
+                activeDot={{ r: 4 }}
+                dot={{
+                  r: 3,
+                  fill: "var(--card)",
+                  stroke: "var(--chart-1)",
+                  strokeWidth: 1.5,
+                }}
+              />
+            </LineChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-muted-foreground flex aspect-video items-center justify-center font-mono text-xs">
+      {children}
+    </div>
   );
 }

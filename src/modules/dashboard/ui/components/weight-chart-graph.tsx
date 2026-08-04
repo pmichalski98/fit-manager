@@ -1,17 +1,25 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { parseISO, format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartRangeSelect,
   filterByDateRange,
   useChartRange,
 } from "./chart-range";
+import {
+  AXIS_TICK,
+  CHART_ASPECT,
+  GRID_STROKE,
+  formatDateTick,
+  formatTooltipDate,
+  makeLastPointDot,
+} from "./chart-style";
 
 export function WeightChartGraph({
   data,
@@ -20,20 +28,31 @@ export function WeightChartGraph({
 }) {
   const [range, setRange] = useChartRange("fit-manager-chart-range-weight");
   const filtered = filterByDateRange(data, range);
+  const current = data[data.length - 1]?.weight;
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-end">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <CardTitle>
+          Weight
+          {current != null ? (
+            <span className="text-primary ml-1.5 font-mono text-[11px] font-semibold tracking-normal normal-case">
+              {current.toFixed(1)} kg
+            </span>
+          ) : null}
+        </CardTitle>
         <ChartRangeSelect value={range} onChange={setRange} />
-      </div>
-      {filtered.length === 0 ? (
-        <div className="text-muted-foreground flex aspect-video items-center justify-center text-sm">
-          No weight entries in this range
-        </div>
-      ) : (
-        <WeightChart data={filtered} />
-      )}
-    </div>
+      </CardHeader>
+      <CardContent>
+        {filtered.length === 0 ? (
+          <div className="text-muted-foreground flex aspect-video items-center justify-center font-mono text-xs">
+            No weight entries in this range
+          </div>
+        ) : (
+          <WeightChart data={filtered} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -46,54 +65,47 @@ function WeightChart({ data }: { data: { date: string; weight: number }[] }) {
           color: "var(--chart-1)",
         },
       }}
-      className="h-full w-full"
+      className={CHART_ASPECT}
     >
-      <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+      <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.2} />
+            <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID_STROKE} vertical={false} />
         <XAxis
           dataKey="date"
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          minTickGap={32}
-          tickFormatter={(value: unknown) => {
-            if (typeof value !== "string") return "";
-            try {
-              return format(parseISO(value), "MMM d");
-            } catch {
-              return value;
-            }
-          }}
+          minTickGap={48}
+          tick={AXIS_TICK}
+          tickFormatter={formatDateTick}
         />
         <YAxis
           tickLine={false}
           axisLine={false}
           tickMargin={8}
+          tickCount={4}
           domain={["dataMin - 1", "dataMax + 1"]}
           width={40}
+          tick={AXIS_TICK}
         />
         <ChartTooltip
-          content={
-            <ChartTooltipContent
-              labelFormatter={(value: unknown) => {
-                if (typeof value !== "string") return "";
-                try {
-                  return format(parseISO(value), "MMM d, yyyy");
-                } catch {
-                  return value;
-                }
-              }}
-            />
-          }
+          content={<ChartTooltipContent labelFormatter={formatTooltipDate} />}
         />
-        <Line
+        <Area
           type="monotone"
           dataKey="weight"
           strokeWidth={2}
-          activeDot={{ r: 6 }}
           stroke="var(--color-weight)"
+          fill="url(#weightFill)"
+          activeDot={{ r: 4 }}
+          dot={makeLastPointDot(data.length - 1)}
         />
-      </LineChart>
+      </AreaChart>
     </ChartContainer>
   );
 }

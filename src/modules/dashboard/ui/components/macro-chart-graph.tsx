@@ -8,12 +8,19 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { parseISO, format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartRangeSelect,
   filterByDateRange,
   useChartRange,
 } from "./chart-range";
+import {
+  AXIS_TICK,
+  CHART_ASPECT,
+  GRID_STROKE,
+  formatDateTick,
+  formatTooltipDate,
+} from "./chart-style";
 
 export type MacroDataPoint = {
   date: string;
@@ -23,7 +30,7 @@ export type MacroDataPoint = {
 };
 
 // Dedicated categorical trio (validated for CVD + contrast on light & dark
-// surfaces) — the app's --chart-* tokens are a green ramp, unusable as a
+// surfaces) — the app's --chart-* tokens are an accent ramp, unusable as a
 // categorical palette. Carbs additionally gets a dash pattern as secondary
 // encoding for the emerald↔amber CVD pair.
 const MACRO_CONFIG = {
@@ -37,55 +44,48 @@ export function MacroChartGraph({ data }: { data: MacroDataPoint[] }) {
   const filtered = filterByDateRange(data, range);
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-end">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <CardTitle>Macros</CardTitle>
         <ChartRangeSelect value={range} onChange={setRange} />
-      </div>
-      {filtered.length === 0 ? (
-        <div className="text-muted-foreground flex aspect-video items-center justify-center text-sm">
-          No macro entries in this range
-        </div>
-      ) : (
-        <MacroChart data={filtered} />
-      )}
-    </div>
+      </CardHeader>
+      <CardContent>
+        {filtered.length === 0 ? (
+          <div className="text-muted-foreground flex aspect-video items-center justify-center font-mono text-xs">
+            No macro entries in this range
+          </div>
+        ) : (
+          <MacroChart data={filtered} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 function MacroChart({ data }: { data: MacroDataPoint[] }) {
   return (
-    <ChartContainer config={MACRO_CONFIG} className="h-full w-full">
+    <ChartContainer config={MACRO_CONFIG} className={CHART_ASPECT}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid stroke={GRID_STROKE} vertical={false} />
         <XAxis
           dataKey="date"
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          minTickGap={32}
-          tickFormatter={(value: unknown) => {
-            if (typeof value !== "string") return "";
-            try {
-              return format(parseISO(value), "MMM d");
-            } catch {
-              return value;
-            }
-          }}
+          minTickGap={48}
+          tick={AXIS_TICK}
+          tickFormatter={formatDateTick}
         />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} width={40} />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickCount={4}
+          width={40}
+          tick={AXIS_TICK}
+        />
         <ChartTooltip
-          content={
-            <ChartTooltipContent
-              labelFormatter={(value: unknown) => {
-                if (typeof value !== "string") return "";
-                try {
-                  return format(parseISO(value), "MMM d, yyyy");
-                } catch {
-                  return value;
-                }
-              }}
-            />
-          }
+          content={<ChartTooltipContent labelFormatter={formatTooltipDate} />}
         />
         <ChartLegend content={<ChartLegendContent />} />
         <Line
