@@ -1,4 +1,6 @@
-FROM oven/bun:1.2 AS base
+# Bun >= 1.3.14 required: 1.2.x cannot load Next 16.3's compiled server runtime
+# (https://github.com/oven-sh/bun/issues/25609)
+FROM oven/bun:1.3.14 AS base
 
 # --- Install dependencies ---
 FROM base AS deps
