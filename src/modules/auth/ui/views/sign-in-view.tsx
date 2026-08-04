@@ -1,6 +1,5 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -15,14 +14,12 @@ import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { REDIRECT_URL } from "@/lib/constants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { OctagonAlertIcon } from "lucide-react";
-import Image from "next/image";
+import { DumbbellIcon, OctagonAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
+import { FaGithub, FaGoogle } from "react-icons/fa";
 import { z } from "zod";
 
 const SignInSchema = z.object({
@@ -90,8 +87,10 @@ export default function SignInView() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 md:p-8">
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col items-center text-center">
-                  <h1 className="text-2xl font-bold">Welcome back</h1>
-                  <p className="text-muted-foreground text-balance">
+                  <h1 className="text-[22px] font-bold tracking-tight">
+                    Welcome back
+                  </h1>
+                  <p className="text-muted-foreground mt-1 text-[11px] font-medium tracking-[0.08em] uppercase">
                     Login to your account
                   </p>
                 </div>
@@ -131,18 +130,17 @@ export default function SignInView() {
                     )}
                   />
                   {!!error && (
-                    <Alert className="bg-destructive/10 border-none">
-                      <OctagonAlertIcon className="text-destructive h-4 w-4" />
-                      <AlertTitle>Error</AlertTitle>
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
+                    <div className="border-destructive/40 bg-destructive/10 text-destructive flex items-center gap-2.5 rounded-sm border px-3.5 py-2.5 text-xs">
+                      <OctagonAlertIcon className="size-3.5 shrink-0" />
+                      {error}
+                    </div>
                   )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
-                <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                  <span className="bg-card text-muted-foreground relative z-10 px-2">
+                <div className="after:border-border relative text-center after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+                  <span className="bg-card text-faint relative z-10 px-2 text-[10px] font-semibold tracking-[0.1em] uppercase">
                     Or continue with
                   </span>
                 </div>
@@ -154,7 +152,7 @@ export default function SignInView() {
                     disabled={isLoading}
                     onClick={() => onSocialSignIn("google")}
                   >
-                    <FcGoogle className="h-4 w-4" />
+                    <FaGoogle className="size-3.5" />
                     Google
                   </Button>
                   <Button
@@ -164,15 +162,15 @@ export default function SignInView() {
                     disabled={isLoading}
                     onClick={() => onSocialSignIn("github")}
                   >
-                    <FaGithub className="h-4 w-4" />
+                    <FaGithub className="size-3.5" />
                     Github
                   </Button>
                 </div>
-                <div className="text-center text-sm">
+                <div className="text-secondary-foreground text-center text-xs">
                   Don&apos;t have an account?{" "}
                   <Link
                     href="/sign-up"
-                    className="underline underline-offset-4"
+                    className="text-primary underline underline-offset-4"
                   >
                     Sign up
                   </Link>
@@ -180,14 +178,25 @@ export default function SignInView() {
               </div>
             </form>
           </Form>
-          <div className="bg-primary relative hidden flex-col items-center justify-center gap-y-4 rounded-r-xl md:flex">
-            <Image src="/dark_logo.png" alt="logo" width={400} height={400} />
+          <div className="bg-background hidden flex-col items-center justify-center gap-4 border-l md:flex">
+            <span className="bg-primary flex size-16 items-center justify-center rounded-[14px]">
+              <DumbbellIcon
+                className="text-primary-foreground size-9"
+                strokeWidth={2.5}
+              />
+            </span>
+            <p className="text-[13px] font-bold tracking-[0.06em] uppercase">
+              Fit Manager
+            </p>
+            <p className="text-faint font-mono text-[11px]">
+              train · eat · track
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-        By clicking continue, you agreee to our <a href="#">Terms of Service</a>{" "}
+      <div className="text-faint *:[a]:hover:text-primary text-center text-[11px] text-balance *:[a]:underline *:[a]:underline-offset-4">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
         and <a href="#">Privacy Policy</a>
       </div>
     </div>
