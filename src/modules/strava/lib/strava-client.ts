@@ -64,10 +64,7 @@ export class StravaClient {
     return res.json() as Promise<T>;
   }
 
-  async getActivities(
-    page: number,
-    perPage = 200,
-  ): Promise<StravaActivity[]> {
+  async getActivities(page: number, perPage = 200): Promise<StravaActivity[]> {
     return this.request<StravaActivity[]>(
       `/athlete/activities?page=${page}&per_page=${perPage}`,
     );

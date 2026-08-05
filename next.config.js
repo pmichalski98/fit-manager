@@ -47,5 +47,4 @@ export default withSentryConfig(config, {
 
   // Automatically tree-shake Sentry logger statements to reduce bundle size
   disableLogger: true,
-
 });

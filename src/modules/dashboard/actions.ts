@@ -76,7 +76,8 @@ export async function getTrainingVolumeProgress(trainingId: string) {
   for (const record of history) {
     if (record.totalLoadKg == null) continue;
     const current = maxByDate.get(record.date) ?? 0;
-    if (record.totalLoadKg > current) maxByDate.set(record.date, record.totalLoadKg);
+    if (record.totalLoadKg > current)
+      maxByDate.set(record.date, record.totalLoadKg);
   }
 
   return Array.from(maxByDate.entries()).map(([date, volume]) => ({

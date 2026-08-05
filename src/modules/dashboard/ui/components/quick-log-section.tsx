@@ -2,8 +2,8 @@ import { differenceInDays } from "date-fns";
 
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
 import {
-  getCaloricGoal,
   getDailyLogByDate,
+  getGoalSettings,
   getLatestDailyLog,
   getLatestMeasurements,
 } from "@/modules/body/actions";
@@ -15,12 +15,12 @@ export async function QuickLogSection() {
   const [
     { data: todayLog },
     { data: latestLog },
-    { data: caloricGoal },
+    { data: goalSettings },
     { data: lastMeasurement },
   ] = await Promise.all([
     getDailyLogByDate(today),
     getLatestDailyLog(),
-    getCaloricGoal(),
+    getGoalSettings(),
     getLatestMeasurements(),
   ]);
 
@@ -34,7 +34,7 @@ export async function QuickLogSection() {
     <QuickLogBar
       todayLog={todayLog ?? null}
       latestLog={latestLog ?? null}
-      caloricGoal={caloricGoal ?? null}
+      goalSettings={goalSettings ?? null}
       lastMeasurement={lastMeasurement ?? null}
       measurementsAgeDays={measurementsAgeDays}
     />

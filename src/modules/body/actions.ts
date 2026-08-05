@@ -7,11 +7,11 @@ import {
   userRepository,
 } from "@/modules/body/repositories";
 import {
+  dailyGoalsSchema,
   dailyLogSchema,
-  goalSchema,
   measurementsSchema,
+  type DailyGoalsFormValues,
   type DailyLogFormValues,
-  type GoalFormValues,
   type MeasurementsFormValues,
 } from "@/modules/body/schemas";
 import { revalidatePath } from "next/cache";
@@ -55,6 +55,7 @@ export async function createOrUpdateDailyLog(input: DailyLogFormValues) {
       date: data.date,
       weight: data.weight,
       kcal: data.kcal,
+      steps: data.steps,
     });
     return { ok: true, data: result };
   } catch (error) {
@@ -95,17 +96,14 @@ export async function createOrUpdateMeasurements(
   }
 }
 
-export async function updateUserCaloricGoal(input: GoalFormValues) {
+export async function updateDailyGoals(input: DailyGoalsFormValues) {
   const userId = await requireUserId();
-  const { success, data, error } = goalSchema.safeParse(input);
+  const { success, data, error } = dailyGoalsSchema.safeParse(input);
   if (!success) {
     return { ok: false, data: null, error: error.message };
   }
   try {
-    const result = await userRepository.updateCaloricGoal(
-      userId,
-      data.caloricGoal,
-    );
+    const result = await userRepository.updateDailyGoals(userId, data);
     return { ok: true, data: result };
   } catch (error) {
     console.error(error);
@@ -130,6 +128,17 @@ export async function getCaloricGoal() {
   const userId = await requireUserId();
   try {
     const result = await userRepository.findCaloricGoal(userId);
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, data: null, error: "Internal server error" };
+  }
+}
+
+export async function getGoalSettings() {
+  const userId = await requireUserId();
+  try {
+    const result = await userRepository.findGoalSettings(userId);
     return { ok: true, data: result };
   } catch (error) {
     console.error(error);

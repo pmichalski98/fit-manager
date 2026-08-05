@@ -56,7 +56,9 @@ for (const entry of journal.entries) {
       await sql.unsafe(statement);
     } catch (err: any) {
       // Skip "already exists" errors for idempotency (re-running after partial apply)
-      const alreadyExists = ["42710", "42P07", "42P06", "42701"].includes(err.code);
+      const alreadyExists = ["42710", "42P07", "42P06", "42701"].includes(
+        err.code,
+      );
       if (alreadyExists) {
         console.log(`    ⚠ Skipped (already exists): ${err.message}`);
       } else {

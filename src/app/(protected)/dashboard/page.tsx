@@ -9,6 +9,10 @@ import {
   KpiStripSkeleton,
 } from "@/modules/dashboard/ui/components/kpi-strip";
 import {
+  DailyGoalsPanel,
+  DailyGoalsPanelSkeleton,
+} from "@/modules/dashboard/ui/components/daily-goals-panel";
+import {
   MeasurementsCard,
   MeasurementsCardSkeleton,
 } from "@/modules/dashboard/ui/components/measurements-card";
@@ -96,6 +100,10 @@ export default async function DashboardPage(props: PageProps) {
             prevMonday={prevMonday}
             prevSunday={prevSunday}
           />
+        </Suspense>
+
+        <Suspense fallback={<DailyGoalsPanelSkeleton />}>
+          <DailyGoalsPanel />
         </Suspense>
 
         <HideableChart chartId="training-activity">

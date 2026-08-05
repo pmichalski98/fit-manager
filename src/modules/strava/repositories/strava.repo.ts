@@ -5,7 +5,16 @@ import {
   trainingSession,
   trainingSessionCardio,
 } from "@/server/db/schema";
-import { and, count, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+} from "drizzle-orm";
 import type { mapStravaActivityToSession } from "../lib/strava-mapper";
 import { STRAVA_TRAINING_NAME } from "../types";
 
@@ -74,9 +83,7 @@ class StravaRepository {
   }
 
   async delete(userId: string) {
-    await db
-      .delete(stravaAccount)
-      .where(eq(stravaAccount.userId, userId));
+    await db.delete(stravaAccount).where(eq(stravaAccount.userId, userId));
   }
 
   async findOrCreateStravaTraining(userId: string) {

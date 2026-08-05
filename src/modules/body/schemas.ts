@@ -5,6 +5,7 @@ export const dailyLogSchema = z.object({
   date: z.string().regex(dateRegex, "Invalid date format (YYYY-MM-DD)"),
   weight: z.coerce.string().min(0).max(1000).optional(),
   kcal: z.coerce.number().int().min(0).max(100000).optional(),
+  steps: z.coerce.number().int().min(0).max(200000).optional(),
 });
 export type DailyLogFormValues = z.infer<typeof dailyLogSchema>;
 
@@ -21,8 +22,18 @@ export const measurementsSchema = z.object({
 });
 export type MeasurementsFormValues = z.infer<typeof measurementsSchema>;
 
-export const goalSchema = z.object({
-  caloricGoal: z.coerce.number().int("Invalid caloric goal"),
+export const dailyGoalsSchema = z.object({
+  caloricGoal: z.coerce.number().int("Invalid caloric goal").min(0).max(100000),
+  stepsGoal: z.coerce.number().int("Invalid steps goal").min(0).max(200000),
+  weeklyTrainingGoal: z.coerce
+    .number()
+    .int("Invalid weekly training goal")
+    .min(0)
+    .max(14),
+  goalTrainingEnabled: z.boolean(),
+  goalStepsEnabled: z.boolean(),
+  goalWeightEnabled: z.boolean(),
+  goalKcalEnabled: z.boolean(),
 });
 
-export type GoalFormValues = z.infer<typeof goalSchema>;
+export type DailyGoalsFormValues = z.infer<typeof dailyGoalsSchema>;

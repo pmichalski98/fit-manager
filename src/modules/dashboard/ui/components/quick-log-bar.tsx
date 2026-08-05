@@ -8,20 +8,23 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { TargetIcon } from "lucide-react";
+
 import { cn, getTodayDateYYYYMMDD, handleIntegerInput } from "@/lib/utils";
 import { createOrUpdateDailyLog } from "@/modules/body/actions";
 import {
   dailyLogSchema,
   type DailyLogFormValues,
 } from "@/modules/body/schemas";
-import { CaloricGoalDialog } from "@/modules/body/ui/components/caloric-goal-dialog";
+import type { DailyGoalSettings } from "@/modules/body/repositories/user.repo";
+import { DailyGoalsDialog } from "@/modules/body/ui/components/daily-goals-dialog";
 import { MeasurementsDialog } from "@/modules/body/ui/components/measurements-dialog";
 import type { BodyMeasurement, DailyLog } from "@/server/db/schema";
 
 type Props = {
   todayLog: DailyLog | null;
   latestLog: DailyLog | null;
-  caloricGoal: number | null;
+  goalSettings: DailyGoalSettings | null;
   lastMeasurement: BodyMeasurement | null;
   measurementsAgeDays: number | null;
 };
@@ -29,7 +32,7 @@ type Props = {
 export function QuickLogBar({
   todayLog,
   latestLog,
-  caloricGoal,
+  goalSettings,
   lastMeasurement,
   measurementsAgeDays,
 }: Props) {
@@ -41,6 +44,7 @@ export function QuickLogBar({
       date: getTodayDateYYYYMMDD(),
       weight: todayLog?.weight ?? "",
       kcal: todayLog?.kcal ?? undefined,
+      steps: todayLog?.steps ?? undefined,
     },
   });
 
@@ -132,7 +136,53 @@ export function QuickLogBar({
             <span className="text-faint font-mono text-[11px]">
               kcal <span className="text-primary">· auto from Fitatu</span>
             </span>
-            <CaloricGoalDialog defaultGoal={caloricGoal} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="label-caps tracking-[0.08em]">Steps</label>
+            <FormField
+              control={form.control}
+              name="steps"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="—"
+                      className="h-[30px] w-20 text-center font-mono"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(
+                          value === "" ? undefined : Number(value),
+                        );
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      onKeyDown={handleIntegerInput}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <span className="text-faint font-mono text-[11px]">
+              {goalSettings?.stepsGoal != null
+                ? `/ ${goalSettings.stepsGoal.toLocaleString("en-US").replace(/,/g, " ")}`
+                : "steps"}
+            </span>
+            <DailyGoalsDialog settings={goalSettings}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                title="Set daily goals"
+              >
+                <TargetIcon className="size-3.5" />
+                <span className="sr-only">Set daily goals</span>
+              </Button>
+            </DailyGoalsDialog>
           </div>
 
           <Button type="submit" size="sm" disabled={isSubmitting}>

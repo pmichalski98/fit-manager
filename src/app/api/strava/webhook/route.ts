@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
     !account.webhookSubscriptionId ||
     String(event.subscription_id) !== account.webhookSubscriptionId
   ) {
-    return NextResponse.json({ error: "Invalid subscription" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Invalid subscription" },
+      { status: 403 },
+    );
   }
 
   // Fire and forget — Strava expects 200 within 2 seconds
@@ -53,10 +56,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-async function handleActivityCreate(
-  event: StravaWebhookEvent,
-  userId: string,
-) {
+async function handleActivityCreate(event: StravaWebhookEvent, userId: string) {
   const account = await stravaRepository.findByAthleteId(
     String(event.owner_id),
   );

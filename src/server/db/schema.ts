@@ -26,6 +26,15 @@ export const user = createTable("user", (d) => ({
     .notNull(),
   image: d.text("image"),
   caloricGoal: d.integer("caloric_goal"),
+  stepsGoal: d.integer("steps_goal"),
+  weeklyTrainingGoal: d.integer("weekly_training_goal"),
+  goalTrainingEnabled: d
+    .boolean("goal_training_enabled")
+    .notNull()
+    .default(true),
+  goalStepsEnabled: d.boolean("goal_steps_enabled").notNull().default(true),
+  goalWeightEnabled: d.boolean("goal_weight_enabled").notNull().default(true),
+  goalKcalEnabled: d.boolean("goal_kcal_enabled").notNull().default(true),
   createdAt: d
     .timestamp("created_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
@@ -96,6 +105,8 @@ export const dailyLog = createTable(
     date: d.date("date").notNull(),
     weight: d.numeric("weight", { precision: 5, scale: 1 }),
     kcal: d.integer("kcal"),
+    // Daily step count, synced from Apple Health via an iOS Shortcut
+    steps: d.integer("steps"),
     // Macros in grams, synced from Fitatu
     proteinG: d.integer("protein_g"),
     carbsG: d.integer("carbs_g"),

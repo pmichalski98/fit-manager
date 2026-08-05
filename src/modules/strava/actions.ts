@@ -90,10 +90,7 @@ export async function enableStravaWebhook() {
   }
 
   const data = (await res.json()) as { id: number };
-  await stravaRepository.updateWebhookSubscriptionId(
-    userId,
-    String(data.id),
-  );
+  await stravaRepository.updateWebhookSubscriptionId(userId, String(data.id));
 
   return { ok: true, data: { alreadyActive: false } };
 }

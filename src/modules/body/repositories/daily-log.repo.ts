@@ -40,6 +40,10 @@ class DailyLogRepository {
             values.kcal === 0 || values.kcal === undefined
               ? null
               : (values.kcal ?? null),
+          steps:
+            values.steps === 0 || values.steps === undefined
+              ? null
+              : values.steps,
           updatedAt: new Date(),
         })
         .where(
@@ -60,6 +64,10 @@ class DailyLogRepository {
           values.kcal === 0 || values.kcal === undefined
             ? null
             : (values.kcal ?? null),
+        steps:
+          values.steps === 0 || values.steps === undefined
+            ? null
+            : values.steps,
         weight: values.weight === "" ? null : (values.weight ?? null),
       })
       .returning();
@@ -76,6 +84,7 @@ class DailyLogRepository {
         date: dailyLog.date,
         weight: dailyLog.weight,
         kcal: dailyLog.kcal,
+        steps: dailyLog.steps,
         proteinG: dailyLog.proteinG,
         carbsG: dailyLog.carbsG,
         fatG: dailyLog.fatG,
