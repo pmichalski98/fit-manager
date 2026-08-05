@@ -1,6 +1,8 @@
 import type { DailyGoalSettings } from "@/modules/body/repositories/user.repo";
 
 export const KCAL_TOLERANCE = 0.05;
+/** Steps only tolerate a shortfall — overshooting the goal is always fine. */
+export const STEPS_TOLERANCE = 0.05;
 
 export type GoalCriterionKey = "training" | "steps" | "weight" | "kcal";
 
@@ -107,8 +109,8 @@ export function evaluateDailyGoals({
         trained || weekSessionCount + remainingDays >= weeklyGoal;
     }
     if (activeCriteria.includes("steps")) {
-      criteria.steps =
-        log?.steps != null && log.steps >= (settings.stepsGoal ?? 0);
+      const threshold = (settings.stepsGoal ?? 0) * (1 - STEPS_TOLERANCE);
+      criteria.steps = log?.steps != null && log.steps >= threshold;
     }
     if (activeCriteria.includes("weight")) {
       const weight = log?.weight != null ? parseFloat(log.weight) : NaN;

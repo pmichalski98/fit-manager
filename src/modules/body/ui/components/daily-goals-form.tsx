@@ -20,6 +20,10 @@ import { Input } from "@/components/ui/input";
 import { handleIntegerInput } from "@/lib/utils";
 import { updateDailyGoals } from "@/modules/body/actions";
 import type { DailyGoalSettings } from "@/modules/body/repositories/user.repo";
+import {
+  KCAL_TOLERANCE,
+  STEPS_TOLERANCE,
+} from "@/modules/dashboard/lib/daily-goals";
 import { dailyGoalsSchema, type DailyGoalsFormValues } from "../../schemas";
 
 type Props = {
@@ -27,7 +31,8 @@ type Props = {
   onSaved?: () => void;
 };
 
-const KCAL_TOLERANCE_PCT = 5;
+const KCAL_TOLERANCE_PCT = KCAL_TOLERANCE * 100;
+const STEPS_TOLERANCE_PCT = STEPS_TOLERANCE * 100;
 
 type CriterionName =
   | "goalTrainingEnabled"
@@ -62,7 +67,9 @@ export function DailyGoalsForm({ settings, onSaved }: Props) {
     {
       name: "goalStepsEnabled",
       label: "Steps ≥ goal",
-      hint: stepsGoal ? formatSteps(Number(stepsGoal)) : "set a goal",
+      hint: stepsGoal
+        ? `${formatSteps(Number(stepsGoal))} −${STEPS_TOLERANCE_PCT}%`
+        : "set a goal",
     },
     {
       name: "goalWeightEnabled",
@@ -139,7 +146,7 @@ export function DailyGoalsForm({ settings, onSaved }: Props) {
                     />
                   </FormControl>
                   <p className="text-faint font-mono text-[11px]">
-                    daily total counts
+                    daily total · tolerance −{STEPS_TOLERANCE_PCT}%
                   </p>
                   <FormMessage />
                 </FormItem>
