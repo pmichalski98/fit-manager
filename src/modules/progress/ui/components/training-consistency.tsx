@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getConsistencyGraphData } from "@/modules/dashboard/actions";
+import { getConsistencyGraphData } from "@/modules/progress/actions";
 import { AutoScrollContainer } from "./auto-scroll-container";
 import {
   startOfWeek,

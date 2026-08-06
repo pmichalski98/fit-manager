@@ -58,7 +58,7 @@ export async function uploadPhoto(values: PhotoFormValues) {
       imageUrl,
     });
 
-    revalidatePath("/photo");
+    revalidatePath("/body");
 
     return {
       ok: true as const,
@@ -105,7 +105,7 @@ export async function deletePhoto(id: string) {
       console.error("Failed to delete image from S3", error);
     }
 
-    revalidatePath("/photo");
+    revalidatePath("/body");
     return { ok: true as const, data: deleted, error: null };
   } catch (error) {
     console.error(error);

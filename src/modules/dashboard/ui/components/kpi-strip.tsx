@@ -1,3 +1,4 @@
+import { subDays } from "date-fns";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 
@@ -32,27 +33,61 @@ function parseWeights(logs: DailyLogRow[]): number[] {
   return weights;
 }
 
+function TrendSparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const x = (i: number) => 2 + 68 * (i / (values.length - 1));
+  const y = (v: number) => 19 - 15 * ((v - min) / span);
+
+  const points = values
+    .map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`)
+    .join(" ");
+  const lastX = x(values.length - 1).toFixed(1);
+  const lastY = y(values[values.length - 1]!).toFixed(1);
+
+  return (
+    <svg viewBox="0 0 72 22" className="h-[22px] w-[72px] shrink-0">
+      <polyline
+        points={points}
+        fill="none"
+        stroke="var(--chart-1)"
+        strokeWidth={1.5}
+        opacity={0.8}
+      />
+      <circle cx={lastX} cy={lastY} r={2} fill="var(--chart-1)" />
+    </svg>
+  );
+}
+
 function KpiCell({
   label,
   value,
   unit,
   delta,
+  spark,
   className,
 }: {
   label: string;
   value: string;
   unit?: string;
   delta: ReactNode;
+  spark?: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("flex flex-col gap-1.5 px-5 py-4", className)}>
       <span className="label-caps">{label}</span>
-      <span className="font-mono text-[26px] leading-none font-semibold">
-        {value}
-        {unit ? (
-          <span className="text-muted-foreground text-[13px]"> {unit}</span>
-        ) : null}
+      <span className="flex items-end justify-between gap-2">
+        <span className="font-mono text-[26px] leading-none font-semibold">
+          {value}
+          {unit ? (
+            <span className="text-muted-foreground text-[13px]"> {unit}</span>
+          ) : null}
+        </span>
+        {spark}
       </span>
       <span className="text-muted-foreground font-mono text-[11px]">
         {delta}
@@ -72,31 +107,42 @@ export async function KpiStrip({
 
   if (!userId) return null;
 
-  const [logs, prevLogs, sessions, prevSessions, userRow] = await Promise.all([
-    dailyLogRepository.findDailyLogsInRange(
-      userId,
-      formatDateYYYYMMDD(monday),
-      formatDateYYYYMMDD(sunday),
-    ) as Promise<DailyLogRow[]>,
-    dailyLogRepository.findDailyLogsInRange(
-      userId,
-      formatDateYYYYMMDD(prevMonday),
-      formatDateYYYYMMDD(prevSunday),
-    ) as Promise<DailyLogRow[]>,
-    sessionRepository.getSessionsInRange(userId, monday, nextDayStart(sunday)),
-    sessionRepository.getSessionsInRange(
-      userId,
-      prevMonday,
-      nextDayStart(prevSunday),
-    ),
-    userRepository.findUserById(userId),
-  ]);
+  const [logs, prevLogs, trendLogs, sessions, prevSessions, userRow] =
+    await Promise.all([
+      dailyLogRepository.findDailyLogsInRange(
+        userId,
+        formatDateYYYYMMDD(monday),
+        formatDateYYYYMMDD(sunday),
+      ) as Promise<DailyLogRow[]>,
+      dailyLogRepository.findDailyLogsInRange(
+        userId,
+        formatDateYYYYMMDD(prevMonday),
+        formatDateYYYYMMDD(prevSunday),
+      ) as Promise<DailyLogRow[]>,
+      dailyLogRepository.findDailyLogsInRange(
+        userId,
+        formatDateYYYYMMDD(subDays(sunday, 29)),
+        formatDateYYYYMMDD(sunday),
+      ) as Promise<DailyLogRow[]>,
+      sessionRepository.getSessionsInRange(
+        userId,
+        monday,
+        nextDayStart(sunday),
+      ),
+      sessionRepository.getSessionsInRange(
+        userId,
+        prevMonday,
+        nextDayStart(prevSunday),
+      ),
+      userRepository.findUserById(userId),
+    ]);
 
   const caloricGoal = (userRow?.caloricGoal as number | null) ?? null;
 
   // Weight
   const weekAvgWeight = average(parseWeights(logs));
   const prevWeekAvgWeight = average(parseWeights(prevLogs));
+  const weightTrend = parseWeights(trendLogs);
   const weightDelta =
     weekAvgWeight != null && prevWeekAvgWeight != null
       ? weekAvgWeight - prevWeekAvgWeight
@@ -131,6 +177,7 @@ export async function KpiStrip({
         label="Weight · wk avg"
         value={weekAvgWeight != null ? weekAvgWeight.toFixed(1) : "—"}
         unit="kg"
+        spark={<TrendSparkline values={weightTrend} />}
         className="border-r border-b lg:border-b-0"
         delta={
           weightDelta != null ? (

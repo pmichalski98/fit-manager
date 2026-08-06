@@ -20,7 +20,7 @@ import {
 
 const STORAGE_KEY = "fit-manager-hidden-charts";
 
-export const DASHBOARD_CHARTS = [
+export const PROGRESS_CHARTS = [
   { id: "training-activity", title: "Training Activity" },
   { id: "weight-history", title: "Weight History" },
   { id: "kcal-history", title: "Caloric Intake History" },
@@ -90,7 +90,7 @@ export function ChartsMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Visible charts</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {DASHBOARD_CHARTS.map((chart) => (
+        {PROGRESS_CHARTS.map((chart) => (
           <DropdownMenuCheckboxItem
             key={chart.id}
             checked={!hiddenIds?.includes(chart.id)}

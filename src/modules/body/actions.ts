@@ -63,6 +63,7 @@ export async function createOrUpdateDailyLog(input: DailyLogFormValues) {
     return { ok: false, data: null, error: "Internal server error" };
   } finally {
     revalidatePath("/dashboard");
+    revalidatePath("/progress");
   }
 }
 
@@ -92,7 +93,7 @@ export async function createOrUpdateMeasurements(
     console.error(error);
     return { ok: false, data: null, error: "Internal server error" };
   } finally {
-    revalidatePath("/dashboard");
+    revalidatePath("/body");
   }
 }
 
