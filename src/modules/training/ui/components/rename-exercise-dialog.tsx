@@ -38,7 +38,7 @@ export function RenameExerciseDialog({
             . Did you correct a typo, or is this a completely new exercise?
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+        <AlertDialogFooter className="flex-col sm:flex-col">
           <Button variant="outline" onClick={() => onDecision(false)}>
             Just renamed (Keep history)
           </Button>
