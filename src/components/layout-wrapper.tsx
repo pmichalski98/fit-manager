@@ -27,9 +27,11 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <SidebarInset className="max-h-svh overflow-x-hidden overflow-y-auto overscroll-y-contain">
         <div
           className={cn(
-            "flex flex-1 flex-col px-4 md:px-6 md:pb-6",
+            "mx-auto flex w-full flex-1 flex-col px-4 md:px-6 md:pb-6",
             "pt-[calc(var(--safe-top)+1.5rem)] md:pt-6",
-            isTrainingSession ? "pb-[calc(var(--safe-bottom)+1rem)]" : "pb-14",
+            isTrainingSession
+              ? "max-w-[96rem] pb-[calc(var(--safe-bottom)+1rem)]"
+              : "max-w-7xl pb-14",
           )}
         >
           {children}
