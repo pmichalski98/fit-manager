@@ -1,19 +1,23 @@
 import { getDailyLogHistory } from "../../actions";
-import { getCaloricGoal } from "@/modules/body/actions";
+import { getGoalSettings } from "@/modules/body/actions";
 import { HideableChart } from "./hideable-chart";
 import { KcalChartGraph } from "./kcal-chart-graph";
 import { MacroChartGraph } from "./macro-chart-graph";
+import { StepsChartGraph } from "./steps-chart-graph";
 import { WeightChartGraph } from "./weight-chart-graph";
 
 export async function BodyCharts() {
-  const [data, { data: caloricGoal }] = await Promise.all([
+  const [data, { data: goalSettings }] = await Promise.all([
     getDailyLogHistory(),
-    getCaloricGoal(),
+    getGoalSettings(),
   ]);
 
   if (!data || data.length === 0) {
     return null;
   }
+
+  const caloricGoal = goalSettings?.caloricGoal ?? null;
+  const stepsGoal = goalSettings?.stepsGoal ?? null;
 
   // Filter out entries without kcal
   const kcalData = data
@@ -31,6 +35,14 @@ export async function BodyCharts() {
     .map((log) => ({
       date: log.date,
       weight: Number(log.weight),
+    }));
+
+  // Days with steps synced from Apple Health
+  const stepsData = data
+    .filter((log) => log.steps != null && log.steps > 0)
+    .map((log) => ({
+      date: log.date,
+      steps: Number(log.steps),
     }));
 
   // Days with at least one macro logged (synced from Fitatu)
@@ -58,7 +70,13 @@ export async function BodyCharts() {
 
       {kcalData.length > 0 && (
         <HideableChart chartId="kcal-history">
-          <KcalChartGraph data={kcalData} caloricGoal={caloricGoal ?? null} />
+          <KcalChartGraph data={kcalData} caloricGoal={caloricGoal} />
+        </HideableChart>
+      )}
+
+      {stepsData.length > 0 && (
+        <HideableChart chartId="steps-history">
+          <StepsChartGraph data={stepsData} stepsGoal={stepsGoal} />
         </HideableChart>
       )}
 

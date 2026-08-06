@@ -24,6 +24,7 @@ export const PROGRESS_CHARTS = [
   { id: "training-activity", title: "Training Activity" },
   { id: "weight-history", title: "Weight History" },
   { id: "kcal-history", title: "Caloric Intake History" },
+  { id: "steps-history", title: "Steps History" },
   { id: "macro-history", title: "Macros History" },
   { id: "exercise-progress", title: "Exercise Progress" },
   { id: "training-volume", title: "Training Volume" },
