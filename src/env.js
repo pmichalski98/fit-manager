@@ -27,6 +27,10 @@ export const env = createEnv({
     FITATU_SYNC_USER_EMAIL: z.string().email().optional(),
     HEALTH_EXPORT_SECRET: z.string().optional(),
     HEALTH_EXPORT_USER_EMAIL: z.string().email().optional(),
+    GARMIN_USERNAME: z.string().optional(),
+    GARMIN_PASSWORD: z.string().optional(),
+    GARMIN_SYNC_SECRET: z.string().optional(),
+    GARMIN_SYNC_USER_EMAIL: z.string().email().optional(),
     OPENAI_API_KEY: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -68,6 +72,10 @@ export const env = createEnv({
     FITATU_SYNC_USER_EMAIL: process.env.FITATU_SYNC_USER_EMAIL,
     HEALTH_EXPORT_SECRET: process.env.HEALTH_EXPORT_SECRET,
     HEALTH_EXPORT_USER_EMAIL: process.env.HEALTH_EXPORT_USER_EMAIL,
+    GARMIN_USERNAME: process.env.GARMIN_USERNAME,
+    GARMIN_PASSWORD: process.env.GARMIN_PASSWORD,
+    GARMIN_SYNC_SECRET: process.env.GARMIN_SYNC_SECRET,
+    GARMIN_SYNC_USER_EMAIL: process.env.GARMIN_SYNC_USER_EMAIL,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

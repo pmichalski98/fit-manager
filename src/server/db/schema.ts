@@ -237,6 +237,28 @@ export const stravaAccount = createTable(
 
 export type StravaAccount = typeof stravaAccount.$inferSelect;
 
+// ─── Garmin Integration ─────────────────────────────────────────────────────
+
+export const garminAccount = createTable(
+  "garmin_account",
+  (d) => ({
+    id: d.uuid("id").primaryKey().defaultRandom(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // Persisted garmin-connect tokens: OAuth1 lives ~1 year and is used to
+    // refresh the short-lived OAuth2, so password login happens rarely.
+    oauth1Token: d.jsonb("oauth1_token"),
+    oauth2Token: d.jsonb("oauth2_token"),
+    createdAt: d.timestamp("created_at").notNull().defaultNow(),
+    updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
+  }),
+  (t) => [uniqueIndex("garmin_account_user_unique").on(t.userId)],
+);
+
+export type GarminAccount = typeof garminAccount.$inferSelect;
+
 // Training session lifecycle and results
 export const trainingSession = createTable(
   "training_session",
@@ -259,6 +281,7 @@ export const trainingSession = createTable(
     totalLoadKg: d.integer("total_load_kg"),
     notes: d.text("notes"),
     stravaActivityId: d.text("strava_activity_id"),
+    garminActivityId: d.text("garmin_activity_id"),
     date: d.date("date").notNull().defaultNow(),
     createdAt: d.timestamp("created_at").notNull().defaultNow(),
     updatedAt: d.timestamp("updated_at").notNull().defaultNow(),
@@ -266,6 +289,9 @@ export const trainingSession = createTable(
   (t) => [
     uniqueIndex("training_session_strava_activity_unique").on(
       t.stravaActivityId,
+    ),
+    uniqueIndex("training_session_garmin_activity_unique").on(
+      t.garminActivityId,
     ),
   ],
 );
