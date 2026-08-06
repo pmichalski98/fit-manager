@@ -49,3 +49,7 @@ yarn-error.log*
 
 # design handoff reference files (local only)
 design_handoff_carbon_redesign*/
+
+# agent instruction files (local only)
+/AGENTS.md
+/CLAUDE.md
