@@ -19,7 +19,7 @@ import {
   type DayGoalResult,
   type GoalCriterionKey,
 } from "../../lib/daily-goals";
-import { formatDurationMin, nextDayStart } from "../../utils";
+import { formatDurationMin, formatSteps, nextDayStart } from "../../utils";
 
 const HISTORY_DAYS = 365;
 const GRID_DAYS = 14;
@@ -30,10 +30,6 @@ const CRITERION_LABELS: Record<GoalCriterionKey, string> = {
   weight: "Weight",
   kcal: "Kcal",
 };
-
-function formatSteps(value: number): string {
-  return value.toLocaleString("en-US").replace(/,/g, " ");
-}
 
 function shiftDate(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);

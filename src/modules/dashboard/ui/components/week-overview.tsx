@@ -14,6 +14,7 @@ import type { SessionSummary } from "@/modules/session/types";
 import {
   average,
   formatDurationMin,
+  formatSteps,
   formatVolumeKg,
   nextDayStart,
 } from "../../utils";
@@ -33,6 +34,7 @@ type DailyLogRow = {
   date: string;
   weight: string | null;
   kcal: number | null;
+  steps: number | null;
 };
 
 function sessionMeta(s: SessionSummary): string {
@@ -101,6 +103,7 @@ export async function WeekOverview({
       {
         weight: l.weight != null ? parseFloat(l.weight) : null,
         kcal: l.kcal ?? null,
+        steps: l.steps ?? null,
       },
     ]),
   );
@@ -126,6 +129,9 @@ export async function WeekOverview({
       : null;
   const weekAvgKcal = average(
     logs.filter((l) => l.kcal != null).map((l) => l.kcal!),
+  );
+  const weekAvgSteps = average(
+    logs.filter((l) => l.steps != null).map((l) => l.steps!),
   );
   const totalVolume = sessions.reduce(
     (acc, s) => acc + (s.totalLoadKg ?? 0),
@@ -198,6 +204,9 @@ export async function WeekOverview({
                       <span className="text-faint">—</span>
                     )}
                   </span>
+                  <span className="text-faint text-[11px]">
+                    {log?.steps != null ? formatSteps(log.steps) : "—"}
+                  </span>
                 </div>
                 {daySessions && daySessions.length > 0 ? (
                   <div className="mt-auto flex flex-col gap-1.5">
@@ -255,6 +264,12 @@ export async function WeekOverview({
               {weekAvgKcal != null ? Math.round(weekAvgKcal) : "—"}
             </span>
             {caloricGoal != null ? `/${caloricGoal}` : null}
+          </span>
+          <span>
+            ØSTEPS{" "}
+            <span className="text-foreground">
+              {weekAvgSteps != null ? formatSteps(weekAvgSteps) : "—"}
+            </span>
           </span>
           <span>
             TRN <span className="text-foreground">{sessions.length}</span>

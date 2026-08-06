@@ -13,6 +13,10 @@ export function formatVolumeKg(v: number): string {
   return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+export function formatSteps(v: number): string {
+  return formatVolumeKg(v);
+}
+
 export function average(values: number[]): number | null {
   if (!values.length) return null;
   const sum = values.reduce((acc, v) => acc + v, 0);
