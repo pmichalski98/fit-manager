@@ -12,7 +12,7 @@ export async function assembleExportData(
   userId: string,
   range: ExportRangeInput,
 ): Promise<ExportData> {
-  const [dailyLogs, measurements, sessions, mealItems, caloricGoal] =
+  const [dailyLogs, measurements, sessions, mealItems, goals] =
     await Promise.all([
       dailyLogRepository.findDailyLogsInRange(userId, range.start, range.end),
       measurementsRepository.findMeasurementsInRange(
@@ -26,12 +26,13 @@ export async function assembleExportData(
         range.end,
       ),
       nutritionRepository.findItemsInRange(userId, range.start, range.end),
-      userRepository.findCaloricGoal(userId),
+      userRepository.findGoalSettings(userId),
     ]);
 
   return {
     range,
-    caloricGoal,
+    caloricGoal: goals?.caloricGoal ?? null,
+    stepsGoal: goals?.stepsGoal ?? null,
     dailyLogs,
     measurements,
     sessions,

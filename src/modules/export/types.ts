@@ -9,6 +9,7 @@ export type DailyLogEntry = Awaited<
 export type ExportData = {
   range: { start: string; end: string };
   caloricGoal: number | null;
+  stepsGoal: number | null;
   dailyLogs: DailyLogEntry[];
   measurements: BodyMeasurement[];
   sessions: SessionDetail[];

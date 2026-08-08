@@ -1,6 +1,6 @@
 "use client";
 
-import { format, subMonths, subYears } from "date-fns";
+import { format, isBefore, subDays, subMonths, subYears } from "date-fns";
 import { Copy, Download, FileDown } from "lucide-react";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
@@ -21,17 +21,19 @@ import { Spinner } from "@/components/ui/spinner";
 import { cn, formatDateYYYYMMDD } from "@/lib/utils";
 import { exportDataForAnalysis } from "@/modules/export/actions";
 
+/** Day counts are inclusive of today, so "7D" spans today and the 6 days before. */
 const PRESETS = [
-  { label: "1M", months: 1 },
-  { label: "3M", months: 3 },
-  { label: "6M", months: 6 },
-  { label: "1Y", months: 12 },
+  { label: "7D", from: (today: Date) => subDays(today, 6) },
+  { label: "14D", from: (today: Date) => subDays(today, 13) },
+  { label: "1M", from: (today: Date) => subMonths(today, 1) },
+  { label: "3M", from: (today: Date) => subMonths(today, 3) },
+  { label: "6M", from: (today: Date) => subMonths(today, 6) },
+  { label: "1Y", from: (today: Date) => subYears(today, 1) },
 ] as const;
 
-function presetRange(months: number): DateRange {
+function presetRange(preset: (typeof PRESETS)[number]): DateRange {
   const today = new Date();
-  const from = months === 12 ? subYears(today, 1) : subMonths(today, months);
-  return { from, to: today };
+  return { from: preset.from(today), to: today };
 }
 
 function sameDay(a: Date | undefined, b: Date | undefined): boolean {
@@ -43,12 +45,23 @@ function sameDay(a: Date | undefined, b: Date | undefined): boolean {
 }
 
 export function ExportDialog() {
-  const [range, setRange] = useState<DateRange | undefined>(() =>
-    presetRange(1),
-  );
+  const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [pending, setPending] = useState<"copy" | "download" | null>(null);
 
   const complete = range?.from !== undefined && range?.to !== undefined;
+
+  // Two clicks define a range: the first sets one end, the second the other
+  // (in either order), and a third starts over. react-day-picker's built-in
+  // range logic instead edits whichever endpoint is nearest, which makes a
+  // click on an already-selected range hard to predict.
+  const handleDayClick = (day: Date) => {
+    setRange((prev) => {
+      if (!prev?.from || prev.to) return { from: day, to: undefined };
+      return isBefore(day, prev.from)
+        ? { from: day, to: prev.from }
+        : { from: prev.from, to: day };
+    });
+  };
 
   const runExport = async (mode: "copy" | "download") => {
     if (!range?.from || !range?.to) return;
@@ -100,13 +113,13 @@ export function ExportDialog() {
 
         <div className="flex flex-col gap-4 p-5">
           <DialogDescription className="text-secondary-foreground text-xs leading-relaxed">
-            Exports weight, nutrition, training and body measurements as
+            Exports weight, steps, nutrition, training and body measurements as
             Markdown — paste it into an AI chat to analyze your progress.
           </DialogDescription>
 
-          <div className="bg-input-bg border-input flex w-fit gap-0.5 rounded-sm border p-0.5">
+          <div className="bg-input-bg border-input flex w-fit flex-wrap gap-0.5 rounded-sm border p-0.5">
             {PRESETS.map((preset) => {
-              const target = presetRange(preset.months);
+              const target = presetRange(preset);
               const active =
                 sameDay(range?.from, target.from) &&
                 sameDay(range?.to, target.to);
@@ -114,9 +127,9 @@ export function ExportDialog() {
                 <button
                   key={preset.label}
                   type="button"
-                  onClick={() => setRange(presetRange(preset.months))}
+                  onClick={() => setRange(presetRange(preset))}
                   className={cn(
-                    "rounded-[4px] px-3.5 py-[5px] font-mono text-[11px] transition-colors",
+                    "rounded-[4px] px-2.5 py-[5px] font-mono text-[11px] transition-colors",
                     active
                       ? "bg-primary text-primary-foreground font-bold"
                       : "text-muted-foreground hover:text-foreground font-semibold",
@@ -133,7 +146,7 @@ export function ExportDialog() {
               mode="range"
               weekStartsOn={1}
               selected={range}
-              onSelect={setRange}
+              onSelect={(_, clickedDay) => handleDayClick(clickedDay)}
               defaultMonth={range?.from}
               disabled={{ after: new Date() }}
               className="w-full bg-transparent p-0 font-mono"
@@ -147,7 +160,9 @@ export function ExportDialog() {
             <p className="text-secondary-foreground text-center font-mono text-[11px]">
               {range?.from && range?.to
                 ? `${format(range.from, "d MMM yyyy")} — ${format(range.to, "d MMM yyyy")}`
-                : "Select a date range"}
+                : range?.from
+                  ? `${format(range.from, "d MMM yyyy")} — pick an end date`
+                  : "Pick a start and an end date"}
             </p>
           </div>
         </div>

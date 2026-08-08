@@ -98,6 +98,39 @@ function renderBodyWeight(data: ExportData, totalDays: number): string[] {
   return [...lines, ""];
 }
 
+function renderSteps(data: ExportData, totalDays: number): string[] {
+  const goal = data.stepsGoal;
+  const days = data.dailyLogs
+    .map((log) => ({ date: log.date, steps: log.steps }))
+    .filter(
+      (day): day is { date: string; steps: number } => day.steps !== null,
+    );
+
+  const lines = ["## Steps"];
+  if (days.length === 0) return [...lines, NO_DATA, ""];
+
+  lines.push(goal ? `Steps goal: ${goal} steps/day` : "Steps goal: not set");
+
+  const avg = Math.round(average(days.map((day) => day.steps)));
+  const summaryParts = [`Days logged: ${days.length}/${totalDays}`];
+  if (goal) {
+    const delta = avg - goal;
+    summaryParts.push(
+      `Avg: ${avg}/day (${delta >= 0 ? "+" : ""}${delta} vs goal)`,
+      `Days at goal: ${days.filter((day) => day.steps >= goal).length}/${days.length}`,
+    );
+  } else {
+    summaryParts.push(`Avg: ${avg}/day`);
+  }
+  summaryParts.push(`Total: ${days.reduce((sum, day) => sum + day.steps, 0)}`);
+  lines.push(summaryParts.join(" | "), "", "| Date | Steps |", "|---|---|");
+
+  for (const day of days) {
+    lines.push(`| ${day.date} | ${day.steps} |`);
+  }
+  return [...lines, ""];
+}
+
 /** "150 g" for a stable amount, "150–165 g" when portions drifted. */
 function formatAmount(ingredient: MealGroup["ingredients"][number]): string {
   if (ingredient.avgGrams === null) return "?";
@@ -391,6 +424,7 @@ export function renderExportMarkdown(data: ExportData): string {
     "",
     ...renderBodyWeight(data, totalDays),
     ...renderNutrition(data, totalDays),
+    ...renderSteps(data, totalDays),
     ...renderTraining(data),
     ...renderMeasurements(data),
   ];
