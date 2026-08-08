@@ -62,13 +62,13 @@ import { useMediaQuery } from "@/modules/session/ui/hooks/use-media-query";
 import { SwipeableExerciseNav } from "@/modules/session/ui/components/swipeable-exercise-nav";
 import { ExerciseProgressDots } from "@/modules/session/ui/components/exercise-progress-dots";
 import { ExerciseSidebar } from "@/modules/session/ui/components/exercise-sidebar";
+import { RestTimer } from "@/modules/session/ui/components/rest-timer";
 import { useSessionKeyboardShortcuts } from "@/modules/session/ui/hooks/use-session-keyboard-shortcuts";
 import { useExerciseRename } from "@/modules/session/ui/hooks/use-exercise-rename";
 import { useExerciseReorder } from "@/modules/session/ui/hooks/use-exercise-reorder";
 import { useHorizontalScroll } from "@/modules/session/ui/hooks/use-horizontal-scroll";
 import { RenameExerciseDialog } from "@/modules/training/ui/components/rename-exercise-dialog";
 import { formatExerciseTarget } from "@/modules/training/lib/format-target";
-import { formatVolumeKg } from "@/modules/dashboard/utils";
 import {
   getSetProgress,
   isSetRecord,
@@ -79,6 +79,9 @@ import { cn } from "@/lib/utils";
 
 /** Minimum exercise count before scroll navigation (arrows + dots) is shown */
 const MIN_EXERCISES_FOR_SCROLL_NAV = 3;
+
+/** Pause before auto-scrolling on, so the final set's "done" state registers */
+const AUTO_ADVANCE_DELAY_MS = 500;
 
 type TemplateExercise = {
   id: string;
@@ -346,6 +349,22 @@ export function StrengthSessionView({
     });
   }, []);
 
+  // Auto-advance on desktop: finishing every set of an exercise scrolls the
+  // next one into view. Mobile gets this from the swiper effect above.
+  // Forward moves only, so un-checking a set doesn't yank the view backwards.
+  const lastAdvancedToRef = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = lastAdvancedToRef.current;
+    lastAdvancedToRef.current = activeExerciseIndex;
+    if (isMobile || activeExerciseIndex == null) return;
+    if (prev == null || activeExerciseIndex <= prev) return;
+    const t = setTimeout(
+      () => handleSidebarClick(activeExerciseIndex),
+      AUTO_ADVANCE_DELAY_MS,
+    );
+    return () => clearTimeout(t);
+  }, [isMobile, activeExerciseIndex, handleSidebarClick]);
+
   const handleToggleNextDone = useCallback(() => {
     document.dispatchEvent(new CustomEvent("session:toggle-next-done"));
   }, []);
@@ -596,23 +615,6 @@ export function StrengthSessionView({
     return { setsDone, setsTotal, exercisesDone };
   }, [exercisesArr.fields.length, progressByExercise]);
 
-  // Volume of completed sets; doneTrigger bumps whenever a set is toggled
-  const doneVolume = useMemo(() => {
-    const values = form.getValues("exercises") ?? [];
-    let vol = 0;
-    for (const [exKey, setsMap] of Object.entries(doneMapRef.current)) {
-      const ex = values[Number(exKey)];
-      if (!ex) continue;
-      for (const [setKey, isDone] of Object.entries(setsMap)) {
-        if (!isDone) continue;
-        const s = ex.sets?.[Number(setKey)];
-        if (s) vol += (s.weight ?? 0) * (s.reps ?? 0);
-      }
-    }
-    return vol;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doneTrigger, form]);
-
   const handleClose = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
@@ -646,12 +648,6 @@ export function StrengthSessionView({
                 Ex.{" "}
                 <span className="text-foreground">
                   {sessionStats.exercisesDone}/{exercisesArr.fields.length}
-                </span>
-              </span>
-              <span>
-                Vol{" "}
-                <span className="text-foreground">
-                  {formatVolumeKg(doneVolume)} kg
                 </span>
               </span>
             </div>
@@ -1141,6 +1137,15 @@ function ExerciseCard({
   const localNameRef = useRef<HTMLInputElement>(null);
   const posInputRef = useRef<HTMLInputElement>(null);
 
+  const prevExerciseLastDoneAt =
+    exIndex > 0 ? (mostRecentDoneByExercise[exIndex - 1] ?? null) : null;
+  // Rest runs from this exercise's last completed set, else the previous
+  // exercise's, else the start of the session.
+  const restStartAt =
+    mostRecentDoneByExercise[exIndex] ??
+    prevExerciseLastDoneAt ??
+    sessionStartAtMs;
+
   const noteValue = useWatch({ control, name: `exercises.${exIndex}.notes` });
   const hasNote = typeof noteValue === "string" && noteValue.length > 0;
   // Open by default when a note was restored (resume); toggleable afterwards
@@ -1297,6 +1302,12 @@ function ExerciseCard({
           )}
         </div>
       </div>
+      {/* Rest timer — pinned above the scrollable sets so it never scrolls away */}
+      {isActive && (
+        <div className="px-4 pt-2.5 sm:px-5">
+          <RestTimer startAt={restStartAt} />
+        </div>
+      )}
       {(targetHint || prevSets.length > 0) && (
         <p className="text-muted-foreground px-4 pt-1 font-mono text-[11px] sm:px-5">
           {targetHint ? `target ${targetHint}` : null}
@@ -1366,9 +1377,7 @@ function ExerciseCard({
           exIndex={exIndex}
           prevSets={prevSets}
           record={record}
-          prevExerciseLastDoneAt={
-            exIndex > 0 ? (mostRecentDoneByExercise[exIndex - 1] ?? null) : null
-          }
+          prevExerciseLastDoneAt={prevExerciseLastDoneAt}
           sessionStartAtMs={sessionStartAtMs}
           onMostRecentChange={onMostRecentChange}
           onProgressChange={onProgressChange}
@@ -1426,7 +1435,6 @@ function ExerciseSets({
   const [localMostRecentDoneAt, setLocalMostRecentDoneAt] = useState<
     number | null
   >(null);
-  const [currentRest, setCurrentRest] = useState("00:00");
 
   const { fields, append, remove } = useFieldArray({
     name: `exercises.${exIndex}.sets`,
@@ -1490,37 +1498,6 @@ function ExerciseSets({
   }, [exIndex, localMostRecentDoneAt, onMostRecentChange]);
 
   useEffect(() => {
-    if (!isActive) {
-      setCurrentRest("00:00");
-      return;
-    }
-    const restStart =
-      localMostRecentDoneAt ??
-      prevExerciseLastDoneAt ??
-      sessionStartAtMs ??
-      Date.now();
-    const i = setInterval(() => {
-      const diff = Math.max(0, Date.now() - restStart);
-      const h = Math.floor(diff / 3600000)
-        .toString()
-        .padStart(2, "0");
-      const m = Math.floor((diff % 3600000) / 60000)
-        .toString()
-        .padStart(2, "0");
-      const s = Math.floor((diff % 60000) / 1000)
-        .toString()
-        .padStart(2, "0");
-      setCurrentRest(h === "00" ? `${m}:${s}` : `${h}:${m}:${s}`);
-    }, 1000);
-    return () => clearInterval(i);
-  }, [
-    isActive,
-    localMostRecentDoneAt,
-    prevExerciseLastDoneAt,
-    sessionStartAtMs,
-  ]);
-
-  useEffect(() => {
     const total = fields.length;
     const done = fields.reduce(
       (acc, field) => acc + (doneMap[field.id] ? 1 : 0),
@@ -1577,18 +1554,6 @@ function ExerciseSets({
 
   return (
     <div className="space-y-2">
-      {/* Rest timer — prominent when active */}
-      {isActive && (
-        <div className="bg-primary/8 border-primary/30 flex items-center justify-between rounded-lg border px-3.5 py-1.5">
-          <span className="text-primary text-[10px] font-semibold tracking-[0.1em] uppercase">
-            Rest timer
-          </span>
-          <span className="text-primary font-mono text-xl font-semibold">
-            {currentRest}
-          </span>
-        </div>
-      )}
-
       {/* Set rows */}
       {fields.map((f, setIdx) => {
         const isDone = !!doneMap[f.id];
