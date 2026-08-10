@@ -36,6 +36,7 @@ export async function assembleExportData(
     dailyLogs,
     measurements,
     sessions,
-    mealItems: mealItems.filter((item) => item.eaten),
+    // Not filtered by `eaten` — Fitatu reports false even for logged past days.
+    mealItems,
   };
 }

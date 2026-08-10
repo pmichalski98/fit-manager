@@ -217,7 +217,9 @@ export async function analyzeWeek(userId: string, weekStart: string) {
     weekStart,
     weekEndOf(weekStart),
   );
-  const eaten = items.filter((item) => item.eaten).slice(0, MAX_ITEMS);
+  // Fitatu returns eaten=false even for fully logged past days, so the flag
+  // carries no signal — the sync only pulls past days, which were all eaten.
+  const eaten = items.slice(0, MAX_ITEMS);
 
   if (eaten.length === 0) return null;
 
