@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { LayoutWrapper } from "@/components/layout-wrapper";
+import { ViewportHealer } from "@/components/viewport-healer";
 import "@/styles/globals.css";
 import { type Metadata, type Viewport } from "next";
 import { IBM_Plex_Mono, Inter } from "next/font/google";
@@ -18,6 +19,10 @@ const plexMono = IBM_Plex_Mono({
 
 export const viewport: Viewport = {
   viewportFit: "cover",
+  // iOS auto-zooms (and pans the whole layout viewport) when focusing inputs
+  // with font-size < 16px; maximumScale disables only that auto-zoom —
+  // Safari still allows manual pinch zoom since iOS 10.
+  maximumScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#121317" },
     { media: "(prefers-color-scheme: light)", color: "#f6f6f8" },
@@ -54,6 +59,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <LayoutWrapper>{children}</LayoutWrapper>
+            <ViewportHealer />
             <Toaster richColors />
           </ThemeProvider>
         </body>

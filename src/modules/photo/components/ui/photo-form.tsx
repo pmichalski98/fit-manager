@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { DateFormField } from "@/components/date-form-field";
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
 import { getDailyLogByDate } from "@/modules/body/actions";
@@ -138,9 +138,7 @@ export function PhotoForm({
                 <FormItem>
                   <FormLabel className="label-caps">Weight (kg)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
+                    <DecimalInput
                       placeholder="84.2"
                       className="text-center font-mono"
                       {...field}

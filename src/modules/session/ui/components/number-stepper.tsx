@@ -94,7 +94,7 @@ export function NumberStepper({
       onChange(null);
       return;
     }
-    const parsed = Number(editValue);
+    const parsed = Number(editValue.replace(",", "."));
     if (Number.isNaN(parsed)) return;
     onChange(clamp(parsed));
   };
@@ -145,13 +145,14 @@ export function NumberStepper({
         {isEditing ? (
           <input
             ref={inputRef}
-            type="number"
+            // type="text": iOS ignores the "," key on type="number" inputs,
+            // which makes fractional weights impossible to type
+            type="text"
             inputMode={inputMode}
-            step={step}
-            min={min}
-            max={max}
             value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
+            onChange={(e) =>
+              setEditValue(e.target.value.replace(/[^0-9.,]/g, ""))
+            }
             onBlur={commitEdit}
             onKeyDown={(e) => {
               if (e.key === "Enter") {

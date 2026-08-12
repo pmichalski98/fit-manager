@@ -110,6 +110,7 @@ export function CardioSessionView({ template, last }: Props) {
                 control={form.control}
                 name="distanceKm"
                 label="Distance (km)"
+                decimal
               />
               <NumberFormField
                 control={form.control}
@@ -125,11 +126,13 @@ export function CardioSessionView({ template, last }: Props) {
                 control={form.control}
                 name="avgSpeedKmh"
                 label="Avg Speed (km/h)"
+                decimal
               />
               <NumberFormField
                 control={form.control}
                 name="maxSpeedKmh"
                 label="Max Speed (km/h)"
+                decimal
               />
               <NumberFormField
                 control={form.control}

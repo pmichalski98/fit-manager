@@ -1,6 +1,7 @@
 {
   "name": "Fit Manager",
   "short_name": "Fit Manager",
+  "start_url": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

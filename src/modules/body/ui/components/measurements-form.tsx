@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
@@ -126,9 +127,7 @@ export function MeasurementsForm({ last, onSuccess }: Props) {
                   <FormItem className="gap-1.5">
                     <FormLabel className="label-caps">{label}</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
+                      <DecimalInput
                         className="text-center font-mono"
                         {...field}
                       />

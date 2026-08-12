@@ -6,6 +6,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { TargetIcon } from "lucide-react";
@@ -90,9 +91,7 @@ export function QuickLogBar({
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
+                    <DecimalInput
                       placeholder={latestLog?.weight ?? "—"}
                       className="h-[30px] w-20 text-center font-mono"
                       {...field}
