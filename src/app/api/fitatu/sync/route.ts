@@ -10,9 +10,11 @@ import {
 export const dynamic = "force-dynamic";
 
 const MAX_BACKFILL_DAYS = 31;
+const DEFAULT_SYNC_DAYS = 7;
 
 /**
- * Cron endpoint: syncs yesterday's Fitatu entries by default.
+ * Cron endpoint: re-syncs the last 7 days ending yesterday by default, so
+ * meals logged in Fitatu days after the fact overwrite the stale values.
  * Query params:
  *   - date=YYYY-MM-DD  sync a single specific day
  *   - days=N           sync the last N days ending yesterday (backfill, max 31)
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
     dates = [dateParam];
   } else {
     const days = Math.min(
-      Math.max(Number.parseInt(daysParam ?? "1", 10) || 1, 1),
+      Math.max(Number.parseInt(daysParam ?? "", 10) || DEFAULT_SYNC_DAYS, 1),
       MAX_BACKFILL_DAYS,
     );
     const yesterday = shiftDate(warsawToday(), -1);
