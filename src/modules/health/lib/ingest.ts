@@ -85,7 +85,12 @@ export async function ingestHealthExport(
     for (let i = 0; i < dates.length; i++) {
       const date = dates[i]!.trim().slice(0, 10);
       const qty = parseQty(values[i]!);
-      if (!dateRegex.test(date) || qty == null || qty < 0) continue;
+      // Shortcuts' "Group By Day" zero-fills days the filtered source has no
+      // samples for (e.g. days before the Apple Watch existed), so a 0 here
+      // always means "no data" — skip it instead of clobbering another
+      // source's total. An intentional 0 can still be set via the
+      // single-day {date, steps} payload.
+      if (!dateRegex.test(date) || qty == null || qty <= 0) continue;
       stepsByDate.set(date, (stepsByDate.get(date) ?? 0) + qty);
     }
   } else {
