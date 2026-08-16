@@ -42,6 +42,10 @@ COPY --from=builder --chown=bun:bun /app/node_modules/drizzle-orm ./node_modules
 COPY --from=builder --chown=bun:bun /app/node_modules/postgres ./node_modules/postgres
 COPY --from=builder --chown=bun:bun /app/scripts ./scripts
 
+# Pre-create the image optimizer cache dir with correct ownership so the
+# named volume mounted here (see docker-compose.yml) is writable by "bun"
+RUN mkdir -p .next/cache/images && chown -R bun:bun .next/cache
+
 USER bun
 EXPOSE 3000
 ENV PORT=3000

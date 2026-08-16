@@ -14,6 +14,9 @@ const config = {
     },
   },
   images: {
+    // Photos are stored under immutable UUID keys (never overwritten in-place),
+    // so optimized variants can be cached for a long time.
+    minimumCacheTTL: 2678400, // 31 days
     remotePatterns: [
       {
         protocol: "https",

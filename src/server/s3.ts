@@ -3,8 +3,29 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 
 import { env } from "@/env";
+
+// Progress photos are only ever viewed as thumbnails / phone-width comparisons,
+// so anything beyond this edge length is wasted bytes.
+export const PHOTO_MAX_DIMENSION = 1600;
+export const PHOTO_WEBP_QUALITY = 80;
+
+// Keys are random UUIDs and objects are never overwritten in-place, so the
+// browser / Next image optimizer can treat them as immutable.
+const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
+export async function compressImage(input: Buffer) {
+  return sharp(input)
+    .rotate() // bake in EXIF orientation before metadata is stripped
+    .resize(PHOTO_MAX_DIMENSION, PHOTO_MAX_DIMENSION, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: PHOTO_WEBP_QUALITY })
+    .toBuffer();
+}
 
 const REGION = process.env.AWS_REGION ?? "eu-central-1";
 
@@ -32,6 +53,7 @@ export async function uploadBufferToS3(
         Key: key,
         Body: buffer,
         ContentType: contentType,
+        CacheControl: IMMUTABLE_CACHE_CONTROL,
       }),
     );
 
@@ -45,7 +67,8 @@ export async function uploadBufferToS3(
 export async function uploadImageToS3(file: File) {
   const key = crypto.randomUUID();
   const buffer = Buffer.from(await file.arrayBuffer());
-  return uploadBufferToS3(buffer, key, file.type);
+  const compressed = await compressImage(buffer);
+  return uploadBufferToS3(compressed, key, "image/webp");
 }
 
 export async function deleteImageFromS3(imageUrl: string) {
