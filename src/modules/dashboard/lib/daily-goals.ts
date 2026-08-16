@@ -3,6 +3,15 @@ import type { DailyGoalSettings } from "@/modules/body/repositories/user.repo";
 export const KCAL_TOLERANCE = 0.05;
 /** Steps only tolerate a shortfall — overshooting the goal is always fine. */
 export const STEPS_TOLERANCE = 0.05;
+/** A cardio session at least this long exempts the day from the steps goal. */
+export const STEPS_EXEMPT_CARDIO_MIN = 90;
+
+export function isStepsExemptSession(s: {
+  type: string;
+  durationMin: number | null;
+}): boolean {
+  return s.type === "cardio" && (s.durationMin ?? 0) >= STEPS_EXEMPT_CARDIO_MIN;
+}
 
 export type GoalCriterionKey = "training" | "steps" | "weight" | "kcal";
 
@@ -10,6 +19,8 @@ export type DayGoalResult = {
   date: string;
   /** A completed session exists on this date. */
   trained: boolean;
+  /** Steps passed only via the long-cardio exemption, not by count. */
+  stepsExempt: boolean;
   /** Pass/fail per active criterion (only active keys are present). */
   criteria: Partial<Record<GoalCriterionKey, boolean>>;
   metCount: number;
@@ -35,11 +46,18 @@ type LogRow = {
   steps: number | null;
 };
 
+type SessionRow = {
+  /** YYYY-MM-DD */
+  date: string;
+  type: string;
+  durationMin: number | null;
+};
+
 type EvaluateInput = {
   settings: DailyGoalSettings;
   logs: LogRow[];
-  /** Dates (YYYY-MM-DD) of completed sessions; duplicates count as separate sessions. */
-  sessionDates: string[];
+  /** Completed sessions; duplicates on a date count as separate sessions. */
+  sessions: SessionRow[];
   /** First day of the evaluated window (YYYY-MM-DD). */
   startDate: string;
   /** Last day of the evaluated window, i.e. today (YYYY-MM-DD). */
@@ -68,7 +86,7 @@ function isoWeekdayIndex(date: string): number {
 export function evaluateDailyGoals({
   settings,
   logs,
-  sessionDates,
+  sessions,
   startDate,
   today,
 }: EvaluateInput): DailyGoalsEvaluation {
@@ -85,8 +103,10 @@ export function evaluateDailyGoals({
 
   const logsByDate = new Map(logs.map((l) => [l.date, l]));
   const sessionsByDate = new Map<string, number>();
-  for (const date of sessionDates) {
-    sessionsByDate.set(date, (sessionsByDate.get(date) ?? 0) + 1);
+  const stepsExemptDates = new Set<string>();
+  for (const s of sessions) {
+    sessionsByDate.set(s.date, (sessionsByDate.get(s.date) ?? 0) + 1);
+    if (isStepsExemptSession(s)) stepsExemptDates.add(s.date);
   }
 
   const days: DayGoalResult[] = [];
@@ -102,6 +122,7 @@ export function evaluateDailyGoals({
 
     const log = logsByDate.get(date);
     const criteria: Partial<Record<GoalCriterionKey, boolean>> = {};
+    let stepsExempt = false;
 
     if (activeCriteria.includes("training")) {
       const remainingDays = 6 - weekdayIdx;
@@ -110,7 +131,10 @@ export function evaluateDailyGoals({
     }
     if (activeCriteria.includes("steps")) {
       const threshold = (settings.stepsGoal ?? 0) * (1 - STEPS_TOLERANCE);
-      criteria.steps = log?.steps != null && log.steps >= threshold;
+      const metByCount = log?.steps != null && log.steps >= threshold;
+      const exempt = stepsExemptDates.has(date);
+      criteria.steps = metByCount || exempt;
+      stepsExempt = exempt && !metByCount;
     }
     if (activeCriteria.includes("weight")) {
       const weight = log?.weight != null ? parseFloat(log.weight) : NaN;
@@ -127,6 +151,7 @@ export function evaluateDailyGoals({
     days.push({
       date,
       trained,
+      stepsExempt,
       criteria,
       metCount,
       totalCount,

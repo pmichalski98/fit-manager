@@ -66,7 +66,7 @@ export async function DailyGoalsPanel() {
   const evaluation = evaluateDailyGoals({
     settings,
     logs,
-    sessionDates: distribution.map((s) => s.date),
+    sessions: distribution,
     startDate,
     today,
   });
@@ -207,8 +207,9 @@ function TodayChecklist({
           })
           .join(", ")
       : `${weekTrainedCount}/${settings.weeklyTrainingGoal ?? 0} this week`,
-    steps:
-      todaySteps != null
+    steps: todayResult.stepsExempt
+      ? `${todaySteps != null ? formatSteps(todaySteps) : "—"} · long cardio`
+      : todaySteps != null
         ? `${formatSteps(todaySteps)} / ${formatSteps(settings.stepsGoal ?? 0)}`
         : "no data yet",
     weight: todayWeight != null ? `${todayWeight} kg` : "no entry",
@@ -319,10 +320,13 @@ function GoalsGrid({
           {days.map((day) => {
             const met = day.criteria[key] === true;
             const isToday = day.date === today;
-            // Rest days that merely keep the weekly goal reachable get a
-            // muted fill so real sessions stand out.
-            const strong = key === "training" ? day.trained : met;
-            const soft = key === "training" && met && !day.trained;
+            // Muted fill for passes that didn't come from the metric itself:
+            // rest days keeping the weekly goal reachable, and long-cardio
+            // days exempt from the steps goal.
+            const soft =
+              (key === "training" && met && !day.trained) ||
+              (key === "steps" && met && day.stepsExempt);
+            const strong = met && !soft;
             return (
               <span
                 key={day.date}

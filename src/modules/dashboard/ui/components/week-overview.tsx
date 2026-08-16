@@ -11,6 +11,7 @@ import { dailyLogRepository } from "@/modules/body/repositories/daily-log.repo";
 import { userRepository } from "@/modules/body/repositories/user.repo";
 import { sessionRepository } from "@/modules/session/repositories/session.repo";
 import type { SessionSummary } from "@/modules/session/types";
+import { isStepsExemptSession } from "../../lib/daily-goals";
 import {
   average,
   formatDurationMin,
@@ -130,8 +131,16 @@ export async function WeekOverview({
   const weekAvgKcal = average(
     logs.filter((l) => l.kcal != null).map((l) => l.kcal!),
   );
+  // Days exempted from the steps goal by long cardio stay out of the average
+  const stepsExemptDates = new Set(
+    sessions
+      .filter(isStepsExemptSession)
+      .map((s) => formatDateYYYYMMDD(new Date(s.startAt))),
+  );
   const weekAvgSteps = average(
-    logs.filter((l) => l.steps != null).map((l) => l.steps!),
+    logs
+      .filter((l) => l.steps != null && !stepsExemptDates.has(l.date))
+      .map((l) => l.steps!),
   );
   const totalVolume = sessions.reduce(
     (acc, s) => acc + (s.totalLoadKg ?? 0),

@@ -246,6 +246,7 @@ class SessionRepository {
       .select({
         date: trainingSession.date,
         type: trainingSession.type,
+        durationMin: trainingSession.durationMin,
       })
       .from(trainingSession)
       .where(whereClause)

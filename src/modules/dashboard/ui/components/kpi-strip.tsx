@@ -7,7 +7,8 @@ import { cn, formatDateYYYYMMDD } from "@/lib/utils";
 import { dailyLogRepository } from "@/modules/body/repositories/daily-log.repo";
 import { userRepository } from "@/modules/body/repositories/user.repo";
 import { sessionRepository } from "@/modules/session/repositories/session.repo";
-import { average, nextDayStart } from "../../utils";
+import { isStepsExemptSession } from "../../lib/daily-goals";
+import { average, formatSteps, nextDayStart } from "../../utils";
 
 type KpiStripProps = {
   monday: Date;
@@ -20,6 +21,7 @@ type DailyLogRow = {
   date: string;
   weight: string | null;
   kcal: number | null;
+  steps: number | null;
 };
 
 function parseWeights(logs: DailyLogRow[]): number[] {
@@ -107,37 +109,28 @@ export async function KpiStrip({
 
   if (!userId) return null;
 
-  const [logs, prevLogs, trendLogs, sessions, prevSessions, userRow] =
-    await Promise.all([
-      dailyLogRepository.findDailyLogsInRange(
-        userId,
-        formatDateYYYYMMDD(monday),
-        formatDateYYYYMMDD(sunday),
-      ) as Promise<DailyLogRow[]>,
-      dailyLogRepository.findDailyLogsInRange(
-        userId,
-        formatDateYYYYMMDD(prevMonday),
-        formatDateYYYYMMDD(prevSunday),
-      ) as Promise<DailyLogRow[]>,
-      dailyLogRepository.findDailyLogsInRange(
-        userId,
-        formatDateYYYYMMDD(subDays(sunday, 29)),
-        formatDateYYYYMMDD(sunday),
-      ) as Promise<DailyLogRow[]>,
-      sessionRepository.getSessionsInRange(
-        userId,
-        monday,
-        nextDayStart(sunday),
-      ),
-      sessionRepository.getSessionsInRange(
-        userId,
-        prevMonday,
-        nextDayStart(prevSunday),
-      ),
-      userRepository.findUserById(userId),
-    ]);
+  const [logs, prevLogs, trendLogs, sessions, userRow] = await Promise.all([
+    dailyLogRepository.findDailyLogsInRange(
+      userId,
+      formatDateYYYYMMDD(monday),
+      formatDateYYYYMMDD(sunday),
+    ) as Promise<DailyLogRow[]>,
+    dailyLogRepository.findDailyLogsInRange(
+      userId,
+      formatDateYYYYMMDD(prevMonday),
+      formatDateYYYYMMDD(prevSunday),
+    ) as Promise<DailyLogRow[]>,
+    dailyLogRepository.findDailyLogsInRange(
+      userId,
+      formatDateYYYYMMDD(subDays(sunday, 29)),
+      formatDateYYYYMMDD(sunday),
+    ) as Promise<DailyLogRow[]>,
+    sessionRepository.getSessionsInRange(userId, monday, nextDayStart(sunday)),
+    userRepository.findUserById(userId),
+  ]);
 
   const caloricGoal = (userRow?.caloricGoal as number | null) ?? null;
+  const stepsGoal = (userRow?.stepsGoal as number | null) ?? null;
 
   // Weight
   const weekAvgWeight = average(parseWeights(logs));
@@ -161,14 +154,20 @@ export async function KpiStrip({
   const strengthCount = sessions.filter((s) => s.type === "strength").length;
   const cardioCount = sessions.filter((s) => s.type === "cardio").length;
 
-  // Volume
-  const sumVolume = (list: typeof sessions) =>
-    list.reduce((acc, s) => acc + (s.totalLoadKg ?? 0), 0);
-  const volume = sumVolume(sessions);
-  const prevVolume = sumVolume(prevSessions);
-  const volumePct =
-    volume > 0 && prevVolume > 0
-      ? ((volume - prevVolume) / prevVolume) * 100
+  // Steps — days exempted by long cardio don't count toward the average
+  const stepsExemptDates = new Set(
+    sessions
+      .filter(isStepsExemptSession)
+      .map((s) => formatDateYYYYMMDD(new Date(s.startAt))),
+  );
+  const weekAvgSteps = average(
+    logs
+      .filter((l) => l.steps != null && !stepsExemptDates.has(l.date))
+      .map((l) => l.steps!),
+  );
+  const stepsDiff =
+    weekAvgSteps != null && stepsGoal != null
+      ? Math.round(weekAvgSteps) - stepsGoal
       : null;
 
   return (
@@ -234,17 +233,28 @@ export async function KpiStrip({
         }
       />
       <KpiCell
-        label="Volume · week"
-        value={volume > 0 ? String(Math.round(volume)) : "—"}
-        unit="kg"
+        label="Steps · day avg"
+        value={
+          weekAvgSteps != null ? formatSteps(Math.round(weekAvgSteps)) : "—"
+        }
         delta={
-          volumePct != null ? (
-            <span className="text-primary">
-              {volumePct >= 0 ? "▲ +" : "▼ "}
-              {Math.abs(volumePct).toFixed(1)}% vs prev
-            </span>
+          stepsGoal != null ? (
+            <>
+              goal {formatSteps(stepsGoal)}
+              {stepsDiff != null ? (
+                <>
+                  {" · "}
+                  <span
+                    className={stepsDiff < 0 ? "text-cardio" : "text-primary"}
+                  >
+                    {stepsDiff >= 0 ? "+" : "−"}
+                    {formatSteps(Math.abs(stepsDiff))}
+                  </span>
+                </>
+              ) : null}
+            </>
           ) : (
-            "no prev week data"
+            "no goal set"
           )
         }
       />
