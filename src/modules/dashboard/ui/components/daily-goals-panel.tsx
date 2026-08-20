@@ -215,7 +215,7 @@ function TodayChecklist({
     weight: todayWeight != null ? `${todayWeight} kg` : "no entry",
     kcal:
       todayKcal != null
-        ? `${todayKcal} / ${settings.caloricGoal} ±${KCAL_TOLERANCE * 100}%`
+        ? `${todayKcal} / ${settings.caloricGoal} +${KCAL_TOLERANCE * 100}%`
         : "no entry",
   };
 

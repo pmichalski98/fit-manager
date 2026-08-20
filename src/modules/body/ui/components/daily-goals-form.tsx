@@ -80,7 +80,7 @@ export function DailyGoalsForm({ settings, onSaved }: Props) {
       name: "goalKcalEnabled",
       label: "Calories on target",
       hint: caloricGoal
-        ? `${caloricGoal} ±${KCAL_TOLERANCE_PCT}%`
+        ? `${caloricGoal} +${KCAL_TOLERANCE_PCT}%`
         : "set a goal",
     },
   ];
@@ -122,7 +122,7 @@ export function DailyGoalsForm({ settings, onSaved }: Props) {
                     />
                   </FormControl>
                   <p className="text-faint font-mono text-[11px]">
-                    tolerance ±{KCAL_TOLERANCE_PCT}%
+                    under goal OK, tolerance +{KCAL_TOLERANCE_PCT}% over
                   </p>
                   <FormMessage />
                 </FormItem>

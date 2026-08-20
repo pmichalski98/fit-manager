@@ -1,5 +1,6 @@
 import type { DailyGoalSettings } from "@/modules/body/repositories/user.repo";
 
+/** Kcal only tolerate an overshoot — eating under the goal is always fine. */
 export const KCAL_TOLERANCE = 0.05;
 /** Steps only tolerate a shortfall — overshooting the goal is always fine. */
 export const STEPS_TOLERANCE = 0.05;
@@ -143,7 +144,7 @@ export function evaluateDailyGoals({
     if (activeCriteria.includes("kcal")) {
       const goal = settings.caloricGoal ?? 0;
       criteria.kcal =
-        log?.kcal != null && Math.abs(log.kcal - goal) <= goal * KCAL_TOLERANCE;
+        log?.kcal != null && log.kcal <= goal * (1 + KCAL_TOLERANCE);
     }
 
     const metCount = Object.values(criteria).filter(Boolean).length;
