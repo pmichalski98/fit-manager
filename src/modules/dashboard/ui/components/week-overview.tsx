@@ -3,11 +3,12 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { auth } from "@/lib/auth";
-import { cn, formatDateYYYYMMDD } from "@/lib/utils";
+import { cn, formatDateYYYYMMDD, getTodayDateYYYYMMDD } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { dailyLogRepository } from "@/modules/body/repositories/daily-log.repo";
+import { DailyLogDialog } from "@/modules/body/ui/components/daily-log-dialog";
 import { userRepository } from "@/modules/body/repositories/user.repo";
 import { sessionRepository } from "@/modules/session/repositories/session.repo";
 import type { SessionSummary } from "@/modules/session/types";
@@ -98,16 +99,9 @@ export async function WeekOverview({
     caloricGoal = (userRow?.caloricGoal as number | null) ?? null;
   }
 
-  const logsByDate = new Map(
-    logs.map((l) => [
-      l.date,
-      {
-        weight: l.weight != null ? parseFloat(l.weight) : null,
-        kcal: l.kcal ?? null,
-        steps: l.steps ?? null,
-      },
-    ]),
-  );
+  // Raw rows, not parsed numbers — the day cells double as edit triggers and
+  // the dialog needs the stored values back unchanged
+  const logsByDate = new Map(logs.map((l) => [l.date, l]));
 
   const sessionsByDate = new Map<string, SessionSummary[]>();
   for (const s of sessions) {
@@ -148,6 +142,7 @@ export async function WeekOverview({
   );
 
   const today = new Date();
+  const todayKey = getTodayDateYYYYMMDD();
   const rangeText = isSameMonth(monday, sunday)
     ? `${format(monday, "d")}–${format(sunday, "d MMM")}`
     : `${format(monday, "d MMM")} – ${format(sunday, "d MMM")}`;
@@ -179,16 +174,19 @@ export async function WeekOverview({
             const log = logsByDate.get(key);
             const daySessions = sessionsByDate.get(key);
             const isToday = isSameDay(d, today);
+            const weight = log?.weight != null ? parseFloat(log.weight) : null;
+            const isFuture = key > todayKey;
 
-            return (
-              <div
-                key={key}
-                className={cn(
-                  "flex min-h-[120px] flex-col gap-2 p-3",
-                  i < 6 && "border-b sm:border-r sm:border-b-0",
-                  isToday && "bg-accent/60",
-                )}
-              >
+            const cellClass = cn(
+              "flex min-h-[120px] w-full flex-col gap-2 p-3 text-left",
+              i < 6 && "border-b sm:border-r sm:border-b-0",
+              isToday && "bg-accent/60",
+              !isFuture &&
+                "hover:bg-accent focus-visible:ring-ring cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none",
+            );
+
+            const cellBody = (
+              <>
                 <span
                   className={cn(
                     "text-[10px] font-semibold tracking-[0.1em] uppercase",
@@ -200,8 +198,8 @@ export async function WeekOverview({
                 </span>
                 <div className="flex flex-col gap-0.5 font-mono">
                   <span className="text-[15px] font-semibold">
-                    {log?.weight != null && !Number.isNaN(log.weight) ? (
-                      log.weight.toFixed(1)
+                    {weight != null && !Number.isNaN(weight) ? (
+                      weight.toFixed(1)
                     ) : (
                       <span className="text-faint">—</span>
                     )}
@@ -248,7 +246,32 @@ export async function WeekOverview({
                     })}
                   </div>
                 ) : null}
-              </div>
+              </>
+            );
+
+            if (isFuture) {
+              return (
+                <div key={key} className={cellClass}>
+                  {cellBody}
+                </div>
+              );
+            }
+
+            return (
+              <DailyLogDialog
+                key={key}
+                date={key}
+                log={log ?? null}
+                today={todayKey}
+              >
+                <button
+                  type="button"
+                  className={cellClass}
+                  aria-label={`Edit entry for ${format(d, "d MMM yyyy")}`}
+                >
+                  {cellBody}
+                </button>
+              </DailyLogDialog>
             );
           })}
         </div>

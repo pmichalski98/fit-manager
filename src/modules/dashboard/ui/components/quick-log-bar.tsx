@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { TargetIcon } from "lucide-react";
+import { CalendarPlusIcon, TargetIcon } from "lucide-react";
 
-import { cn, getTodayDateYYYYMMDD, handleIntegerInput } from "@/lib/utils";
+import { cn, handleIntegerInput } from "@/lib/utils";
 import { createOrUpdateDailyLog } from "@/modules/body/actions";
 import {
   dailyLogSchema,
@@ -19,10 +19,14 @@ import {
 } from "@/modules/body/schemas";
 import type { DailyGoalSettings } from "@/modules/body/repositories/user.repo";
 import { DailyGoalsDialog } from "@/modules/body/ui/components/daily-goals-dialog";
+import { DailyLogDialog } from "@/modules/body/ui/components/daily-log-dialog";
 import { MeasurementsDialog } from "@/modules/body/ui/components/measurements-dialog";
 import type { BodyMeasurement, DailyLog } from "@/server/db/schema";
 
 type Props = {
+  /** Today as YYYY-MM-DD, resolved on the server to avoid a hydration mismatch. */
+  today: string;
+  defaultBackfillDate: string;
   todayLog: DailyLog | null;
   latestLog: DailyLog | null;
   goalSettings: DailyGoalSettings | null;
@@ -31,6 +35,8 @@ type Props = {
 };
 
 export function QuickLogBar({
+  today,
+  defaultBackfillDate,
   todayLog,
   latestLog,
   goalSettings,
@@ -42,7 +48,7 @@ export function QuickLogBar({
   const form = useForm<DailyLogFormValues>({
     resolver: zodResolver(dailyLogSchema) as Resolver<DailyLogFormValues>,
     defaultValues: {
-      date: getTodayDateYYYYMMDD(),
+      date: today,
       weight: todayLog?.weight ?? "",
       kcal: todayLog?.kcal ?? undefined,
       steps: todayLog?.steps ?? undefined,
@@ -187,6 +193,18 @@ export function QuickLogBar({
           <Button type="submit" size="sm" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Save"}
           </Button>
+
+          <DailyLogDialog date={defaultBackfillDate} today={today}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              title="Add or correct an entry for a past day"
+            >
+              <CalendarPlusIcon className="size-3.5" />
+              Past day
+            </Button>
+          </DailyLogDialog>
 
           <div className="ml-auto flex items-center gap-2.5">
             <span

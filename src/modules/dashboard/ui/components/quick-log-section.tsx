@@ -1,6 +1,6 @@
-import { differenceInDays } from "date-fns";
+import { differenceInDays, subDays } from "date-fns";
 
-import { getTodayDateYYYYMMDD } from "@/lib/utils";
+import { formatDateYYYYMMDD, getTodayDateYYYYMMDD } from "@/lib/utils";
 import {
   getDailyLogByDate,
   getGoalSettings,
@@ -32,6 +32,9 @@ export async function QuickLogSection() {
 
   return (
     <QuickLogBar
+      today={today}
+      // "Add past entry" opens on yesterday — today is already in the bar
+      defaultBackfillDate={formatDateYYYYMMDD(subDays(new Date(), 1))}
       todayLog={todayLog ?? null}
       latestLog={latestLog ?? null}
       goalSettings={goalSettings ?? null}
