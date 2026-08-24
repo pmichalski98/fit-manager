@@ -149,7 +149,7 @@ export function ExportDialog() {
               onSelect={(_, clickedDay) => handleDayClick(clickedDay)}
               defaultMonth={range?.from}
               disabled={{ after: new Date() }}
-              className="w-full bg-transparent p-0 font-mono"
+              className="w-full bg-transparent p-0 font-mono [--cell-size:--spacing(12)]"
               classNames={{
                 caption_label:
                   "text-[11px] font-semibold uppercase tracking-[0.08em] select-none",
