@@ -1,0 +1,1 @@
+ALTER TABLE "fit-manager_user" ADD COLUMN "auto_weekly_analysis" boolean DEFAULT false NOT NULL;

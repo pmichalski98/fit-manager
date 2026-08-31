@@ -1,5 +1,9 @@
 import { getCaloricGoal } from "@/modules/body/actions";
-import { getWeekInsight, getWeekMeals } from "../../actions";
+import {
+  getAutoWeeklyAnalysis,
+  getWeekInsight,
+  getWeekMeals,
+} from "../../actions";
 import { WeekMeals } from "../components/week-meals";
 import { WeeklyInsightCard } from "../components/weekly-insight-card";
 
@@ -8,11 +12,13 @@ export default async function NutritionView({
 }: {
   weekStart: string;
 }) {
-  const [{ data: items }, { data: insight }, goalResult] = await Promise.all([
-    getWeekMeals(weekStart),
-    getWeekInsight(weekStart),
-    getCaloricGoal(),
-  ]);
+  const [{ data: items }, { data: insight }, goalResult, autoAnalysis] =
+    await Promise.all([
+      getWeekMeals(weekStart),
+      getWeekInsight(weekStart),
+      getCaloricGoal(),
+      getAutoWeeklyAnalysis(),
+    ]);
   const caloricGoal = goalResult.data ?? null;
 
   return (
@@ -21,6 +27,7 @@ export default async function NutritionView({
         weekStart={weekStart}
         insight={insight}
         hasMeals={items.length > 0}
+        autoAnalysis={autoAnalysis}
       />
 
       <WeekMeals items={items} caloricGoal={caloricGoal} />

@@ -35,6 +35,11 @@ export const user = createTable("user", (d) => ({
   goalStepsEnabled: d.boolean("goal_steps_enabled").notNull().default(true),
   goalWeightEnabled: d.boolean("goal_weight_enabled").notNull().default(true),
   goalKcalEnabled: d.boolean("goal_kcal_enabled").notNull().default(true),
+  // Gates the weekly-analysis cron endpoint only; the manual button ignores it.
+  autoWeeklyAnalysis: d
+    .boolean("auto_weekly_analysis")
+    .notNull()
+    .default(false),
   createdAt: d
     .timestamp("created_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())

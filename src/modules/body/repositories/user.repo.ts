@@ -35,6 +35,21 @@ class UserRepository {
     return row?.caloricGoal ?? null;
   }
 
+  async findAutoWeeklyAnalysis(userId: string) {
+    const [row] = await db
+      .select({ autoWeeklyAnalysis: user.autoWeeklyAnalysis })
+      .from(user)
+      .where(eq(user.id, userId));
+    return row?.autoWeeklyAnalysis ?? false;
+  }
+
+  async updateAutoWeeklyAnalysis(userId: string, enabled: boolean) {
+    await db
+      .update(user)
+      .set({ autoWeeklyAnalysis: enabled, updatedAt: new Date() })
+      .where(eq(user.id, userId));
+  }
+
   async findGoalSettings(userId: string): Promise<DailyGoalSettings | null> {
     const [row] = await db
       .select({

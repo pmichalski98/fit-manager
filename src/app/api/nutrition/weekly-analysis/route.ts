@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     : lastCompletedWeekStart(warsawToday());
 
   const [appUser] = await db
-    .select({ id: user.id })
+    .select({ id: user.id, autoWeeklyAnalysis: user.autoWeeklyAnalysis })
     .from(user)
     .where(eq(user.email, env.FITATU_SYNC_USER_EMAIL));
   if (!appUser) {
@@ -54,6 +54,13 @@ export async function GET(request: NextRequest) {
       { error: `No app user with email ${env.FITATU_SYNC_USER_EMAIL}` },
       { status: 500 },
     );
+  }
+
+  // The user analyses weeks manually from the app; the cron only runs when
+  // explicitly re-enabled there. 200 so the scheduler never treats it as
+  // a failure.
+  if (!appUser.autoWeeklyAnalysis) {
+    return NextResponse.json({ weekStart, status: "disabled" });
   }
 
   try {

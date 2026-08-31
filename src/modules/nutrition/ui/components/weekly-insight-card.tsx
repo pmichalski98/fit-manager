@@ -1,16 +1,19 @@
 import type { NutritionInsight } from "@/server/db/schema";
+import { AutoAnalysisToggle } from "./auto-analysis-toggle";
 import { GenerateInsightButton } from "./generate-insight-button";
 
 interface WeeklyInsightCardProps {
   weekStart: string;
   insight: NutritionInsight | null;
   hasMeals: boolean;
+  autoAnalysis: boolean;
 }
 
 export function WeeklyInsightCard({
   weekStart,
   insight,
   hasMeals,
+  autoAnalysis,
 }: WeeklyInsightCardProps) {
   return (
     <div className="bg-card flex flex-col gap-4 rounded-[10px] border p-5">
@@ -23,12 +26,16 @@ export function WeeklyInsightCard({
             </span>
           )}
         </h2>
-        {hasMeals && (
-          <GenerateInsightButton
-            weekStart={weekStart}
-            hasInsight={insight !== null}
-          />
-        )}
+        <div className="flex flex-wrap items-center gap-4">
+          <AutoAnalysisToggle enabled={autoAnalysis} />
+          {hasMeals && (
+            <GenerateInsightButton
+              weekStart={weekStart}
+              hasInsight={insight !== null}
+              insightUpdatedAt={insight?.updatedAt.toISOString() ?? null}
+            />
+          )}
+        </div>
       </div>
 
       {!insight && (
