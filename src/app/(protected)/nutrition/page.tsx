@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTodayDateYYYYMMDD } from "@/lib/utils";
+import { SyncFitatuButton } from "@/modules/fitatu/ui/components/sync-fitatu-button";
 import {
   addDays,
   parseDate,
@@ -38,6 +39,7 @@ export default async function NutritionPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <SyncFitatuButton weekStart={weekStart} />
           <Button variant="outline" size="sm" asChild>
             <Link href={`/nutrition?week=${addDays(weekStart, -7)}`}>
               <ChevronLeftIcon />
